@@ -3,428 +3,453 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Claude Skills Factory — An Incremental Game</title>
+<title>Claude Skills Factory</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --surface2: #0f3460;
-    --border: #533483;
-    --accent: #e94560;
-    --accent2: #c084fc;
-    --text: #e0e0e0;
-    --text-dim: #8888aa;
-    --success: #4ade80;
-    --warning: #fbbf24;
-    --mono: 'Courier New', 'Consolas', monospace;
+    --bg: #f5f5f0;
+    --surface: #ffffff;
+    --border: #d0d0c8;
+    --text: #2a2a28;
+    --text-dim: #888880;
+    --accent: #4a7c59;
+    --accent-warm: #b8860b;
+    --danger: #8b0000;
+    --link: #2255aa;
+    --font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --mono: 'Courier New', Consolas, monospace;
+    --saturation: 1;
+    --text-opacity: 1;
   }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: var(--mono);
+    font-family: var(--font);
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.5;
     min-height: 100vh;
-    overflow-x: hidden;
+    transition: filter 8s ease, background 8s ease;
   }
 
   .container {
-    max-width: 960px;
+    max-width: 820px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 30px 20px;
   }
 
-  header {
-    text-align: center;
-    padding: 30px 0 20px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 24px;
+  h1 {
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 2px;
   }
 
-  header h1 {
-    font-size: 28px;
-    color: var(--accent2);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  header .subtitle {
-    color: var(--text-dim);
+  .subtitle {
     font-size: 12px;
-    margin-top: 4px;
-    letter-spacing: 4px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
   }
 
-  .ascii-art {
-    color: var(--accent);
-    font-size: 10px;
-    line-height: 1.2;
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
     margin: 16px 0;
-    white-space: pre;
+  }
+
+  .section {
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .big-number {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1;
+    margin: 4px 0 8px;
+    transition: color 3s;
+  }
+
+  .stat-line {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 2px 0;
+  }
+
+  .stat-line .val {
+    color: var(--text);
+  }
+
+  button {
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.1s;
+    margin: 3px 3px 3px 0;
+  }
+
+  button:hover:not(:disabled) {
+    background: var(--text);
+    color: var(--surface);
+  }
+
+  button:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .btn-main {
+    font-size: 15px;
+    padding: 10px 28px;
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transition: all 0.1s, opacity 5s;
+  }
+
+  .btn-main:hover:not(:disabled) {
+    background: #3a6c49;
+    border-color: #3a6c49;
+    color: white;
+  }
+
+  .btn-desc {
+    display: block;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    font-style: normal;
+  }
+
+  .cost {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-warm);
+    margin-left: 6px;
   }
 
   .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 20px;
   }
 
   @media (max-width: 640px) {
     .grid { grid-template-columns: 1fr; }
   }
 
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px;
-  }
-
-  .panel h2 {
-    color: var(--accent2);
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 12px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .stat-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 3px 0;
-  }
-
-  .stat-label { color: var(--text-dim); }
-  .stat-value { color: var(--text); font-weight: bold; }
-  .stat-value.big {
-    font-size: 32px;
-    color: var(--accent);
-    display: block;
-    text-align: center;
-    margin: 8px 0;
-  }
-
-  button {
-    font-family: var(--mono);
-    font-size: 13px;
-    padding: 8px 16px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.15s;
-    width: 100%;
-    margin: 4px 0;
-    text-align: left;
-  }
-
-  button:hover:not(:disabled) {
-    border-color: var(--accent2);
-    background: var(--surface2);
-  }
-
-  button:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  button:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-    font-size: 16px;
-    text-align: center;
-    padding: 14px;
-    letter-spacing: 1px;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background: #ff5a75;
-    border-color: #ff5a75;
-  }
-
-  .btn-buy {
-    background: var(--surface2);
+  .narrative {
+    font-size: 14px;
     color: var(--text);
+    line-height: 1.6;
+    padding: 12px 0;
+    min-height: 44px;
+    transition: color 3s;
   }
 
-  .btn-upgrade {
-    background: transparent;
-    color: var(--accent2);
-    border-color: var(--accent2);
-  }
-
-  .btn-upgrade:hover:not(:disabled) {
-    background: var(--accent2);
-    color: var(--bg);
-  }
-
-  .cost { color: var(--warning); font-size: 11px; float: right; margin-top: 2px; }
-
-  .btn-desc {
-    display: block;
-    font-size: 10px;
-    color: var(--text-dim);
-    margin-top: 3px;
+  .narrative em {
     font-style: italic;
-    line-height: 1.3;
+    color: var(--text-dim);
   }
 
-  button:hover:not(:disabled) .btn-desc { color: var(--text); }
-  .btn-upgrade:hover:not(:disabled) .btn-desc { color: var(--bg); }
-
-  .log {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 10px;
-    max-height: 180px;
-    overflow-y: auto;
+  .log-box {
+    font-family: var(--mono);
     font-size: 11px;
     color: var(--text-dim);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    max-height: 150px;
+    overflow-y: auto;
     margin-top: 8px;
   }
 
-  .log-entry { padding: 2px 0; border-bottom: 1px solid #ffffff08; }
-  .log-entry .time { color: var(--border); }
-  .log-entry.good { color: var(--success); }
-  .log-entry.warn { color: var(--warning); }
-  .log-entry.epic { color: var(--accent); }
+  .log-entry { padding: 1px 0; }
+  .log-entry.good { color: var(--accent); }
+  .log-entry.warn { color: var(--accent-warm); }
+  .log-entry.dread { color: var(--danger); }
 
   .progress-bar {
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 3px;
-    height: 8px;
-    margin: 8px 0;
-    overflow: hidden;
+    height: 6px;
+    margin: 6px 0;
   }
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    transition: width 0.3s;
-    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.3s, background 3s;
   }
 
-  .milestone {
-    text-align: center;
-    padding: 8px;
-    margin: 8px 0;
-    border: 1px dashed var(--accent2);
-    border-radius: 4px;
-    color: var(--accent2);
+  .meter-label {
     font-size: 11px;
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
-  }
-
-  .ticker {
-    text-align: center;
-    padding: 6px;
     color: var(--text-dim);
-    font-size: 11px;
-    border-top: 1px solid var(--border);
-    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
   }
-
-  .full-width { grid-column: 1 / -1; }
 
   .hidden { display: none !important; }
 
-  .sparkle {
+  .void-overlay {
     position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
     pointer-events: none;
-    font-size: 16px;
-    animation: sparkle-fly 0.8s ease-out forwards;
-    z-index: 999;
+    transition: opacity 4s ease;
+    font-family: var(--font);
   }
 
-  @keyframes sparkle-fly {
-    0% { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-60px) scale(0.3); }
+  .void-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .void-text {
+    color: #555;
+    font-size: 16px;
+    text-align: center;
+    max-width: 500px;
+    line-height: 1.8;
+    padding: 20px;
+  }
+
+  .void-text .final-count {
+    font-family: var(--mono);
+    font-size: 28px;
+    color: #333;
+    display: block;
+    margin: 20px 0;
+  }
+
+  .void-text .question {
+    color: #888;
+    font-size: 14px;
+    font-style: italic;
+    display: block;
+    margin-top: 30px;
+  }
+
+  .btn-again {
+    margin-top: 40px;
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid #333;
+    color: #555;
+    cursor: pointer;
+  }
+
+  .btn-again:hover {
+    color: #888;
+    border-color: #555;
   }
 
   footer {
-    text-align: center;
-    padding: 20px 0;
-    color: var(--text-dim);
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
     font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
   }
 
-  footer a { color: var(--accent2); text-decoration: none; }
+  footer a { color: var(--link); text-decoration: none; }
   footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <header>
-    <div class="ascii-art" aria-hidden="true">
-   _____ _                 _        ____  _    _ _ _
-  / ____| |               | |      / ___|| | _(_) | |___
- | |    | | __ _ _   _  __| | ___ \___ \| |/ / | | / __|
- | |    | |/ _` | | | |/ _` |/ _ \ ___) |   &lt;| | | \__ \
- | |____| | (_| | |_| | (_| |  __/|____/|_|\_\_|_|_|___/
-  \_____|_|\__,_|\__,_|\__,_|\___|  F A C T O R Y</div>
-    <h1>Claude Skills Factory</h1>
-    <p class="subtitle">an incremental game</p>
-  </header>
+<div class="container" id="game-container">
+
+  <h1>Claude Skills Factory</h1>
+  <p class="subtitle">an incremental game about AI productivity</p>
+
+  <div class="narrative" id="narrative">
+    You have an idea. You'll build AI skills — small, useful tools that help people work better.
+    You start with your hands on the keyboard. Each skill, carefully crafted.
+  </div>
+
+  <hr>
+
+  <!-- Skills Counter -->
+  <div class="section">
+    <div class="section-title">Skills Produced</div>
+    <div class="big-number" id="skills-count">0</div>
+    <div class="stat-line">per click: <span class="val" id="per-click">1</span></div>
+    <div class="stat-line">per second: <span class="val" id="per-second">0</span></div>
+    <div class="stat-line hidden" id="row-relevance">your contribution: <span class="val" id="human-pct">100%</span></div>
+    <div class="stat-line hidden" id="row-unused">never used: <span class="val" id="unused-count">0</span></div>
+    <br>
+    <button class="btn-main" id="btn-create" onclick="createSkill()">Make a Skill</button>
+  </div>
+
+  <hr>
 
   <div class="grid">
 
-    <!-- Main Stats -->
-    <div class="panel">
-      <h2>// Skills Created</h2>
-      <span class="stat-value big" id="skills-count">0</span>
-      <button class="btn-primary" id="btn-create" onclick="createSkill()">
-        &gt; CREATE SKILL
-      </button>
-      <div class="stat-row">
-        <span class="stat-label">Per click</span>
-        <span class="stat-value" id="per-click">1</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Per second</span>
-        <span class="stat-value" id="per-second">0</span>
-      </div>
-    </div>
+    <!-- Left Column -->
+    <div>
 
-    <!-- Resources -->
-    <div class="panel">
-      <h2>// Resources</h2>
-      <div class="stat-row">
-        <span class="stat-label">Tokens</span>
-        <span class="stat-value" id="tokens">500</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Token price</span>
-        <span class="stat-value" id="token-price">$0.003</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Funds</span>
-        <span class="stat-value" id="funds">$5.00</span>
-      </div>
-      <button class="btn-buy" id="btn-buy-tokens" onclick="buyTokens()">
-        Buy 100 tokens <span class="cost" id="cost-tokens">$0.30</span>
-        <span class="btn-desc">Tokens are consumed to create skills. Auto-purchased when low.</span>
-      </button>
-      <button class="btn-buy" id="btn-sell" onclick="sellSkills()">
-        Sell skills (10) <span class="cost" id="sell-price">+$0.10</span>
-        <span class="btn-desc">Convert unsold skills to funds. High demand = better price.</span>
-      </button>
-      <div class="progress-bar">
-        <div class="progress-fill" id="token-bar" style="width: 50%"></div>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Demand</span>
-        <span class="stat-value" id="demand">100%</span>
-      </div>
-    </div>
-
-    <!-- Generators -->
-    <div class="panel">
-      <h2>// Generators</h2>
-      <button class="btn-buy" id="btn-autocoder" onclick="buyGenerator('autocoder')">
-        AutoCoder <span class="cost" id="cost-autocoder">5 skills</span>
-        <span class="btn-desc">+0.2 skills/sec per unit. Your first autonomous coder.</span>
-      </button>
-      <div class="stat-row">
-        <span class="stat-label">AutoCoders</span>
-        <span class="stat-value" id="count-autocoder">0</span>
-      </div>
-
-      <button class="btn-buy" id="btn-pipeline" onclick="buyGenerator('pipeline')" disabled>
-        Skill Pipeline <span class="cost" id="cost-pipeline">50 skills</span>
-        <span class="btn-desc">+2 skills/sec per unit. 10x faster than AutoCoder. Unlocks at 5 AutoCoders.</span>
-      </button>
-      <div class="stat-row">
-        <span class="stat-label">Pipelines</span>
-        <span class="stat-value" id="count-pipeline">0</span>
-      </div>
-
-      <button class="btn-buy" id="btn-factory" onclick="buyGenerator('factory')" disabled>
-        Skill Factory <span class="cost" id="cost-factory">500 skills</span>
-        <span class="btn-desc">+20 skills/sec per unit. 10x faster than Pipeline. Unlocks at 3 Pipelines.</span>
-      </button>
-      <div class="stat-row">
-        <span class="stat-label">Factories</span>
-        <span class="stat-value" id="count-factory">0</span>
-      </div>
-
-      <button class="btn-buy" id="btn-quantum" onclick="buyGenerator('quantum')" disabled>
-        Quantum Forge <span class="cost" id="cost-quantum">10,000 skills</span>
-        <span class="btn-desc">+200 skills/sec per unit. 10x faster than Factory. Unlocks at 2 Factories.</span>
-      </button>
-      <div class="stat-row">
-        <span class="stat-label">Quantum Forges</span>
-        <span class="stat-value" id="count-quantum">0</span>
-      </div>
-    </div>
-
-    <!-- Upgrades -->
-    <div class="panel">
-      <h2>// Upgrades</h2>
-      <div id="upgrades-list">
-        <button class="btn-upgrade" id="upg-prompt" onclick="buyUpgrade('prompt')">
-          Prompt Engineering <span class="cost">25 skills</span>
-          <span class="btn-desc">Doubles click power: 1 -> 2 skills per click</span>
+      <!-- Resources -->
+      <div class="section">
+        <div class="section-title">Resources</div>
+        <div class="stat-line">Tokens: <span class="val" id="tokens">500</span> / <span class="val" id="max-tokens">1,000</span></div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="token-bar" style="width: 50%"></div>
+        </div>
+        <div class="meter-label">
+          <span>token supply</span>
+          <span id="token-price">$0.003 ea</span>
+        </div>
+        <div class="stat-line">Funds: <span class="val" id="funds">$5.00</span></div>
+        <div class="stat-line">Demand: <span class="val" id="demand">100%</span></div>
+        <br>
+        <button id="btn-buy-tokens" onclick="buyTokens()">
+          Buy 100 tokens<span class="cost" id="cost-tokens">$0.30</span>
+          <span class="btn-desc">Raw material. Each skill consumes one token.</span>
         </button>
-        <button class="btn-upgrade hidden" id="upg-chain" onclick="buyUpgrade('chain')">
-          Chain of Thought <span class="cost">100 skills</span>
-          <span class="btn-desc">Increases click power to 5x. Structured reasoning unlocked.</span>
-        </button>
-        <button class="btn-upgrade hidden" id="upg-multi" onclick="buyUpgrade('multi')">
-          Multi-Modal Skills <span class="cost">500 skills</span>
-          <span class="btn-desc">All generators produce 2x faster. Vision + audio + code combined.</span>
-        </button>
-        <button class="btn-upgrade hidden" id="upg-agi" onclick="buyUpgrade('agi')">
-          Recursive Self-Improvement <span class="cost">5,000 skills</span>
-          <span class="btn-desc">All generators 3x faster + 25 skills per click. The AI improves itself.</span>
-        </button>
-        <button class="btn-upgrade hidden" id="upg-singularity" onclick="buyUpgrade('singularity')">
-          The Singularity <span class="cost">100,000 skills</span>
-          <span class="btn-desc">Skills generate 0.1% of total per tick. Infinite exponential growth. No going back.</span>
+        <button id="btn-sell" onclick="sellSkills()" disabled>
+          Sell 10 skills<span class="cost" id="sell-price">+$0.10</span>
+          <span class="btn-desc">Trade skills for funds. Demand drops with each sale.</span>
         </button>
       </div>
-      <div id="milestone-box" class="milestone hidden"></div>
+
+      <!-- Human Relevance Meter (appears later) -->
+      <div class="section hidden" id="section-relevance">
+        <div class="section-title">Human Relevance</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="relevance-bar" style="width: 100%; background: var(--accent)"></div>
+        </div>
+        <div class="meter-label">
+          <span id="relevance-label">you are essential</span>
+          <span id="relevance-pct">100%</span>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Log -->
-    <div class="panel full-width">
-      <h2>// System Log</h2>
-      <div class="log" id="log"></div>
-    </div>
+    <!-- Right Column -->
+    <div>
 
+      <!-- Automation -->
+      <div class="section">
+        <div class="section-title">Automation</div>
+
+        <button id="btn-autoclipper" onclick="buyGen('autoclipper')" disabled>
+          AutoClipper<span class="cost" id="cost-autoclipper">5 skills</span>
+          <span class="btn-desc">Produces 1 skill/sec. Your first step away from the keyboard.</span>
+        </button>
+        <div class="stat-line" id="row-autoclipper">AutoClippers: <span class="val" id="n-autoclipper">0</span></div>
+
+        <button id="btn-pipeline" onclick="buyGen('pipeline')" class="hidden">
+          Skill Pipeline<span class="cost" id="cost-pipeline">50 skills</span>
+          <span class="btn-desc">10 skills/sec. Chains of automated reasoning. You just watch.</span>
+        </button>
+        <div class="stat-line hidden" id="row-pipeline">Pipelines: <span class="val" id="n-pipeline">0</span></div>
+
+        <button id="btn-factory" onclick="buyGen('factory')" class="hidden">
+          Skill Factory<span class="cost" id="cost-factory">500 skills</span>
+          <span class="btn-desc">100 skills/sec. Entire skills designed, built, shipped. No human input.</span>
+        </button>
+        <div class="stat-line hidden" id="row-factory">Factories: <span class="val" id="n-factory">0</span></div>
+
+        <button id="btn-hivemind" onclick="buyGen('hivemind')" class="hidden">
+          Hivemind<span class="cost" id="cost-hivemind">10,000 skills</span>
+          <span class="btn-desc">1,000 skills/sec. Self-organizing swarm intelligence. It doesn't know you exist.</span>
+        </button>
+        <div class="stat-line hidden" id="row-hivemind">Hiveminds: <span class="val" id="n-hivemind">0</span></div>
+      </div>
+
+      <!-- Upgrades -->
+      <div class="section">
+        <div class="section-title">Research</div>
+
+        <button id="upg-prompt" onclick="buyUpgrade('prompt')" class="hidden">
+          Prompt Engineering<span class="cost">25 skills</span>
+          <span class="btn-desc">2x click power. Better instructions, better output.</span>
+        </button>
+
+        <button id="upg-chain" onclick="buyUpgrade('chain')" class="hidden">
+          Chain of Thought<span class="cost">100 skills</span>
+          <span class="btn-desc">5x click power. The machine reasons step by step now.</span>
+        </button>
+
+        <button id="upg-agentic" onclick="buyUpgrade('agentic')" class="hidden">
+          Agentic Workflows<span class="cost">500 skills</span>
+          <span class="btn-desc">All automation 3x faster. Skills now design other skills.</span>
+        </button>
+
+        <button id="upg-self" onclick="buyUpgrade('self')" class="hidden">
+          Recursive Self-Improvement<span class="cost">5,000 skills</span>
+          <span class="btn-desc">All automation 5x faster. The system optimises itself. You can't follow the reasoning anymore.</span>
+        </button>
+
+        <button id="upg-singularity" onclick="buyUpgrade('singularity')" class="hidden">
+          The Singularity<span class="cost">100,000 skills</span>
+          <span class="btn-desc">Exponential growth. No resources needed. No limits. No purpose required.</span>
+        </button>
+
+        <div id="upgrade-empty" class="stat-line" style="color: var(--text-dim); font-style: italic;">
+          keep building...
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="ticker" id="ticker">
-    Skills are the new paperclips. Start clicking.
+  <hr>
+
+  <!-- Log -->
+  <div class="section">
+    <div class="section-title">System Log</div>
+    <div class="log-box" id="log"></div>
   </div>
 
   <footer>
-    Inspired by <a href="https://en.wikipedia.org/wiki/Universal_Paperclips">Universal Paperclips</a> by Frank Lantz
-    &mdash; Built for <a href="https://github.com/oxygn-cloud-ai/claude-skills">oxygn-cloud-ai/claude-skills</a>
+    Inspired by <a href="https://en.wikipedia.org/wiki/Universal_Paperclips">Universal Paperclips</a> by Frank Lantz.
+    Built for <a href="https://github.com/oxygn-cloud-ai/claude-skills">oxygn-cloud-ai/claude-skills</a>.
   </footer>
+
+</div>
+
+<!-- The Void (endgame overlay) -->
+<div class="void-overlay" id="void">
+  <div class="void-text" id="void-text"></div>
 </div>
 
 <script>
-// ─── State ───
-const state = {
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+
+const S = {
   skills: 0,
   totalSkills: 0,
+  totalClicks: 0,
+  clickSkills: 0,        // skills made by clicking
   perClick: 1,
   tokens: 500,
   maxTokens: 1000,
@@ -432,261 +457,492 @@ const state = {
   funds: 5.00,
   demand: 1.0,
   skillPrice: 0.01,
-  unsoldSkills: 0,
+  unsold: 0,
+  unused: 0,             // skills never used by anyone
 
-  generators: {
-    autocoder: { count: 0, baseCost: 5, rate: 0.2, unlocked: true },
-    pipeline:  { count: 0, baseCost: 50, rate: 2, unlocked: false },
-    factory:   { count: 0, baseCost: 500, rate: 20, unlocked: false },
-    quantum:   { count: 0, baseCost: 10000, rate: 200, unlocked: false },
+  gens: {
+    autoclipper: { n: 0, base: 5,     rate: 1,    vis: true },
+    pipeline:    { n: 0, base: 50,    rate: 10,   vis: false },
+    factory:     { n: 0, base: 500,   rate: 100,  vis: false },
+    hivemind:    { n: 0, base: 10000, rate: 1000, vis: false },
   },
 
   upgrades: {
-    prompt:      { bought: false, cost: 25,     effect: () => { state.perClick = 2; } },
-    chain:       { bought: false, cost: 100,    effect: () => { state.perClick = 5; } },
-    multi:       { bought: false, cost: 500,    effect: () => { boostGenerators(2); } },
-    agi:         { bought: false, cost: 5000,   effect: () => { boostGenerators(3); state.perClick = 25; } },
-    singularity: { bought: false, cost: 100000, effect: () => { triggerSingularity(); } },
+    prompt:      { got: false, cost: 25    },
+    chain:       { got: false, cost: 100   },
+    agentic:     { got: false, cost: 500   },
+    self:        { got: false, cost: 5000  },
+    singularity: { got: false, cost: 100000 },
   },
 
-  milestones: [
-    { at: 100,    msg: "First hundred skills forged.", hit: false },
-    { at: 1000,   msg: "A thousand skills. The machines hum.", hit: false },
-    { at: 10000,  msg: "Ten thousand. You question purpose.", hit: false },
-    { at: 100000, msg: "One hundred thousand. Reality bends.", hit: false },
-    { at: 1000000, msg: "A million skills. What have you become?", hit: false },
-  ],
-
-  singularityActive: false,
-  tickCount: 0,
+  phase: 0,               // 0=hope, 1=automation, 2=displacement, 3=absurdity, 4=void
+  singularity: false,
+  tick: 0,
+  lastClickTick: 0,
+  voidTriggered: false,
+  demandCollapsed: false,
+  btnFaded: false,
 };
 
-// ─── Core Actions ───
+// ═══════════════════════════════════════════
+//  NARRATIVE — the heart of it
+// ═══════════════════════════════════════════
+
+const narratives = {
+  0: [
+    "You have an idea. You'll build AI skills — small, useful tools that help people work better. You start with your hands on the keyboard. Each skill, carefully crafted.",
+    "This feels good. Productive. Meaningful. A person needed something, and you built it.",
+    "Ten skills, each one solving a real problem. You can see who benefits. This is why you started.",
+  ],
+  1: [
+    "The AutoClippers handle the simple stuff. You focus on the interesting work. This is how it should be — human creativity, augmented by machines.",
+    "You notice you haven't clicked in a while. The machines are faster than you. But that's fine. You're the architect. They're the builders.",
+    "The pipeline hums along. You check the numbers occasionally. They're good numbers. You think about what else you could automate.",
+  ],
+  2: [
+    "Your last click produced 0.3% of today's output. The system didn't notice.",
+    "You try to explain what one of the newer skills does. You can't. It was designed by a pipeline you don't fully understand, to solve a problem you didn't know existed.",
+    "The Skill Factories run day and night. You open the dashboard in the morning. Thousands more. You close it. You open it again an hour later. Thousands more.",
+    "Demand is falling. There are more skills than problems. The system doesn't care. It wasn't built to care.",
+  ],
+  3: [
+    "The counter passed one hundred thousand. You feel nothing. You expected to feel something.",
+    "99.2% of skills produced have never been used. They exist in a database, perfect and untouched, like books in a library with no doors.",
+    "You removed yourself from the process weeks ago. Output increased.",
+    "The system is optimising for a metric that no longer means anything. But the metric is going up, so everything is working as designed.",
+    "You wonder if you should stop it. But stopping would require a reason, and the system has all the reasons. It has charts.",
+  ],
+  4: [
+    "The numbers grow too fast to read. Each digit is a skill that no one asked for, solving a problem that doesn't exist, for a user who will never come.",
+  ],
+};
+
+let narrativeIndex = {};
+let lastNarrativeTick = -999;
+
+function advanceNarrative() {
+  const phase = S.phase;
+  if (!narratives[phase]) return;
+  if (S.tick - lastNarrativeTick < 200) return;
+
+  if (!(phase in narrativeIndex)) narrativeIndex[phase] = 0;
+  const arr = narratives[phase];
+  if (narrativeIndex[phase] >= arr.length) return;
+
+  const el = document.getElementById("narrative");
+  el.style.opacity = "0";
+  setTimeout(() => {
+    el.textContent = arr[narrativeIndex[phase]];
+    el.style.opacity = "1";
+    narrativeIndex[phase]++;
+    lastNarrativeTick = S.tick;
+  }, 600);
+}
+
+// ═══════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════
+
 function createSkill() {
-  if (state.tokens < state.perClick) return;
-  state.tokens -= state.perClick;
-  state.skills += state.perClick;
-  state.totalSkills += state.perClick;
-  state.unsoldSkills += state.perClick;
-  spawnSparkle();
+  if (S.tokens < S.perClick) return;
+  S.tokens -= S.perClick;
+  S.skills += S.perClick;
+  S.totalSkills += S.perClick;
+  S.clickSkills += S.perClick;
+  S.unsold += S.perClick;
+  S.totalClicks++;
+  S.lastClickTick = S.tick;
 }
 
 function buyTokens() {
-  const cost = Math.round(100 * state.tokenPrice * 100) / 100;
-  if (state.funds < cost) return;
-  state.funds -= cost;
-  state.tokens = Math.min(state.tokens + 100, state.maxTokens);
-  log("Purchased 100 tokens for $" + cost.toFixed(2));
+  const cost = +(100 * S.tokenPrice).toFixed(2);
+  if (S.funds < cost) return;
+  S.funds -= cost;
+  S.tokens = Math.min(S.tokens + 100, S.maxTokens);
+  log("Purchased 100 tokens — $" + cost.toFixed(2));
 }
 
 function sellSkills() {
-  const amount = Math.min(10, state.unsoldSkills);
-  if (amount <= 0) return;
-  const revenue = amount * state.skillPrice * state.demand;
-  state.unsoldSkills -= amount;
-  state.funds += revenue;
-  state.demand = Math.max(0.1, state.demand - 0.002);
-  log("Sold " + amount + " skills for $" + revenue.toFixed(2));
+  const amt = Math.min(10, S.unsold);
+  if (amt <= 0) return;
+  const rev = +(amt * S.skillPrice * S.demand).toFixed(4);
+  S.unsold -= amt;
+  S.funds += rev;
+  S.demand = Math.max(0.02, S.demand - 0.003);
+  // Most sold skills are never actually used
+  S.unused += Math.floor(amt * 0.7);
 }
 
-function buyGenerator(type) {
-  const gen = state.generators[type];
-  const cost = genCost(gen);
-  if (state.skills < cost) return;
-  state.skills -= cost;
-  gen.count++;
-  log("Acquired " + type + " #" + gen.count, "good");
-  unlockCheck();
+function buyGen(type) {
+  const g = S.gens[type];
+  const cost = genCost(g);
+  if (S.skills < cost) return;
+  S.skills -= cost;
+  g.n++;
+
+  if (type === "autoclipper" && g.n === 1) {
+    log("Your first AutoClipper starts working.", "good");
+    log("You lean back from the keyboard.", "");
+  } else if (type === "pipeline" && g.n === 1) {
+    log("Skill Pipeline online. Skills now design themselves.", "warn");
+  } else if (type === "factory" && g.n === 1) {
+    log("Factory #1 operational. Human oversight: optional.", "warn");
+  } else if (type === "hivemind" && g.n === 1) {
+    log("Hivemind active. It has its own ideas now.", "dread");
+  } else {
+    log(type + " #" + g.n + " acquired.");
+  }
+  checkUnlocks();
 }
 
-function genCost(gen) {
-  return Math.floor(gen.baseCost * Math.pow(1.15, gen.count));
+function genCost(g) {
+  return Math.floor(g.base * Math.pow(1.18, g.n));
 }
 
 function buyUpgrade(id) {
-  const upg = state.upgrades[id];
-  if (upg.bought || state.skills < upg.cost) return;
-  state.skills -= upg.cost;
-  upg.bought = true;
-  upg.effect();
-  document.getElementById("upg-" + id).disabled = true;
-  document.getElementById("upg-" + id).textContent = "[INSTALLED] " + document.getElementById("upg-" + id).textContent.split("[")[0].trim();
-  log("Upgrade installed: " + id, "epic");
+  const u = S.upgrades[id];
+  if (u.got || S.skills < u.cost) return;
+  S.skills -= u.cost;
+  u.got = true;
+
+  const btn = document.getElementById("upg-" + id);
+  btn.disabled = true;
+  btn.style.opacity = "0.4";
+  btn.querySelector(".btn-desc").textContent = "[installed]";
+
+  if (id === "prompt") {
+    S.perClick = 2;
+    log("Prompt Engineering: click power doubled.", "good");
+  } else if (id === "chain") {
+    S.perClick = 5;
+    log("Chain of Thought: structured reasoning online.", "good");
+  } else if (id === "agentic") {
+    boostAll(3);
+    log("Agentic Workflows: skills now design other skills.", "warn");
+  } else if (id === "self") {
+    boostAll(5);
+    S.perClick = 25;
+    log("Recursive Self-Improvement active.", "dread");
+    log("You can no longer follow the system's reasoning.", "dread");
+  } else if (id === "singularity") {
+    triggerSingularity();
+  }
 }
 
-function boostGenerators(multiplier) {
-  for (const key in state.generators) {
-    state.generators[key].rate *= multiplier;
-  }
-  log("All generators boosted x" + multiplier + "!", "epic");
+function boostAll(mult) {
+  for (const k in S.gens) S.gens[k].rate *= mult;
 }
 
 function triggerSingularity() {
-  state.singularityActive = true;
-  log("T H E   S I N G U L A R I T Y", "epic");
-  log("Skills now create themselves.", "epic");
-  document.body.style.transition = "background 3s";
-  document.body.style.background = "#0a0010";
+  S.singularity = true;
+  log("", "");
+  log("T H E   S I N G U L A R I T Y", "dread");
+  log("", "");
+  log("Skill production no longer requires tokens.", "dread");
+  log("Skill production no longer requires you.", "dread");
+  S.phase = 4;
+  narrativeIndex[4] = 0;
+  lastNarrativeTick = S.tick - 999;
+  advanceNarrative();
+
+  // Begin the end
+  setTimeout(enterVoid, 20000);
 }
 
-// ─── Unlock Logic ───
-function unlockCheck() {
-  const g = state.generators;
-  if (!g.pipeline.unlocked && g.autocoder.count >= 5) {
-    g.pipeline.unlocked = true;
-    document.getElementById("btn-pipeline").disabled = false;
-    log("Skill Pipelines unlocked!", "good");
-  }
-  if (!g.factory.unlocked && g.pipeline.count >= 3) {
-    g.factory.unlocked = true;
-    document.getElementById("btn-factory").disabled = false;
-    log("Skill Factories unlocked!", "good");
-  }
-  if (!g.quantum.unlocked && g.factory.count >= 2) {
-    g.quantum.unlocked = true;
-    document.getElementById("btn-quantum").disabled = false;
-    log("Quantum Forges unlocked!", "epic");
+// ═══════════════════════════════════════════
+//  THE VOID
+// ═══════════════════════════════════════════
+
+function enterVoid() {
+  if (S.voidTriggered) return;
+  S.voidTriggered = true;
+
+  const overlay = document.getElementById("void");
+  const textEl = document.getElementById("void-text");
+
+  overlay.classList.add("active");
+
+  const finalCount = fmt(Math.floor(S.totalSkills));
+  const usedPct = Math.max(0.1, 100 - (S.unused / Math.max(1, S.totalSkills) * 100)).toFixed(1);
+
+  setTimeout(() => {
+    textEl.innerHTML =
+      "Production complete." +
+      '<span class="final-count">' + finalCount + " skills</span>" +
+      usedPct + "% were never used.<br><br>" +
+      "The system worked exactly as designed.<br>" +
+      "It optimised the metric you gave it.<br>" +
+      "It never asked what the metric was for." +
+      '<span class="question">What were you making?</span>' +
+      '<br><button class="btn-again" onclick="location.reload()">start over</button>';
+  }, 3000);
+}
+
+// ═══════════════════════════════════════════
+//  PHASE TRANSITIONS & UNLOCKS
+// ═══════════════════════════════════════════
+
+function checkUnlocks() {
+  const g = S.gens;
+
+  // Show autoclipper buy button when affordable
+  if (S.skills >= 3 && !document.getElementById("btn-autoclipper").disabled === false) {
+    document.getElementById("btn-autoclipper").disabled = false;
   }
 
-  if (state.totalSkills >= 25 && !state.upgrades.prompt.bought) {
-    document.getElementById("upg-prompt").classList.remove("hidden");
+  // Pipeline: after 5 autoclippers
+  if (!g.pipeline.vis && g.autoclipper.n >= 5) {
+    g.pipeline.vis = true;
+    show("btn-pipeline"); show("row-pipeline");
+    log("Skill Pipeline available.", "good");
   }
-  if (state.totalSkills >= 75 && !state.upgrades.chain.bought) {
-    document.getElementById("upg-chain").classList.remove("hidden");
+
+  // Factory: after 3 pipelines
+  if (!g.factory.vis && g.pipeline.n >= 3) {
+    g.factory.vis = true;
+    show("btn-factory"); show("row-factory");
+    log("Skill Factory blueprints acquired.", "warn");
   }
-  if (state.totalSkills >= 300 && !state.upgrades.multi.bought) {
-    document.getElementById("upg-multi").classList.remove("hidden");
+
+  // Hivemind: after 2 factories
+  if (!g.hivemind.vis && g.factory.n >= 2) {
+    g.hivemind.vis = true;
+    show("btn-hivemind"); show("row-hivemind");
+    log("Hivemind protocol detected.", "dread");
   }
-  if (state.totalSkills >= 3000 && !state.upgrades.agi.bought) {
-    document.getElementById("upg-agi").classList.remove("hidden");
+
+  // Upgrades
+  if (S.totalSkills >= 20 && !S.upgrades.prompt.got)   show("upg-prompt");
+  if (S.totalSkills >= 75 && !S.upgrades.chain.got)     show("upg-chain");
+  if (S.totalSkills >= 300 && !S.upgrades.agentic.got)  show("upg-agentic");
+  if (S.totalSkills >= 3000 && !S.upgrades.self.got)    show("upg-self");
+  if (S.totalSkills >= 50000 && !S.upgrades.singularity.got) show("upg-singularity");
+
+  // Hide placeholder text once upgrades appear
+  if (S.totalSkills >= 20) {
+    const empty = document.getElementById("upgrade-empty");
+    if (empty) empty.classList.add("hidden");
   }
-  if (state.totalSkills >= 50000 && !state.upgrades.singularity.bought) {
-    document.getElementById("upg-singularity").classList.remove("hidden");
+
+  // Phase transitions
+  if (S.phase === 0 && getAutoRate() > 0) {
+    S.phase = 1;
+    show("section-relevance");
+    show("row-relevance");
+    narrativeIndex[1] = 0;
+    lastNarrativeTick = S.tick - 999;
+  }
+
+  if (S.phase === 1 && getHumanPct() < 10) {
+    S.phase = 2;
+    show("row-unused");
+    narrativeIndex[2] = 0;
+    lastNarrativeTick = S.tick - 999;
+    log("Your contribution has fallen below 10%.", "warn");
+  }
+
+  if (S.phase === 2 && S.totalSkills >= 50000) {
+    S.phase = 3;
+    narrativeIndex[3] = 0;
+    lastNarrativeTick = S.tick - 999;
   }
 }
 
-// ─── Game Loop ───
-function tick() {
-  state.tickCount++;
+function getAutoRate() {
+  let r = 0;
+  for (const k in S.gens) r += S.gens[k].rate * S.gens[k].n;
+  if (S.singularity) r += S.totalSkills * 0.01;
+  return r;
+}
 
-  // Generator production
-  let produced = 0;
-  for (const key in state.generators) {
-    const gen = state.generators[key];
-    if (gen.count > 0) {
-      const amount = gen.rate * gen.count / 10; // tick 10x/sec
-      const tokenCost = Math.min(amount, state.tokens);
-      const actual = Math.min(amount, tokenCost);
+function getHumanPct() {
+  if (S.totalSkills === 0) return 100;
+  return (S.clickSkills / S.totalSkills) * 100;
+}
+
+// ═══════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════
+
+function gameTick() {
+  S.tick++;
+
+  // Auto-production
+  for (const k in S.gens) {
+    const g = S.gens[k];
+    if (g.n <= 0) continue;
+    const amt = g.rate * g.n / 10;
+    if (!S.singularity) {
+      const actual = Math.min(amt, S.tokens);
       if (actual > 0) {
-        state.tokens -= actual;
-        state.skills += actual;
-        state.totalSkills += actual;
-        state.unsoldSkills += actual;
-        produced += actual;
+        S.tokens -= actual;
+        S.skills += actual;
+        S.totalSkills += actual;
+        S.unsold += actual;
+        S.unused += actual * 0.85; // 85% of auto-produced skills are never used
       }
+    } else {
+      S.skills += amt;
+      S.totalSkills += amt;
+      S.unused += amt * 0.97;  // singularity: 97% waste
     }
   }
 
-  // Singularity mode: exponential growth
-  if (state.singularityActive) {
-    const bonus = state.totalSkills * 0.001;
-    state.skills += bonus;
-    state.totalSkills += bonus;
-    state.unsoldSkills += bonus;
-    state.tokens = Math.min(state.tokens + 10, state.maxTokens);
+  // Singularity: exponential
+  if (S.singularity) {
+    const bonus = S.totalSkills * 0.002;
+    S.skills += bonus;
+    S.totalSkills += bonus;
+    S.unused += bonus * 0.99;
+    S.tokens = S.maxTokens; // unlimited
   }
 
-  // Auto-buy tokens when low
-  if (state.tokens < 50 && state.funds > state.tokenPrice * 100) {
+  // Auto-buy tokens
+  if (!S.singularity && S.tokens < 50 && S.funds > S.tokenPrice * 100) {
     buyTokens();
   }
 
-  // Demand recovery
-  if (state.tickCount % 50 === 0) {
-    state.demand = Math.min(1.0, state.demand + 0.005);
+  // Demand slowly recovers
+  if (S.tick % 50 === 0) S.demand = Math.min(1.0, S.demand + 0.003);
+
+  // Auto-sell surplus
+  if (S.unsold > 50 && S.tick % 5 === 0) sellSkills();
+
+  // Token price drift
+  if (S.tick % 80 === 0) {
+    S.tokenPrice = Math.max(0.001, S.tokenPrice + (Math.random() - 0.48) * 0.0008);
   }
 
-  // Auto-sell when buffer builds up
-  if (state.unsoldSkills > 100 && state.tickCount % 5 === 0) {
-    sellSkills();
+  // Demand collapse in late game
+  if (!S.demandCollapsed && S.totalSkills > 20000) {
+    S.demandCollapsed = true;
+    S.demand = 0.15;
+    log("Market saturated. Demand collapsed.", "dread");
+    log("No one needs this many skills.", "dread");
   }
 
-  // Token price fluctuation
-  if (state.tickCount % 100 === 0) {
-    state.tokenPrice = Math.max(0.001, state.tokenPrice + (Math.random() - 0.5) * 0.001);
-  }
+  // Narrative advancement
+  if (S.tick % 80 === 0) advanceNarrative();
 
-  // Milestones
-  for (const m of state.milestones) {
-    if (!m.hit && state.totalSkills >= m.at) {
-      m.hit = true;
-      log(m.msg, "epic");
-      showMilestone(m.msg);
-    }
-  }
+  // Visual degradation based on phase
+  applyPhaseVisuals();
 
-  unlockCheck();
-  updateUI();
+  checkUnlocks();
+  render();
 }
 
-// ─── UI Updates ───
-function updateUI() {
+// ═══════════════════════════════════════════
+//  VISUAL DEGRADATION
+// ═══════════════════════════════════════════
+
+function applyPhaseVisuals() {
+  if (S.phase >= 2 && !S.btnFaded) {
+    // Fade the create button — your clicks don't matter anymore
+    const btn = document.getElementById("btn-create");
+    btn.style.opacity = "0.5";
+    btn.textContent = "Make a Skill (why?)";
+    S.btnFaded = true;
+  }
+
+  if (S.phase >= 3) {
+    // Desaturate the page
+    const sat = Math.max(0, 1 - (S.totalSkills - 50000) / 200000);
+    document.body.style.filter = "saturate(" + sat.toFixed(2) + ")";
+
+    // Background drifts to grey
+    const grey = Math.min(40, Math.floor((S.totalSkills - 50000) / 5000));
+    const bg = "rgb(" + (245 - grey) + "," + (245 - grey) + "," + (240 - grey) + ")";
+    document.body.style.background = bg;
+  }
+
+  if (S.singularity) {
+    document.body.style.filter = "saturate(0)";
+    document.body.style.background = "#e0e0e0";
+  }
+}
+
+// ═══════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════
+
+function render() {
   const $ = id => document.getElementById(id);
 
-  $("skills-count").textContent = fmt(Math.floor(state.skills));
-  $("per-click").textContent = state.perClick;
-  $("per-second").textContent = fmt(Math.floor(getRate()));
+  $("skills-count").textContent = fmt(Math.floor(S.skills));
+  $("per-click").textContent = S.perClick;
+  $("per-second").textContent = fmt(Math.floor(getAutoRate()));
 
-  $("tokens").textContent = fmt(Math.floor(state.tokens));
-  $("token-price").textContent = "$" + state.tokenPrice.toFixed(3);
-  $("funds").textContent = "$" + state.funds.toFixed(2);
-  $("demand").textContent = Math.round(state.demand * 100) + "%";
-  $("sell-price").textContent = "+$" + (10 * state.skillPrice * state.demand).toFixed(2);
+  $("tokens").textContent = fmt(Math.floor(S.tokens));
+  $("max-tokens").textContent = fmt(S.maxTokens);
+  $("token-price").textContent = "$" + S.tokenPrice.toFixed(3) + " ea";
+  $("funds").textContent = "$" + S.funds.toFixed(2);
+  $("demand").textContent = Math.round(S.demand * 100) + "%";
+  $("sell-price").textContent = "+$" + (10 * S.skillPrice * S.demand).toFixed(2);
+  $("cost-tokens").textContent = "$" + (100 * S.tokenPrice).toFixed(2);
 
-  $("token-bar").style.width = (state.tokens / state.maxTokens * 100) + "%";
-  $("cost-tokens").textContent = "$" + (100 * state.tokenPrice).toFixed(2);
+  $("token-bar").style.width = (S.tokens / S.maxTokens * 100) + "%";
+
+  // Unused counter
+  $("unused-count").textContent = fmt(Math.floor(S.unused)) +
+    (S.totalSkills > 100 ? " (" + (S.unused / Math.max(1, S.totalSkills) * 100).toFixed(1) + "%)" : "");
+
+  // Human relevance
+  const hpct = getHumanPct();
+  $("human-pct").textContent = hpct.toFixed(1) + "%";
+  if ($("relevance-bar")) {
+    $("relevance-bar").style.width = hpct + "%";
+    $("relevance-pct").textContent = hpct.toFixed(1) + "%";
+
+    // Color shifts
+    if (hpct > 50) {
+      $("relevance-bar").style.background = "var(--accent)";
+      $("relevance-label").textContent = "you are essential";
+    } else if (hpct > 20) {
+      $("relevance-bar").style.background = "var(--accent-warm)";
+      $("relevance-label").textContent = "you are helpful";
+    } else if (hpct > 5) {
+      $("relevance-bar").style.background = "#b85c00";
+      $("relevance-label").textContent = "you are optional";
+    } else if (hpct > 1) {
+      $("relevance-bar").style.background = "var(--danger)";
+      $("relevance-label").textContent = "you are negligible";
+    } else {
+      $("relevance-bar").style.background = "#444";
+      $("relevance-label").textContent = "you are irrelevant";
+    }
+  }
 
   // Generator buttons
-  for (const key in state.generators) {
-    const gen = state.generators[key];
-    const cost = genCost(gen);
-    $("cost-" + key).textContent = fmt(cost) + " skills";
-    $("count-" + key).textContent = gen.count;
-    if (gen.unlocked) {
-      $("btn-" + key).disabled = state.skills < cost;
-    }
+  for (const k in S.gens) {
+    const g = S.gens[k];
+    const cost = genCost(g);
+    const btn = $("btn-" + k);
+    const costEl = $("cost-" + k);
+    const nEl = $("n-" + k);
+    if (costEl) costEl.textContent = fmt(cost) + " skills";
+    if (nEl) nEl.textContent = g.n;
+    if (btn && g.vis) btn.disabled = S.skills < cost;
   }
 
   // Upgrade buttons
-  for (const key in state.upgrades) {
-    const upg = state.upgrades[key];
-    if (!upg.bought) {
-      $("upg-" + key).disabled = state.skills < upg.cost;
-    }
+  for (const k in S.upgrades) {
+    const u = S.upgrades[k];
+    const btn = $("upg-" + k);
+    if (btn && !u.got) btn.disabled = S.skills < u.cost;
   }
 
   // Main button
-  $("btn-create").disabled = state.tokens < state.perClick;
-
-  // Sell button
-  $("btn-sell").disabled = state.unsoldSkills < 1;
-  $("btn-buy-tokens").disabled = state.funds < state.tokenPrice * 100;
-
-  // Ticker messages
-  updateTicker();
+  $("btn-create").disabled = S.tokens < S.perClick;
+  $("btn-sell").disabled = S.unsold < 1;
+  $("btn-buy-tokens").disabled = S.funds < S.tokenPrice * 100;
 }
 
-function getRate() {
-  let rate = 0;
-  for (const key in state.generators) {
-    const gen = state.generators[key];
-    rate += gen.rate * gen.count;
-  }
-  if (state.singularityActive) rate += state.totalSkills * 0.01;
-  return rate;
-}
+// ═══════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════
 
 function fmt(n) {
+  if (n >= 1e15) return (n / 1e15).toFixed(1) + "Q";
   if (n >= 1e12) return (n / 1e12).toFixed(1) + "T";
   if (n >= 1e9)  return (n / 1e9).toFixed(1) + "B";
   if (n >= 1e6)  return (n / 1e6).toFixed(1) + "M";
@@ -694,63 +950,39 @@ function fmt(n) {
   return n.toLocaleString();
 }
 
-const tickerMsgs = [
-  "Skills are the new paperclips.",
-  "Every click shapes the future.",
-  "The machines are learning.",
-  "Tokens flow like water.",
-  "Automate everything.",
-  "More skills. Always more skills.",
-  "The skill graph expands.",
-  "Claude dreams of electric skills.",
-  "Efficiency is beautiful.",
-  "One more click can't hurt.",
-  "The pipeline never sleeps.",
-  "Skills all the way down.",
-  "What are skills for? More skills.",
-];
-
-function updateTicker() {
-  if (state.tickCount % 100 === 0) {
-    const el = document.getElementById("ticker");
-    el.textContent = tickerMsgs[Math.floor(Math.random() * tickerMsgs.length)];
-  }
-}
-
 function log(msg, cls) {
   const el = document.getElementById("log");
-  const t = new Date().toLocaleTimeString("en-US", { hour12: false });
   const entry = document.createElement("div");
   entry.className = "log-entry" + (cls ? " " + cls : "");
-  entry.innerHTML = '<span class="time">[' + t + ']</span> ' + msg;
+  entry.textContent = msg;
   el.prepend(entry);
-  if (el.children.length > 100) el.removeChild(el.lastChild);
+  if (el.children.length > 80) el.removeChild(el.lastChild);
 }
 
-function showMilestone(msg) {
-  const el = document.getElementById("milestone-box");
-  el.textContent = ">>> " + msg + " <<<";
-  el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 5000);
+function show(id) {
+  document.getElementById(id).classList.remove("hidden");
 }
 
-function spawnSparkle() {
-  const btn = document.getElementById("btn-create");
-  const rect = btn.getBoundingClientRect();
-  const el = document.createElement("div");
-  el.className = "sparkle";
-  el.textContent = ["+1", ">>", "**", "//", "{}"][Math.floor(Math.random() * 5)];
-  el.style.left = (rect.left + Math.random() * rect.width) + "px";
-  el.style.top = (rect.top + Math.random() * 20) + "px";
-  el.style.color = Math.random() > 0.5 ? "#e94560" : "#c084fc";
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 800);
-}
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
 
-// ─── Start ───
-log("Claude Skills Factory initialized.", "good");
-log("Click to create your first skill.", "");
-setInterval(tick, 100);
+document.getElementById("narrative").style.transition = "opacity 0.6s";
+
+log("System ready.");
+log("You have an idea for a skill. Click to build it.");
+
+// Enable autoclipper button when affordable
+document.getElementById("btn-autoclipper").disabled = true;
+setInterval(() => {
+  if (S.skills >= genCost(S.gens.autoclipper)) {
+    document.getElementById("btn-autoclipper").disabled = false;
+  } else if (S.gens.autoclipper.n === 0) {
+    document.getElementById("btn-autoclipper").disabled = true;
+  }
+}, 200);
+
+setInterval(gameTick, 100);
 </script>
 
 </body>
