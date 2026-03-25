@@ -169,6 +169,18 @@
 
   .cost { color: var(--warning); font-size: 11px; float: right; margin-top: 2px; }
 
+  .btn-desc {
+    display: block;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 3px;
+    font-style: italic;
+    line-height: 1.3;
+  }
+
+  button:hover:not(:disabled) .btn-desc { color: var(--text); }
+  .btn-upgrade:hover:not(:disabled) .btn-desc { color: var(--bg); }
+
   .log {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -307,9 +319,11 @@
       </div>
       <button class="btn-buy" id="btn-buy-tokens" onclick="buyTokens()">
         Buy 100 tokens <span class="cost" id="cost-tokens">$0.30</span>
+        <span class="btn-desc">Tokens are consumed to create skills. Auto-purchased when low.</span>
       </button>
       <button class="btn-buy" id="btn-sell" onclick="sellSkills()">
         Sell skills (10) <span class="cost" id="sell-price">+$0.10</span>
+        <span class="btn-desc">Convert unsold skills to funds. High demand = better price.</span>
       </button>
       <div class="progress-bar">
         <div class="progress-fill" id="token-bar" style="width: 50%"></div>
@@ -325,6 +339,7 @@
       <h2>// Generators</h2>
       <button class="btn-buy" id="btn-autocoder" onclick="buyGenerator('autocoder')">
         AutoCoder <span class="cost" id="cost-autocoder">5 skills</span>
+        <span class="btn-desc">+0.2 skills/sec per unit. Your first autonomous coder.</span>
       </button>
       <div class="stat-row">
         <span class="stat-label">AutoCoders</span>
@@ -333,6 +348,7 @@
 
       <button class="btn-buy" id="btn-pipeline" onclick="buyGenerator('pipeline')" disabled>
         Skill Pipeline <span class="cost" id="cost-pipeline">50 skills</span>
+        <span class="btn-desc">+2 skills/sec per unit. 10x faster than AutoCoder. Unlocks at 5 AutoCoders.</span>
       </button>
       <div class="stat-row">
         <span class="stat-label">Pipelines</span>
@@ -341,6 +357,7 @@
 
       <button class="btn-buy" id="btn-factory" onclick="buyGenerator('factory')" disabled>
         Skill Factory <span class="cost" id="cost-factory">500 skills</span>
+        <span class="btn-desc">+20 skills/sec per unit. 10x faster than Pipeline. Unlocks at 3 Pipelines.</span>
       </button>
       <div class="stat-row">
         <span class="stat-label">Factories</span>
@@ -349,6 +366,7 @@
 
       <button class="btn-buy" id="btn-quantum" onclick="buyGenerator('quantum')" disabled>
         Quantum Forge <span class="cost" id="cost-quantum">10,000 skills</span>
+        <span class="btn-desc">+200 skills/sec per unit. 10x faster than Factory. Unlocks at 2 Factories.</span>
       </button>
       <div class="stat-row">
         <span class="stat-label">Quantum Forges</span>
@@ -362,18 +380,23 @@
       <div id="upgrades-list">
         <button class="btn-upgrade" id="upg-prompt" onclick="buyUpgrade('prompt')">
           Prompt Engineering <span class="cost">25 skills</span>
+          <span class="btn-desc">Doubles click power: 1 -> 2 skills per click</span>
         </button>
         <button class="btn-upgrade hidden" id="upg-chain" onclick="buyUpgrade('chain')">
           Chain of Thought <span class="cost">100 skills</span>
+          <span class="btn-desc">Increases click power to 5x. Structured reasoning unlocked.</span>
         </button>
         <button class="btn-upgrade hidden" id="upg-multi" onclick="buyUpgrade('multi')">
           Multi-Modal Skills <span class="cost">500 skills</span>
+          <span class="btn-desc">All generators produce 2x faster. Vision + audio + code combined.</span>
         </button>
         <button class="btn-upgrade hidden" id="upg-agi" onclick="buyUpgrade('agi')">
           Recursive Self-Improvement <span class="cost">5,000 skills</span>
+          <span class="btn-desc">All generators 3x faster + 25 skills per click. The AI improves itself.</span>
         </button>
         <button class="btn-upgrade hidden" id="upg-singularity" onclick="buyUpgrade('singularity')">
           The Singularity <span class="cost">100,000 skills</span>
+          <span class="btn-desc">Skills generate 0.1% of total per tick. Infinite exponential growth. No going back.</span>
         </button>
       </div>
       <div id="milestone-box" class="milestone hidden"></div>
