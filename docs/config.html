@@ -199,6 +199,7 @@ function save() {
     const input = document.getElementById(key);
     cfg[key] = parseFloat(input.value);
   }
+  cfg._v = 2;
   localStorage.setItem("csf-config", JSON.stringify(cfg));
   document.getElementById("status").textContent = "Saved. Redirecting...";
   setTimeout(() => { window.location.href = "./"; }, 800);
