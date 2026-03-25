@@ -283,10 +283,15 @@
 
   .log-entry { padding: 2px 0; border-bottom: 1px solid #ffffff08; }
   .log-entry .time { color: var(--border); }
-  .log-entry.good { color: var(--success); }
-  .log-entry.warn { color: var(--warning); }
-  .log-entry.epic { color: var(--accent); }
-  .log-entry.dread { color: var(--danger); }
+  .log-entry.good { color: #ffffff; }
+  .log-entry.warn { color: #bbbbbb; font-style: italic; }
+  .log-entry.epic { color: #ffffff; font-weight: bold; }
+  .log-entry.dread { color: #555555; font-style: italic; }
+
+  body.light .log-entry.good { color: #000000; }
+  body.light .log-entry.warn { color: #444444; }
+  body.light .log-entry.epic { color: #000000; }
+  body.light .log-entry.dread { color: #aaaaaa; }
 
   .progress-bar {
     background: var(--bg);
@@ -1332,7 +1337,7 @@ function checkEasterEggs() {
       const el = document.getElementById("log");
       const entry = document.createElement("div");
       entry.className = "log-entry";
-      entry.style.color = "#333";
+      entry.style.color = document.body.classList.contains("light") ? "#ddd" : "#333";
       entry.innerHTML = "hello.";
       el.prepend(entry);
       setTimeout(() => entry.remove(), 4000);
@@ -1407,7 +1412,7 @@ function checkEasterEggs() {
     const el = document.getElementById("log");
     const entry = document.createElement("div");
     entry.className = "log-entry";
-    entry.style.color = "#2a2a2a";
+    entry.style.color = document.body.classList.contains("light") ? "#e0e0e0" : "#2a2a2a";
     entry.style.fontFamily = "var(--mono)";
     entry.innerHTML = "01001000 01000101 01001100 01010000";
     el.prepend(entry);
