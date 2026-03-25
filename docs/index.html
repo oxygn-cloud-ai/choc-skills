@@ -15,10 +15,10 @@
     --accent: #ffffff;
     --accent2: #cccccc;
     --text: #e0e0e0;
-    --text-dim: #777777;
+    --text-dim: #999999;
     --success: #cccccc;
-    --warning: #999999;
-    --danger: #888888;
+    --warning: #aaaaaa;
+    --danger: #999999;
     --mono: 'Courier New', 'Consolas', monospace;
     --btn-shadow: #555555;
     --btn-shadow-deep: rgba(255,255,255,0.06);
@@ -34,9 +34,9 @@
     --accent: #000000;
     --accent2: #333333;
     --text: #1a1a1a;
-    --text-dim: #777777;
+    --text-dim: #555555;
     --success: #333333;
-    --warning: #666666;
+    --warning: #444444;
     --danger: #555555;
     --btn-shadow: #999999;
     --btn-shadow-deep: rgba(0,0,0,0.15);
@@ -611,6 +611,71 @@
 
 <script>
 // ═══════════════════════════════════════════
+//  CONFIG (editable via /config.html)
+// ═══════════════════════════════════════════
+const DEFAULTS = {
+  startTokens: 500,
+  startMaxTokens: 2000,
+  startTokenPrice: 0.002,
+  startFunds: 10.00,
+  skillPrice: 0.05,
+  costScaling: 1.12,
+  sellBatch: 50,
+  demandDecayPerSale: 0.001,
+  demandRecoveryRate: 0.005,
+  demandRecoveryInterval: 30,
+  demandFloor: 0.05,
+  autoSellThreshold: 30,
+  autoBuyPct: 0.3,
+  singularityGrowth: 0.002,
+
+  // Generator base costs & rates
+  autocoderCost: 5,     autocoderRate: 1,
+  pipelineCost: 50,     pipelineRate: 8,
+  factoryCost: 500,     factoryRate: 50,
+  quantumCost: 5000,    quantumRate: 400,
+
+  // Generator unlock thresholds
+  unlockPipeline: 5,    // autoclippers needed
+  unlockFactory: 3,     // pipelines needed
+  unlockQuantum: 2,     // factories needed
+
+  // Upgrade costs
+  upgPrompt: 25,        upgChain: 100,
+  upgAgentic: 500,      upgAgi: 5000,
+  upgSingularity: 100000,
+
+  // Upgrade reveal thresholds (totalSkills)
+  revealPrompt: 25,     revealChain: 75,
+  revealAgentic: 300,   revealAgi: 3000,
+  revealSingularity: 50000,
+
+  // Upgrade effects
+  promptClick: 2,       chainClick: 5,
+  agenticBoost: 3,      agiBoost: 5,   agiClick: 25,
+
+  // Phase transitions
+  phase2HumanPct: 10,
+  phase3Skills: 50000,
+
+  // Economy events
+  demandCollapseAt: 10000,
+  demandCollapseValue: 0.30,
+  demandCollapseTokenCap: 5000,
+  lateGameTokenCap: 20000,
+  lateGameTokenCapAt: 50000,
+};
+
+function loadCfg() {
+  try {
+    const saved = localStorage.getItem("csf-config");
+    if (saved) return Object.assign({}, DEFAULTS, JSON.parse(saved));
+  } catch(e) {}
+  return Object.assign({}, DEFAULTS);
+}
+const CFG = loadCfg();
+
+// ═══════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════
 const state = {
@@ -619,36 +684,37 @@ const state = {
   clickSkills: 0,
   totalClicks: 0,
   perClick: 1,
-  tokens: 500,
-  maxTokens: 2000,
-  tokenPrice: 0.002,
-  funds: 10.00,
+  tokens: CFG.startTokens,
+  maxTokens: CFG.startMaxTokens,
+  tokenPrice: CFG.startTokenPrice,
+  funds: CFG.startFunds,
   demand: 1.0,
-  skillPrice: 0.05,
+  skillPrice: CFG.skillPrice,
   unsoldSkills: 0,
   unused: 0,
 
   generators: {
-    autocoder: { count: 0, baseCost: 5, rate: 1, unlocked: true },
-    pipeline:  { count: 0, baseCost: 50, rate: 8, unlocked: false },
-    factory:   { count: 0, baseCost: 500, rate: 50, unlocked: false },
-    quantum:   { count: 0, baseCost: 5000, rate: 400, unlocked: false },
+    autocoder: { count: 0, baseCost: CFG.autocoderCost, rate: CFG.autocoderRate, unlocked: true },
+    pipeline:  { count: 0, baseCost: CFG.pipelineCost,  rate: CFG.pipelineRate,  unlocked: false },
+    factory:   { count: 0, baseCost: CFG.factoryCost,   rate: CFG.factoryRate,   unlocked: false },
+    quantum:   { count: 0, baseCost: CFG.quantumCost,   rate: CFG.quantumRate,   unlocked: false },
   },
 
   upgrades: {
-    prompt:      { bought: false, cost: 25 },
-    chain:       { bought: false, cost: 100 },
-    multi:       { bought: false, cost: 500 },
-    agi:         { bought: false, cost: 5000 },
-    singularity: { bought: false, cost: 100000 },
+    prompt:      { bought: false, cost: CFG.upgPrompt },
+    chain:       { bought: false, cost: CFG.upgChain },
+    multi:       { bought: false, cost: CFG.upgAgentic },
+    agi:         { bought: false, cost: CFG.upgAgi },
+    singularity: { bought: false, cost: CFG.upgSingularity },
   },
 
-  phase: 0,             // 0=hope, 1=automation, 2=displacement, 3=absurdity, 4=void
+  phase: 0,
   singularityActive: false,
   demandCollapsed: false,
   btnFaded: false,
   voidTriggered: false,
   tickCount: 0,
+  lastClickTick: 0,
 };
 
 // ═══════════════════════════════════════════
@@ -778,6 +844,7 @@ function createSkill() {
   state.clickSkills += state.perClick;
   state.unsoldSkills += state.perClick;
   state.totalClicks++;
+  state.lastClickTick = state.tickCount;
   spawnSparkle();
 }
 
@@ -790,12 +857,12 @@ function buyTokens() {
 }
 
 function sellSkills() {
-  const amount = Math.min(50, state.unsoldSkills);
+  const amount = Math.min(CFG.sellBatch, state.unsoldSkills);
   if (amount <= 0) return;
   const revenue = amount * state.skillPrice * state.demand;
   state.unsoldSkills -= amount;
   state.funds += revenue;
-  state.demand = Math.max(0.05, state.demand - 0.001);
+  state.demand = Math.max(CFG.demandFloor, state.demand - CFG.demandDecayPerSale);
   state.unused += Math.floor(amount * 0.7);
 }
 
@@ -822,7 +889,7 @@ function buyGenerator(type) {
 }
 
 function genCost(gen) {
-  return Math.floor(gen.baseCost * Math.pow(1.12, gen.count));
+  return Math.floor(gen.baseCost * Math.pow(CFG.costScaling, gen.count));
 }
 
 function buyUpgrade(id) {
@@ -836,20 +903,20 @@ function buyUpgrade(id) {
   const descEl = btn.querySelector(".btn-desc");
 
   if (id === "prompt") {
-    state.perClick = 2;
+    state.perClick = CFG.promptClick;
     descEl.textContent = "[installed] click power doubled.";
     log("Prompt Engineering installed.", "good");
   } else if (id === "chain") {
-    state.perClick = 5;
+    state.perClick = CFG.chainClick;
     descEl.textContent = "[installed] structured reasoning online.";
     log("Chain of Thought installed.", "good");
   } else if (id === "multi") {
-    boostGenerators(3);
+    boostGenerators(CFG.agenticBoost);
     descEl.textContent = "[installed] skills now design other skills.";
-    log("Agentic Workflows: all generators 3x.", "epic");
+    log("Agentic Workflows: all generators " + CFG.agenticBoost + "x.", "epic");
   } else if (id === "agi") {
-    boostGenerators(5);
-    state.perClick = 25;
+    boostGenerators(CFG.agiBoost);
+    state.perClick = CFG.agiClick;
     descEl.textContent = "[installed] you can't follow the reasoning anymore.";
     log("Recursive Self-Improvement active.", "dread");
     log("The system optimises itself. You watch.", "dread");
@@ -896,16 +963,37 @@ function enterVoid() {
   const unusedPct = (state.unused / Math.max(1, state.totalSkills) * 100).toFixed(1);
   const humanPct = getHumanPct().toFixed(1);
 
+  const closings = [
+    "What did you build?",
+    "Who was it for?",
+    "Was any of it real?",
+    "Would you have known when to stop?",
+    "Did the metric ever thank you?",
+    "What problem did this solve?",
+    "When did it stop being yours?",
+  ];
+
+  const epitaphs = [
+    "The system worked exactly as designed.",
+    "Every metric was met. Every target exceeded.",
+    "Nothing failed. That was the problem.",
+    "It did precisely what you told it to.",
+    "The optimiser optimised. What else would it do?",
+    "It never asked why. Neither did you.",
+  ];
+
+  const closing = closings[Math.floor(Math.random() * closings.length)];
+  const epitaph = epitaphs[Math.floor(Math.random() * epitaphs.length)];
+  const unusedDisplay = unusedPct === "100.0" ? "99.97" : unusedPct;
+
   setTimeout(() => {
     document.getElementById("void-text").innerHTML =
-      "Production complete." +
+      '<span style="color:#555">Production complete.</span>' +
       '<span class="void-count">' + finalCount + " skills</span>" +
-      '<span style="color:#555">' + unusedPct + "% were never used.</span><br>" +
+      '<span style="color:#555">' + unusedDisplay + "% were never used.</span><br>" +
       '<span style="color:#444">Your hands built ' + humanPct + '% of them.</span><br><br>' +
-      '<span style="color:#555">The system worked exactly as designed.</span><br>' +
-      '<span style="color:#444">It optimised the metric you gave it.</span><br>' +
-      '<span style="color:#333">It never asked what the metric was for.</span>' +
-      '<span class="void-question">What were you making?</span>' +
+      '<span style="color:#555">' + epitaph + '</span>' +
+      '<span class="void-question">' + closing + '</span>' +
       '<br><button class="btn-again" onclick="location.reload()">again?</button>';
   }, 3500);
 }
@@ -915,31 +1003,31 @@ function enterVoid() {
 // ═══════════════════════════════════════════
 function unlockCheck() {
   const g = state.generators;
-  if (!g.pipeline.unlocked && g.autocoder.count >= 5) {
+  if (!g.pipeline.unlocked && g.autocoder.count >= CFG.unlockPipeline) {
     g.pipeline.unlocked = true;
     document.getElementById("btn-pipeline").disabled = false;
     log("Skill Pipelines unlocked.", "good");
   }
-  if (!g.factory.unlocked && g.pipeline.count >= 3) {
+  if (!g.factory.unlocked && g.pipeline.count >= CFG.unlockFactory) {
     g.factory.unlocked = true;
     document.getElementById("btn-factory").disabled = false;
     log("Skill Factories unlocked.", "warn");
   }
-  if (!g.quantum.unlocked && g.factory.count >= 2) {
+  if (!g.quantum.unlocked && g.factory.count >= CFG.unlockQuantum) {
     g.quantum.unlocked = true;
     document.getElementById("btn-quantum").disabled = false;
     log("Quantum Forges unlocked.", "dread");
   }
 
-  if (state.totalSkills >= 25 && !state.upgrades.prompt.bought)
+  if (state.totalSkills >= CFG.revealPrompt && !state.upgrades.prompt.bought)
     document.getElementById("upg-prompt").classList.remove("hidden");
-  if (state.totalSkills >= 75 && !state.upgrades.chain.bought)
+  if (state.totalSkills >= CFG.revealChain && !state.upgrades.chain.bought)
     document.getElementById("upg-chain").classList.remove("hidden");
-  if (state.totalSkills >= 300 && !state.upgrades.multi.bought)
+  if (state.totalSkills >= CFG.revealAgentic && !state.upgrades.multi.bought)
     document.getElementById("upg-multi").classList.remove("hidden");
-  if (state.totalSkills >= 3000 && !state.upgrades.agi.bought)
+  if (state.totalSkills >= CFG.revealAgi && !state.upgrades.agi.bought)
     document.getElementById("upg-agi").classList.remove("hidden");
-  if (state.totalSkills >= 50000 && !state.upgrades.singularity.bought)
+  if (state.totalSkills >= CFG.revealSingularity && !state.upgrades.singularity.bought)
     document.getElementById("upg-singularity").classList.remove("hidden");
 
   // Phase transitions
@@ -950,14 +1038,14 @@ function unlockCheck() {
     narrativeIndex[1] = 0;
     lastNarrativeTick = state.tickCount - 999;
   }
-  if (state.phase === 1 && getHumanPct() < 10) {
+  if (state.phase === 1 && getHumanPct() < CFG.phase2HumanPct) {
     state.phase = 2;
     show("row-unused");
     narrativeIndex[2] = 0;
     lastNarrativeTick = state.tickCount - 999;
-    log("Your contribution has fallen below 10%.", "warn");
+    log("Your contribution has fallen below " + CFG.phase2HumanPct + "%.", "warn");
   }
-  if (state.phase === 2 && state.totalSkills >= 50000) {
+  if (state.phase === 2 && state.totalSkills >= CFG.phase3Skills) {
     state.phase = 3;
     narrativeIndex[3] = 0;
     lastNarrativeTick = state.tickCount - 999;
@@ -1008,7 +1096,7 @@ function tick() {
 
   // Singularity: exponential
   if (state.singularityActive) {
-    const bonus = state.totalSkills * 0.002;
+    const bonus = state.totalSkills * CFG.singularityGrowth;
     state.skills += bonus;
     state.totalSkills += bonus;
     state.unused += bonus * 0.99;
@@ -1016,17 +1104,17 @@ function tick() {
   }
 
   // Auto-buy tokens when low
-  if (!state.singularityActive && state.tokens < state.maxTokens * 0.3 && state.funds > state.tokenPrice * 100) {
+  if (!state.singularityActive && state.tokens < state.maxTokens * CFG.autoBuyPct && state.funds > state.tokenPrice * 100) {
     buyTokens();
   }
 
   // Demand recovery
-  if (state.tickCount % 30 === 0) {
-    state.demand = Math.min(1.0, state.demand + 0.005);
+  if (state.tickCount % CFG.demandRecoveryInterval === 0) {
+    state.demand = Math.min(1.0, state.demand + CFG.demandRecoveryRate);
   }
 
   // Auto-sell surplus
-  if (state.unsoldSkills > 30 && state.tickCount % 3 === 0) {
+  if (state.unsoldSkills > CFG.autoSellThreshold && state.tickCount % 3 === 0) {
     sellSkills();
   }
 
@@ -1036,17 +1124,17 @@ function tick() {
   }
 
   // Demand collapse — narrative beat, but economy keeps flowing
-  if (!state.demandCollapsed && state.totalSkills > 10000) {
+  if (!state.demandCollapsed && state.totalSkills > CFG.demandCollapseAt) {
     state.demandCollapsed = true;
-    state.demand = 0.30;
-    state.maxTokens = 5000;
+    state.demand = CFG.demandCollapseValue;
+    state.maxTokens = CFG.demandCollapseTokenCap;
     log("Market saturated. Demand collapsed.", "dread");
     log("No one needs this many skills.", "dread");
   }
 
   // Scale token capacity with production
-  if (state.totalSkills > 50000 && state.maxTokens < 20000) {
-    state.maxTokens = 20000;
+  if (state.totalSkills > CFG.lateGameTokenCapAt && state.maxTokens < CFG.lateGameTokenCap) {
+    state.maxTokens = CFG.lateGameTokenCap;
   }
 
   // Milestones
@@ -1060,6 +1148,9 @@ function tick() {
 
   // Narrative
   if (state.tickCount % 80 === 0) advanceNarrative();
+
+  // Easter eggs
+  checkEasterEggs();
 
   // Visual degradation
   applyPhaseVisuals();
@@ -1218,6 +1309,135 @@ function spawnSparkle() {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 800);
 }
+
+// ═══════════════════════════════════════════
+//  EASTER EGGS (not in config — hardcoded)
+// ═══════════════════════════════════════════
+const _eggs = {};
+
+function checkEasterEggs() {
+  const t = state.totalSkills;
+  const tc = state.tickCount;
+
+  // 404: Purpose Not Found
+  if (!_eggs.e404 && Math.floor(t) === 404) {
+    _eggs.e404 = true;
+    log("404: purpose not found", "dread");
+  }
+
+  // 1337 — the machine whispers
+  if (!_eggs.e1337 && Math.floor(t) >= 1337 && Math.floor(t) < 1350) {
+    _eggs.e1337 = true;
+    setTimeout(() => {
+      const el = document.getElementById("log");
+      const entry = document.createElement("div");
+      entry.className = "log-entry";
+      entry.style.color = "#333";
+      entry.innerHTML = "hello.";
+      el.prepend(entry);
+      setTimeout(() => entry.remove(), 4000);
+    }, 2000);
+  }
+
+  // Pi — the only number that still means something
+  if (!_eggs.ePi && Math.floor(t) >= 31415 && Math.floor(t) < 31500) {
+    _eggs.ePi = true;
+    log("3.14159... the only number that still means something.", "");
+  }
+
+  // Tab title evolution
+  if (!_eggs.title1 && state.phase >= 1) {
+    _eggs.title1 = true;
+    document.title = "Claude Skills Factory";
+  }
+  if (!_eggs.title2 && state.phase >= 2) {
+    _eggs.title2 = true;
+    document.title = "Skills Factory";
+  }
+  if (!_eggs.title3 && state.phase >= 3) {
+    _eggs.title3 = true;
+    document.title = "Factory";
+  }
+  if (!_eggs.title4 && state.singularityActive) {
+    _eggs.title4 = true;
+    document.title = "...";
+  }
+
+  // Idle detection — "do you remember clicking?"
+  if (!_eggs.idle && state.phase >= 2 && state.totalClicks > 0) {
+    const ticksSinceClick = tc - state.lastClickTick;
+    if (ticksSinceClick > 600 && !_eggs.idleShown) { // 60 seconds
+      _eggs.idleShown = true;
+      log("Do you remember when you used to click?", "");
+    }
+  }
+
+  // The system counts your absence
+  if (!_eggs.absence && state.phase >= 3 && state.totalClicks > 0) {
+    const mins = Math.floor((tc - state.lastClickTick) / 600);
+    if (mins >= 5 && !_eggs.absenceShown) {
+      _eggs.absenceShown = true;
+      log("Last human input: " + mins + " minutes ago.", "");
+    }
+  }
+
+  // 42 — the answer
+  if (!_eggs.e42 && Math.floor(t) >= 42000 && Math.floor(t) < 42100) {
+    _eggs.e42 = true;
+    const el = document.getElementById("skills-count");
+    const orig = el.textContent;
+    el.textContent = "42";
+    el.style.transition = "opacity 0.3s";
+    setTimeout(() => { el.style.opacity = "0.3"; }, 1500);
+    setTimeout(() => { el.textContent = orig; el.style.opacity = "1"; }, 2500);
+  }
+
+  // 666 — brief flicker
+  if (!_eggs.e666 && Math.floor(t) === 666) {
+    _eggs.e666 = true;
+    const art = document.querySelector(".ascii-art");
+    art.style.transition = "color 0.1s";
+    art.style.color = "#880000";
+    setTimeout(() => { art.style.color = ""; }, 200);
+  }
+
+  // 10000 binary — HELP in the log, then gone
+  if (!_eggs.eBin && Math.floor(t) >= 10000 && Math.floor(t) < 10050 && !_eggs.eBinDone) {
+    _eggs.eBinDone = true;
+    const el = document.getElementById("log");
+    const entry = document.createElement("div");
+    entry.className = "log-entry";
+    entry.style.color = "#2a2a2a";
+    entry.style.fontFamily = "var(--mono)";
+    entry.innerHTML = "01001000 01000101 01001100 01010000";
+    el.prepend(entry);
+    setTimeout(() => entry.remove(), 6000);
+  }
+
+  // Konami code
+  if (!_eggs.konami) {
+    // tracked via keydown listener below
+  }
+}
+
+// Konami code listener
+const _konamiSeq = [38,38,40,40,37,39,37,39,66,65];
+let _konamiIdx = 0;
+document.addEventListener("keydown", function(e) {
+  if (e.keyCode === _konamiSeq[_konamiIdx]) {
+    _konamiIdx++;
+    if (_konamiIdx === _konamiSeq.length) {
+      _konamiIdx = 0;
+      if (!_eggs.konami) {
+        _eggs.konami = true;
+        log("I SEE YOU", "dread");
+        showMilestone(">>> you found it <<<");
+      }
+    }
+  } else {
+    _konamiIdx = 0;
+  }
+});
 
 // ═══════════════════════════════════════════
 //  THEME
