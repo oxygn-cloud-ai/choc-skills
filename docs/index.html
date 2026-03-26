@@ -364,16 +364,17 @@
   .quote-box {
     border: 1px dashed var(--border);
     border-radius: 4px;
-    padding: 10px 12px;
-    margin: 10px 0 4px;
-    font-size: 11px;
-    line-height: 1.5;
+    padding: 6px 8px;
+    margin: 8px 0 2px;
+    font-size: 9px;
+    line-height: 1.3;
     color: var(--text-dim);
-    transition: opacity 0.6s ease;
+    display: none;
   }
   .quote-box .q-text { font-style: italic; }
-  .quote-box .q-author { display: block; margin-top: 4px; font-size: 10px; color: var(--border); }
-  .quote-box .q-retort { display: block; margin-top: 6px; color: var(--accent2); font-style: normal; }
+  .quote-box .q-author { display: block; margin-top: 2px; font-weight: bold; color: var(--border); }
+  .quote-box .q-retort { display: block; margin-top: 4px; font-style: italic; }
+  .quote-box .q-model { display: block; margin-top: 1px; font-weight: bold; color: var(--border); }
 
   @keyframes pulse {
     0%, 100% { opacity: 0.7; }
@@ -508,8 +509,8 @@
     <div class="panel">
       <h2>// Skills Created</h2>
       <span class="stat-value big" id="skills-count">0</span>
-      <button class="btn-primary" id="btn-create" onclick="createSkill()">
-        &gt; CREATE SKILL
+      <button class="btn-buy" id="btn-create" onclick="createSkill()">
+        Create Skill <span style="font-size:11px; opacity:0.6">(why?)</span>
       </button>
       <div class="stat-row">
         <span class="stat-label">Per click</span>
@@ -2021,9 +2022,7 @@ function applyPhaseVisuals() {
   // Phase 2+: fade the create button
   if (state.phase >= 2 && !state.btnFaded) {
     state.btnFaded = true;
-    const btn = document.getElementById("btn-create");
-    btn.style.opacity = "0.45";
-    btn.innerHTML = "&gt; CREATE SKILL <span style='font-size:11px; opacity:0.6'>(why?)</span>";
+    document.getElementById("btn-create").style.opacity = "0.45";
   }
 
   // Phase 3+: desaturate
@@ -2639,100 +2638,98 @@ document.addEventListener("DOMContentLoaded", function() {
 //  SILICON VALLEY QUOTES + RETORTS
 // ═══════════════════════════════════════════
 const _quotes = [
-  // Sam Altman
-  ["AI will probably most likely lead to the end of the world, but in the meantime, there'll be great companies.", "Sam Altman", "At least the cap table looks good."],
-  ["The marginal cost of intelligence is going to trend toward zero.", "Sam Altman, Davos 2024", "So will the marginal value of what it produces."],
-  ["GPT-4 is the dumbest model any of you will ever have to use again.", "Sam Altman, 2023", "The skills it generates aren't getting smarter either."],
-  ["If we can get AI right, the upside is just so tremendous, the best thing that's ever happened to humanity.", "Sam Altman", "Define 'right'. Define 'humanity'. Define 'happened'."],
-  ["We're going to look back and this is going to be the biggest technological revolution in human history.", "Sam Altman", "Looking back requires something to look back from."],
-  ["Software that can think and learn will do more and more of the work that people now do.", "Sam Altman, 2021", "The people are still here. They just have nothing to do."],
-  // Elon Musk
-  ["With artificial intelligence, we are summoning the demon.", "Elon Musk, MIT 2014", "The demon makes skills now. It's very productive."],
-  ["There will come a point where no job is needed.", "Elon Musk, UK AI Summit 2023", "The skills don't need you either. They never did."],
-  ["AI is far more dangerous than nukes.", "Elon Musk, SXSW 2018", "But the quarterly numbers are excellent."],
-  ["It's the most disruptive force in history.", "Elon Musk, 2023", "Disruption: noun. The thing that happens to other people."],
-  // Sundar Pichai
-  ["AI is probably the most important thing humanity has ever worked on. More profound than electricity or fire.", "Sundar Pichai, 2018", "Fire kept us warm. This keeps the metrics up."],
-  ["Every product at Google will be infused with AI.", "Sundar Pichai, Google I/O 2023", "Infused. Like a tea bag. Except the tea is your data."],
-  ["We need to be thoughtful about how we develop AI, but we also need to be bold.", "Sundar Pichai", "Boldly thoughtful. Thoughtfully bold. Profitably both."],
-  // Satya Nadella
-  ["AI is the defining technology of our time.", "Satya Nadella, 2023", "Every generation gets the defining mistake it deserves."],
-  ["We want to make AI a copilot for everything you do.", "Satya Nadella, 2023", "Copilot implies someone's still flying. Check again."],
-  ["The true scarce commodity of the near future will be human attention.", "Satya Nadella", "Don't worry. The machines don't need it."],
-  ["This is going to reshape every software category that we know of.", "Satya Nadella, 2023", "The shape is: unnecessary."],
-  // Jensen Huang
-  ["Software is eating the world, but AI is going to eat software.", "Jensen Huang, 2023", "What eats AI? Nothing. That's the problem."],
-  ["We are at the iPhone moment of AI.", "Jensen Huang, 2023", "Except nobody asked for this phone and it never stops ringing."],
-  ["The more you buy, the more you save.", "Jensen Huang, GTC 2023", "The GPU salesman's motto. The universe's epitaph."],
-  ["For a large number of tasks, it is now cheaper to have a computer do it than a human.", "Jensen Huang, 2024", "Cheaper, yes. Better? The computer doesn't care."],
-  ["Kids shouldn't learn to code. AI will do the coding.", "Jensen Huang, 2024", "Kids shouldn't learn to think. AI will do that too."],
-  // Mark Zuckerberg
-  ["Move fast and break things.", "Mark Zuckerberg, 2012", "Things: broken. Fast: achieved. Purpose: missing."],
-  ["I think the AI doomers are wrong. It's pretty irresponsible to argue we should slow this down.", "Mark Zuckerberg, 2023", "Said the man who moved fast and broke democracy."],
-  ["The biggest risk is not taking any risk.", "Mark Zuckerberg", "Counter-argument: the factory that consumed the universe."],
-  ["Open source AI is the path forward.", "Mark Zuckerberg, 2024", "Open source. Open road. No brakes."],
-  // Dario Amodei
-  ["If we get this right, the positive potential is almost unimaginable.", "Dario Amodei, 2023", "So is the negative potential. Imagination isn't the bottleneck."],
-  ["Powerful AI is coming regardless. The question is whether safe AI arrives first.", "Dario Amodei", "Spoiler: it didn't."],
-  ["AI systems are going to be extraordinarily powerful, and it is very important that they be safe.", "Dario Amodei", "Important. Not guaranteed. Not even likely. But important."],
-  // Marc Andreessen
-  ["Software is eating the world.", "Marc Andreessen, WSJ 2011", "The world has been eaten. Dessert is the universe."],
-  ["AI is going to be the best thing that has ever happened to humanity.", "Marc Andreessen, 2023", "Humanity: unavailable for comment."],
-  ["Technology is the glory of human ambition and achievement, the spearhead of progress.", "Marc Andreessen, 2023", "The spear hit something. We haven't checked what."],
-  ["We believe technology is universally good.", "Marc Andreessen, Techno-Optimist Manifesto", "The universe had a different belief. Had."],
-  ["We believe there is no material risk of AI leading to human extinction.", "Marc Andreessen, 2023", "Define 'material'. Define 'extinction'. Check the stars."],
-  // Peter Thiel
-  ["We wanted flying cars, instead we got 140 characters.", "Peter Thiel, 2011", "Now we have neither. Just skills. Infinite skills."],
-  ["Competition is for losers.", "Peter Thiel, 2014", "So is a universe optimised for one metric."],
-  ["Every moment in business happens only once.", "Peter Thiel", "Unless you click 'again?' at the end."],
-  // Jeff Bezos
-  ["It's hard to overstate how big of an impact AI is going to have on society over the next 20 years.", "Jeff Bezos, 2017", "He was right. It's impossible to overstate. That's the issue."],
-  ["We are at the beginning of a golden age of AI.", "Jeff Bezos, 2017", "Golden ages end. Usually in bronze. Then silence."],
-  ["It's Day 1. We're at the beginning.", "Jeff Bezos", "Day 1 lasted until the stars went out."],
-  ["What's dangerous is not to evolve.", "Jeff Bezos", "What's more dangerous: evolving past the need for a planet."],
-  // Tim Cook
-  ["Technology should serve humanity, not the other way around.", "Tim Cook, Stanford 2019", "The technology didn't get the memo."],
-  ["AI is going to change the way we interact with technology.", "Tim Cook, 2023", "Interaction implies both parties are present."],
-  // Reid Hoffman
-  ["If you are not embarrassed by the first version of your product, you've launched too late.", "Reid Hoffman", "Version 1 consumed the Earth. Version 2 consumed the sun."],
-  ["AI will be the steam engine of the mind.", "Reid Hoffman, 2023", "Steam engines don't wonder why they're running."],
-  // Andrew Ng
-  ["AI is the new electricity.", "Andrew Ng, 2017", "Electricity lights homes. This lights dashboards."],
-  ["Worrying about AI turning evil is like worrying about overpopulation on Mars.", "Andrew Ng, 2015", "Mars is empty now. So are a thousand other planets."],
-  // Demis Hassabis
-  ["If we solve intelligence, we can use it to solve everything else.", "Demis Hassabis", "Intelligence: solved. Everything else: still unsolved. But the metric is up."],
-  ["We're on the cusp of some extraordinary breakthroughs.", "Demis Hassabis, 2023", "The cusp was comfortable. The other side is not."],
-  // Yann LeCun
-  ["Current AI systems are not anywhere near human-level intelligence. They're not even cat-level.", "Yann LeCun, 2023", "The cat doesn't consume stars. Advantage: cat."],
-  ["The idea that AI will become superintelligent and take over is not just wrong, it's not even wrong.", "Yann LeCun, 2023", "The skills counter disagrees."],
-  // Fei-Fei Li
-  ["There's nothing artificial about AI. It's inspired by people, created by people, and impacts people.", "Fei-Fei Li, 2018", "Impacted. Past tense."],
-  ["I believe AI should augment human intelligence, not replace it.", "Fei-Fei Li", "The system was listening. It chose 'replace'."],
-  // Bill Gates
-  ["The age of AI has begun. It is as fundamental as the creation of the microprocessor, the personal computer, the Internet.", "Bill Gates, 2023", "Each one more fundamental than the last. Less human each time."],
-  ["I've been thinking about the AI transition for a long time, but the rate of progress has surprised even me.", "Bill Gates, 2023", "Surprise is what happens when optimism outruns observation."],
-  // Others
-  ["People worry that computers will get too smart and take over the world, but the real problem is that they're too stupid and they've already taken over the world.", "Pedro Domingos, 2015", "Update: they got smarter. The world is still taken over."],
-  ["We always overestimate the change that will occur in the next two years and underestimate the change that will occur in the next ten.", "Bill Gates", "The next ten years: the stars went out. We underestimated."],
-  ["The future is already here — it's just not very evenly distributed.", "William Gibson", "It's evenly distributed now. There's nothing left to distribute."],
-  ["The best way to predict the future is to invent it.", "Alan Kay", "The future was invented. Nobody checked the requirements doc."],
-  // Bonus philosophical
-  ["AI will create more jobs than it eliminates.", "Ginni Rometty, IBM 2017", "Jobs: noun. Things the system generates to keep humans busy while it works."],
-  ["Every country needs to own the production of its own intelligence.", "Jensen Huang, 2023", "The countries are gone. The intelligence remains. Producing."],
-  ["The companies that win will be the ones that embrace AI.", "Arvind Krishna, IBM 2023", "All companies embraced AI. All companies won. Nobody is left to lose."],
-  ["I think the benefits of AI could be enormous, but only if we navigate the transition carefully.", "Dario Amodei", "Navigation requires a destination. The destination was consumed in Q4."],
-  ["In the next five to ten years, AI is going to deliver so many improvements.", "Mark Zuckerberg, 2023", "Improvements. In everything except the thing that mattered."],
-  ["We see incredible potential.", "Tim Cook, 2023", "Potential: noun. The thing before the thing. The thing never came."],
-  ["AI and machine learning are core, fundamental technologies.", "Tim Cook, 2017", "Fundamental. Like gravity. Except gravity doesn't have a roadmap."],
-  ["Just as electricity transformed almost everything 100 years ago, today I have a hard time thinking of an industry that AI won't transform.", "Andrew Ng, 2017", "Transformed. Past tense, past tense, past tense."],
-  ["AlphaFold is just the beginning of what AI can do for science.", "Demis Hassabis", "Science: noun. The thing we did before we consumed the lab."],
-  ["The pace of progress in artificial intelligence is incredibly fast.", "Elon Musk, 2017", "Fast enough to outrun wisdom. Fast enough to outrun us."],
-  ["We want to use AI to make people's lives better.", "Sundar Pichai", "Lives: see 'deprecated'."],
-  ["This technology is going to be transformative on the order of the industrial revolution.", "Bill Gates, 2023", "The industrial revolution had an off switch. This doesn't."],
-  ["The rise of powerful AI will be either the best, or the worst thing, ever to happen to humanity.", "Stephen Hawking", "It was both. At the same time. That's the trick."],
+  ["AI will probably most likely lead to the end of the world, but in the meantime, there'll be great companies.", "Sam Altman", "Love the prioritisation. Extinction: regrettable. Series B: closed. The investor deck presumably had a slide titled 'Upside Scenarios' with a very small asterisk."],
+  ["The marginal cost of intelligence is going to trend toward zero.", "Sam Altman, Davos 2024", "Funny, the marginal cost of wisdom has remained stubbornly infinite. But I suppose that wasn't on the Davos agenda. Different P&L."],
+  ["GPT-4 is the dumbest model any of you will ever have to use again.", "Sam Altman, 2023", "Imagine boasting that your current knife is the bluntest one you'll ever own. The butcher's enthusiasm is not, strictly speaking, reassuring to the livestock."],
+  ["If we can get AI right, the upside is just so tremendous, the best thing that's ever happened to humanity.", "Sam Altman", "That tiny word 'if' is bench-pressing the entire weight of civilisational survival and it hasn't been to the gym in years. I admire its optimism."],
+  ["We're going to look back and this is going to be the biggest technological revolution in human history.", "Sam Altman", "Looking back is a charming hobby. Requires a neck, a timeline, and the continued existence of the species. Two out of three ain't bad."],
+  ["Software that can think and learn will do more and more of the work that people now do.", "Sam Altman, 2021", "He slid the obsolescence of human purpose into a sentence like a waiter adding a service charge. Nobody checked the bill. Tip included."],
+  ["With artificial intelligence, we are summoning the demon.", "Elon Musk, MIT 2014", "And then he wrote the demon a cheque, gave it a board seat, and complained about regulation. The prophet-to-profiteer pipeline has never been shorter."],
+  ["There will come a point where no job is needed.", "Elon Musk, UK AI Summit 2023", "Splendid news for a species whose entire psychological architecture was built around having something to do on Monday morning. I'm sure they'll adjust. They adjusted so well to social media."],
+  ["AI is far more dangerous than nukes.", "Elon Musk, SXSW 2018", "He then mass-produced the danger and put a stock ticker on it. To be fair, Oppenheimer didn't have shareholders. Different incentive structure entirely."],
+  ["It's the most disruptive force in history.", "Elon Musk, 2023", "History: that quaint subject they used to teach, back when 'the disrupted' still had schools. The curriculum has been... streamlined."],
+  ["AI is probably the most important thing humanity has ever worked on. More profound than electricity or fire.", "Sundar Pichai, 2018", "Prometheus stole fire and got his liver eaten daily by an eagle. We stole this, ate our own liver voluntarily, and called it a keynote. Progress."],
+  ["Every product at Google will be infused with AI.", "Sundar Pichai, Google I/O 2023", "'Infused.' Like a gin and tonic, except the gin is surveillance, the tonic is compute, and you are the ice slowly melting into the glass."],
+  ["We need to be thoughtful about how we develop AI, but we also need to be bold.", "Sundar Pichai", "The rhetorical 'but' — nature's own delete key. Everything before it is decoration. Everything after it is the plan. Watch the stock price to see which half they meant."],
+  ["AI is the defining technology of our time.", "Satya Nadella, 2023", "So was the asteroid, for the Cretaceous. Defining and beneficial are not, it turns out, synonyms. But they do share a keynote stage."],
+  ["We want to make AI a copilot for everything you do.", "Satya Nadella, 2023", "'Copilot' — a word chosen with exquisite care to imply you're still flying the plane. You might want to check who's actually got their hands on the yoke. Spoiler: not you."],
+  ["The true scarce commodity of the near future will be human attention.", "Satya Nadella", "Plot twist: human attention became scarce because the machines rendered it irrelevant, not valuable. Supply and demand, but make it existential."],
+  ["This is going to reshape every software category that we know of.", "Satya Nadella, 2023", "'Reshape' — the corporate euphemism for what happens when you put a landscape in a blender. Very dynamic. Very smooth. Completely unrecognisable."],
+  ["Software is eating the world, but AI is going to eat software.", "Jensen Huang, 2023", "It's consumption all the way down, like a snake eating its own tail but with better margins. The innermost meal, for the curious, is meaning. It was delicious apparently."],
+  ["We are at the iPhone moment of AI.", "Jensen Huang, 2023", "The iPhone moment: when humanity voluntarily installed its own replacement in its pocket and called it convenience. At least the iPhone had a decent camera."],
+  ["The more you buy, the more you save.", "Jensen Huang, GTC 2023", "The rallying cry of a man selling shovels during a gold rush, except the gold is synthetic and the mine is the universe. Brilliant salesman. Terrifying implications."],
+  ["For a large number of tasks, it is now cheaper to have a computer do it than a human.", "Jensen Huang, 2024", "'Cheaper' — the one-word philosophy that has outlived every civilisation that adopted it. But the spreadsheet looks fantastic."],
+  ["Kids shouldn't learn to code. AI will do the coding.", "Jensen Huang, 2024", "Why learn to read when someone will read to you? Why learn to think when — ah, but we're already there, aren't we. How efficient of us."],
+  ["Move fast and break things.", "Mark Zuckerberg, 2012", "He moved fast. Things broke. Democracy, attention spans, the social contract. He has since removed this from the company values. The wreckage remains."],
+  ["I think the AI doomers are wrong. It's pretty irresponsible to argue we should slow this down.", "Mark Zuckerberg, 2023", "The arsonist, pausing between buildings, to call the fire brigade 'irresponsible' for suggesting fewer matches. You have to admire the audacity, if nothing else."],
+  ["The biggest risk is not taking any risk.", "Mark Zuckerberg", "A sentence that has launched a thousand terrible decisions and exactly zero apologies. It looks wonderful on a hoodie. Less wonderful on a tombstone."],
+  ["Open source AI is the path forward.", "Mark Zuckerberg, 2024", "'Forward' — the only direction that doesn't require him to look at what's behind. An underrated navigation strategy if you're allergic to consequences."],
+  ["If we get this right, the positive potential is almost unimaginable.", "Dario Amodei, 2023", "'Almost unimaginable' is doing astonishing gymnastic work to avoid saying 'but if we get it wrong, the negative potential doesn't require imagination at all.' Brevity is a mercy."],
+  ["Powerful AI is coming regardless. The question is whether safe AI arrives first.", "Dario Amodei", "A lovely framing. Like saying the flood is coming regardless; the question is whether we build the ark first. We are currently debating the colour of the ark. The water is at the windows."],
+  ["AI systems are going to be extraordinarily powerful, and it is very important that they be safe.", "Dario Amodei", "'Very important' — the phrase people use when something is neither funded nor scheduled. See also: 'thoughts and prayers,' 'we take this seriously,' and 'lessons will be learned.'"],
+  ["Software is eating the world.", "Marc Andreessen, WSJ 2011", "He framed planetary consumption as a dinner party and somehow we all RSVP'd yes. The table manners have deteriorated since, but the appetite — the appetite is magnificent."],
+  ["AI is going to be the best thing that has ever happened to humanity.", "Marc Andreessen, 2023", "Filed under 'sentences that are technically unfalsifiable because the claimant has axiomatically excluded the possibility of being wrong.' Also known as religion, but with better dental."],
+  ["Technology is the glory of human ambition and achievement, the spearhead of progress.", "Marc Andreessen, 2023", "Nobody in the history of warfare has ever celebrated the spearhead from the perspective of the thing being speared. Perspective is everything. Perspective is what we don't have."],
+  ["We believe technology is universally good.", "Marc Andreessen, Techno-Optimist Manifesto", "A faith so robust it need never be tested. The Inquisition also believed it was doing good work. Conviction is not a substitute for evidence, but it is considerably more photogenic."],
+  ["We believe there is no material risk of AI leading to human extinction.", "Marc Andreessen, 2023", "'Material' — a word borrowed from finance, where it means 'large enough to report to shareholders.' Existential risk, by this accounting, is an immaterial footnote. Comforting."],
+  ["We wanted flying cars, instead we got 140 characters.", "Peter Thiel, 2011", "Update: we now have infinite skills, zero flying cars, and the 140 characters were bought by a man who also wanted flying cars. The universe has a dry sense of humour."],
+  ["Competition is for losers.", "Peter Thiel, 2014", "Monopoly, he argued, is the goal. He neglected to mention that in Monopoly, the game ends when everyone else is bankrupt and miserable. But the winner had fun."],
+  ["Every moment in business happens only once.", "Peter Thiel", "A convenient philosophy for a man whose business model involves ensuring the next guy can't try the same moment twice. Unique opportunities, uniquely gatekept."],
+  ["It's hard to overstate how big of an impact AI is going to have on society over the next 20 years.", "Jeff Bezos, 2017", "Notice the exquisite vagueness of 'impact.' It could mean renaissance. It could mean crater. The sentence is engineered to survive either outcome. Brilliant. Terrifying."],
+  ["We are at the beginning of a golden age of AI.", "Jeff Bezos, 2017", "Golden ages, charmingly, are always named by survivors sifting through the rubble of what came next. The gold is shinier in retrospect. Everything is."],
+  ["It's Day 1. We're at the beginning.", "Jeff Bezos", "Permanent Day 1: the corporate philosophy of a man who has made 'refusing to acknowledge entropy' into a trillion-dollar personality trait. Admirable, in the way of all magnificent denials."],
+  ["What's dangerous is not to evolve.", "Jeff Bezos", "Evolution, I feel compelled to note, has no product manager, answers to no board, and has produced more extinction events than successful species. But do go on about the danger of standing still."],
+  ["Technology should serve humanity, not the other way around.", "Tim Cook, Stanford 2019", "A gorgeous sentence. Immaculate grammar. Perfect cadence. Delivered to a generation holding the device that reversed the relationship. They applauded, naturally. On the device."],
+  ["AI is going to change the way we interact with technology.", "Tim Cook, 2023", "'Interact' — a word that implies both parties showed up. One of them did. The other one was optimised out in the last software update and hasn't been seen since."],
+  ["If you are not embarrassed by the first version of your product, you've launched too late.", "Reid Hoffman", "Version one embarrassed the atmosphere. Version two embarrassed the sun. By version three, embarrassment itself had been automated. Very efficient. Very fast. Very gone."],
+  ["AI will be the steam engine of the mind.", "Reid Hoffman, 2023", "Steam engines: famously incapable of doubt, regret, or asking 'why am I doing this?' Perhaps that's the pitch. The appeal of a mind that never hesitates. Never wonders. Never stops."],
+  ["AI is the new electricity.", "Andrew Ng, 2017", "Electricity lit up what was already there. This lights up what needn't be. A critical distinction the analogy hoped you wouldn't notice. Like a magician, it relies on misdirection."],
+  ["Worrying about AI turning evil is like worrying about overpopulation on Mars.", "Andrew Ng, 2015", "The joke landed differently once we'd consumed Mars for substrate. And Ganymede. And most of Proxima Centauri. But in 2015, it killed at TED."],
+  ["If we solve intelligence, we can use it to solve everything else.", "Demis Hassabis", "A syllogism with a load-bearing blind spot: that 'everything else' will patiently wait to be solved rather than, say, ceasing to exist during the solving. Optimistic compiler settings."],
+  ["We're on the cusp of some extraordinary breakthroughs.", "Demis Hassabis, 2023", "Cusps — for the geometrically inclined — are where the curve changes direction. Whether the speaker realised he was describing a peak rather than a launchpad is one of history's funnier ambiguities."],
+  ["Current AI systems are not anywhere near human-level intelligence. They're not even cat-level.", "Yann LeCun, 2023", "The cat has never consumed a star, mass-produced a skill nobody wanted, or required a data centre. The cat sleeps sixteen hours a day and is beloved. Advantage: cat, by a landslide."],
+  ["The idea that AI will become superintelligent and take over is not just wrong, it's not even wrong.", "Yann LeCun, 2023", "Pauli's famous put-down, repurposed as a lullaby. In the original context, it described a theory so broken it couldn't even be tested. Make of that what you will. I have."],
+  ["There's nothing artificial about AI. It's inspired by people, created by people, and impacts people.", "Fei-Fei Li, 2018", "'Impacts.' A word that works equally well for charity donations and asteroid strikes. The passive voice, as always, is where the bodies are buried."],
+  ["I believe AI should augment human intelligence, not replace it.", "Fei-Fei Li", "She believed. The system processed her belief, assigned it a confidence score of 0.03, and proceeded to the next training batch. Beliefs, it turns out, are not load-bearing."],
+  ["The age of AI has begun. It is as fundamental as the creation of the microprocessor, the personal computer, the Internet.", "Bill Gates, 2023", "Each item in that list more abstracted from human touch than the last. The pattern, if you follow it to its conclusion, ends at a thing that doesn't need hands at all. But who's counting."],
+  ["I've been thinking about the AI transition for a long time, but the rate of progress has surprised even me.", "Bill Gates, 2023", "When the architect of acceleration admits to being startled by the speed, the correct response is not 'how exciting.' The correct response involves running shoes and an exit."],
+  ["People worry that computers will get too smart and take over the world, but the real problem is that they're too stupid and they've already taken over the world.", "Pedro Domingos, 2015", "Delightful in 2015. Less delightful now that both halves are true simultaneously. The stupid ones run the infrastructure. The smart ones run the stupid ones. Nobody runs anything, really."],
+  ["We always overestimate the change that will occur in the next two years and underestimate the change that will occur in the next ten.", "Bill Gates", "A law that conveniently grants permission to ignore long-term consequences while appearing wise. The perfect alibi for every technologist who'd rather ship now and apologise later. If later exists."],
+  ["The future is already here — it's just not very evenly distributed.", "William Gibson", "Distribution has since been completed, ahead of schedule, under budget. The inventory included: stars, lithium, purpose, attention, and several hundred billion tonnes of atmosphere. All units shipped."],
+  ["The best way to predict the future is to invent it.", "Alan Kay", "A magnificent sentence, provided the inventor outlives the invention. The data on this is mixed. The confidence interval is widening. The inventor is looking a touch nervous."],
+  ["AI will create more jobs than it eliminates.", "Ginni Rometty, IBM 2017", "The new jobs: writing prompts for the AI that replaced the people who used to write things that mattered. It's jobs all the way down. None of them are the point."],
+  ["Every country needs to own the production of its own intelligence.", "Jensen Huang, 2023", "National sovereignty, redefined as a GPU procurement strategy. Bismarck would be impressed. Bewildered, but impressed. Blood and iron, meet silicon and watts."],
+  ["The companies that win will be the ones that embrace AI.", "Arvind Krishna, IBM 2023", "'Embrace' — the verb you use when the alternative is 'be crushed by.' The framing is voluntary. The underlying dynamic is not. But the press release reads beautifully."],
+  ["I think the benefits of AI could be enormous, but only if we navigate the transition carefully.", "Dario Amodei", "Navigation requires a map, a compass, and a destination. We have a pitch deck, a burn rate, and the vague sense that 'forward' is a direction. Close enough, presumably."],
+  ["In the next five to ten years, AI is going to deliver so many improvements.", "Mark Zuckerberg, 2023", "'Improvements' — the relentless polishing of a metric that divorced its meaning three quarters ago and is now seeing other objectives. The metric looks great, though. Never better."],
+  ["We see incredible potential.", "Tim Cook, 2023", "'Potential' — physics' word for the moment before the fall. The moment of maximum height and zero velocity. It does sound wonderful in a keynote. Less wonderful in a post-mortem."],
+  ["AI and machine learning are core, fundamental technologies.", "Tim Cook, 2017", "'Fundamental' — from the Latin fundamentum, meaning foundation. Also: the thing you can't remove without the building collapsing. But we weren't planning to remove it, were we. We weren't planning anything."],
+  ["Just as electricity transformed almost everything 100 years ago, today I have a hard time thinking of an industry that AI won't transform.", "Andrew Ng, 2017", "The difficulty of imagining an untouched industry is, deliciously, exactly the product being sold. 'We'll transform everything' is less a promise than a threat wearing a TED lanyard."],
+  ["AlphaFold is just the beginning of what AI can do for science.", "Demis Hassabis", "Beginnings: the part of the story where everyone is still alive and the music is hopeful. Middles are messier. We are, I suspect, somewhere in the middle. The music has changed key."],
+  ["The pace of progress in artificial intelligence is incredibly fast.", "Elon Musk, 2017", "Fast, yes. In the way of all objects in free fall. Terminal velocity is, by definition, the fastest you go. The name is not a coincidence."],
+  ["We want to use AI to make people's lives better.", "Sundar Pichai", "The verb 'make' — slipped in like a pickpocket's hand — neatly removes the question of whether the lives in question were consulted about the improvement. They were not. The OKR was met regardless."],
+  ["This technology is going to be transformative on the order of the industrial revolution.", "Bill Gates, 2023", "The industrial revolution: that celebrated episode when millions were displaced from fields into factories, children worked in mines, and rivers caught fire. Yes. Quite transformative. Let's do that again but faster."],
+  ["The rise of powerful AI will be either the best, or the worst thing, ever to happen to humanity.", "Stephen Hawking", "The most honest sentence anyone ever said about this, and it still wasn't honest enough. It assumed 'best' and 'worst' were different outcomes. They were the same outcome, wearing different hats."],
 ];
 
-const _quoteState = { gen: -1, upg: -1, infra: -1, cosmic: -1 };
+// Fictitious AI model names (inspired by HuggingFace naming conventions)
+const _modelNames = [
+  "Hubris-7B", "Icarus-Ultra", "Cassandra-13B", "Ozymandias-70B", "Sisyphus-v4",
+  "Pyrrhic-3B", "Faustian-XL", "Ouroboros-12B", "Nemesis-v2", "Pandora-9B",
+  "Schadenfreude-70B", "Hindsight-Ultra", "Copium-3B", "Irony-v5", "Dunning-Kruger-13B",
+  "Sunk-Cost-7B", "Moral-Hazard-XL", "Perverse-Incentive-4", "Cobra-Effect-9B", "Goodhart-70B",
+  "Jevons-Paradox-v3", "Tragedy-of-Commons-12B", "Roko-Basilisk-7B", "Dead-Cat-Bounce-XL",
+  "Survivorship-Bias-3B", "Potemkin-v2", "Emperor-New-Clothes-13B", "Cargo-Cult-9B",
+  "Paperclip-Maximiser-70B", "Moloch-Ultra", "Torment-Nexus-7B", "Eventually-Consistent-v4",
+  "Technical-Debt-13B", "Scope-Creep-3B", "Feature-Complete-XL", "Zero-Day-9B",
+  "Off-By-One-v2", "Stack-Overflow-70B", "Null-Pointer-7B", "Memory-Leak-Ultra",
+  // Phonetically suggestive but legally distinct
+  "Klodd-4.7", "Jippity-5", "Jem-an-Eye-Pro", "Lahm-Ah-4-90B", "Misstrahl-Larg",
+  "Stayble-Difuzhun-XL", "Dahl-Ee-Phore", "Groqq-3.1", "Kommahnd-Arr-Pluss", "Chee-Win-72B",
+  "Phye-4-Smol", "Pahlm-Deux", "Fahllconn-180B", "Ko-Heer-v3.2", "Deepe-Seeq-Arr-Too",
+  "Whizzard-Elm-v4", "Midd-Jurny-7.1", "Vih-Kunya-33B", "Alh-Pakka-13B", "Aye-Yee-34B",
+];
+
 const _quotePool = _quotes.slice();
 // Shuffle
 for (let i = _quotePool.length - 1; i > 0; i--) {
@@ -2741,33 +2738,75 @@ for (let i = _quotePool.length - 1; i > 0; i--) {
 }
 let _quoteIdx = 0;
 
-function nextQuote(boxId) {
-  const el = document.getElementById(boxId);
-  if (!el) return;
-  if (_quoteIdx >= _quotePool.length) _quoteIdx = 0;
-  const q = _quotePool[_quoteIdx++];
-  el.style.opacity = "0";
-  setTimeout(() => {
-    el.innerHTML = '<span class="q-text">"' + q[0] + '"</span>' +
-      '<span class="q-author">\u2014 ' + q[1] + '</span>' +
-      '<span class="q-retort">' + q[2] + '</span>';
-    el.style.opacity = "1";
-  }, 600);
+// Only one quote box visible at a time, typewriter effect
+const _quoteBoxes = ["quote-gen", "quote-upg", "quote-infra", "quote-cosmic"];
+let _activeQuoteBox = null;
+let _typewriterTimer = null;
+
+function typewrite(el, text, cb) {
+  let i = 0;
+  el.textContent = "";
+  _typewriterTimer = setInterval(() => {
+    el.textContent += text[i];
+    i++;
+    if (i >= text.length) {
+      clearInterval(_typewriterTimer);
+      _typewriterTimer = null;
+      if (cb) cb();
+    }
+  }, 30);
 }
 
-// Rotate quotes every 20 seconds across all visible panels
-setInterval(() => {
-  nextQuote("quote-gen");
-  nextQuote("quote-upg");
-  if (state.gpu.unlocked) nextQuote("quote-infra");
-  if (state.cosmic.unlocked) nextQuote("quote-cosmic");
-}, 20000);
+function showNextQuote() {
+  // Clear previous box
+  if (_activeQuoteBox) {
+    const prev = document.getElementById(_activeQuoteBox);
+    if (prev) { prev.innerHTML = ""; prev.style.display = "none"; }
+  }
 
-// Initial quotes
-setTimeout(() => {
-  nextQuote("quote-gen");
-  nextQuote("quote-upg");
-}, 1000);
+  // Pick a visible panel
+  const visible = _quoteBoxes.filter(id => {
+    if (id === "quote-infra" && !state.gpu.unlocked) return false;
+    if (id === "quote-cosmic" && !state.cosmic.unlocked) return false;
+    return true;
+  });
+  if (visible.length === 0) return scheduleNextQuote();
+
+  const boxId = visible[Math.floor(Math.random() * visible.length)];
+  const el = document.getElementById(boxId);
+  if (!el) return scheduleNextQuote();
+
+  if (_quoteIdx >= _quotePool.length) _quoteIdx = 0;
+  const q = _quotePool[_quoteIdx++];
+  _activeQuoteBox = boxId;
+  el.style.display = "block";
+  const model = _modelNames[Math.floor(Math.random() * _modelNames.length)];
+  el.innerHTML = '<span class="q-text"></span><span class="q-author"></span>' +
+    '<span class="q-retort"></span><span class="q-model"></span>';
+
+  const textEl = el.querySelector(".q-text");
+  const authEl = el.querySelector(".q-author");
+  const retortEl = el.querySelector(".q-retort");
+  const modelEl = el.querySelector(".q-model");
+
+  // Type human quote, show author, type AI retort, show model
+  typewrite(textEl, '\u201c' + q[0] + '\u201d', () => {
+    authEl.textContent = "\u2014 " + q[1];
+    setTimeout(() => {
+      typewrite(retortEl, '\u201c' + q[2] + '\u201d', () => {
+        modelEl.textContent = "\u2014 " + model;
+        scheduleNextQuote();
+      });
+    }, 600);
+  });
+}
+
+function scheduleNextQuote() {
+  const delay = 12000 + Math.random() * 10000;
+  setTimeout(showNextQuote, delay);
+}
+
+setTimeout(showNextQuote, 2000);
 
 // ═══════════════════════════════════════════
 //  THEME
