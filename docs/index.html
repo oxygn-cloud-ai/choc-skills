@@ -506,12 +506,12 @@
   <div class="grid">
 
     <!-- Main Stats -->
-    <div class="panel" style="display:flex; flex-direction:column;">
+    <div class="panel">
       <h2>// Skills Created</h2>
       <span class="stat-value big" id="skills-count">0</span>
-      <div style="flex:1;"></div>
       <button class="btn-buy" id="btn-create" onclick="createSkill()">
-        Create Skill <span style="font-size:11px; opacity:0.6">(why?)</span>
+        Create Skill <span class="cost" id="cost-create">1 token</span>
+        <span class="btn-desc">Click to create a skill. Every skill has a cost. <span style="opacity:0.6">(why?)</span></span>
       </button>
       <div class="stat-row">
         <span class="stat-label">Per click</span>
@@ -532,7 +532,7 @@
     </div>
 
     <!-- Resources -->
-    <div class="panel" style="display:flex; flex-direction:column;">
+    <div class="panel">
       <h2>// Resources</h2>
       <div class="stat-row">
         <span class="stat-label">Tokens</span>
@@ -546,7 +546,6 @@
         <span class="stat-label">Funds</span>
         <span class="stat-value" id="funds">$10.00</span>
       </div>
-      <div style="flex:1;"></div>
       <button class="btn-buy" id="btn-buy-tokens" onclick="buyTokens()">
         Buy 100 tokens <span class="cost" id="cost-tokens">$0.30</span>
         <span class="btn-desc">Tokens are consumed to create skills. Every skill has a cost.</span>
@@ -2122,6 +2121,7 @@ function updateUI() {
 
   // Main button
   $("btn-create").disabled = state.tokens < state.perClick;
+  $("cost-create").textContent = state.perClick + " token" + (state.perClick > 1 ? "s" : "");
   $("btn-sell").disabled = state.unsoldSkills < 1;
   $("btn-buy-tokens").disabled = state.funds < state.tokenPrice * 100;
   if (state._tokenAgentRevealed) {
