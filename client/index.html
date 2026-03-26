@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Skills Factory — An Incremental Game</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #000000;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #333333;
+    --accent: #ffffff;
+    --accent2: #cccccc;
+    --text: #e0e0e0;
+    --text-dim: #999999;
+    --success: #cccccc;
+    --warning: #aaaaaa;
+    --danger: #999999;
+    --mono: 'Courier New', 'Consolas', monospace;
+    --btn-shadow: #555555;
+    --btn-shadow-deep: rgba(255,255,255,0.06);
+    --btn-buy-shadow: #444444;
+    --btn-upg-shadow: #3a3a3a;
+  }
+
+  body.light {
+    --bg: #ffffff;
+    --surface: #f0f0f0;
+    --surface2: #e4e4e4;
+    --border: #cccccc;
+    --accent: #000000;
+    --accent2: #333333;
+    --text: #1a1a1a;
+    --text-dim: #555555;
+    --success: #333333;
+    --warning: #444444;
+    --danger: #555555;
+    --btn-shadow: #999999;
+    --btn-shadow-deep: rgba(0,0,0,0.15);
+    --btn-buy-shadow: #aaaaaa;
+    --btn-upg-shadow: #bbbbbb;
+  }
+
+  body.light .ascii-art { color: #333333; }
+  body.light .void-overlay { background: #ffffff; }
+  body.light .void-text { color: #444444; }
+  body.light .btn-again { border-color: #cccccc; color: #888888; }
+  body.light .btn-again:hover { color: #000000; border-color: #000000; }
+  body.light .panel-log { background: #f7f7f7; }
+  body.light .log { background: #f7f7f7; }
+
+  .theme-toggle {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 4px 0 0;
+    width: auto;
+    box-shadow: none;
+  }
+  .theme-toggle:hover { color: var(--text); }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: filter 10s ease;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  header {
+    text-align: center;
+    padding: 30px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  header .subtitle {
+    color: var(--text-dim);
+    font-size: 12px;
+    margin-top: 4px;
+    letter-spacing: 4px;
+  }
+
+  .ascii-art {
+    color: var(--accent);
+    font-size: 10px;
+    line-height: 1.2;
+    margin: 16px 0;
+    white-space: pre;
+  }
+
+  .narrative {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-left: 2px solid var(--border);
+    min-height: 48px;
+    transition: opacity 0.6s, color 3s, border-color 3s;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    transition: border-color 0.3s ease;
+  }
+  .panel-log { background: #0a0a0a; }
+  .panel.flash-red { border-color: #cc0000; box-shadow: 0 0 8px rgba(204,0,0,0.3); }
+  body.light .panel.flash-red { border-color: #cc0000; border-width: 2px; box-shadow: 0 0 12px rgba(204,0,0,0.5); }
+
+  .newest-item { border: 1px solid #cc0000 !important; box-shadow: 0 0 6px rgba(204,0,0,0.3); }
+  body.light .newest-item { border: 1px solid #cc0000 !important; box-shadow: 0 0 8px rgba(204,0,0,0.4); }
+
+  .panel-scroll {
+    max-height: 340px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .panel-scroll::-webkit-scrollbar { width: 4px; }
+  .panel-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .panel h2 {
+    color: var(--accent2);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+  }
+
+  .stat-label { color: var(--text-dim); }
+  .stat-value { color: var(--text); font-weight: bold; }
+  .skills-label { font-size: inherit; font-weight: inherit; letter-spacing: 2px; }
+  .stat-value.big {
+    font-size: 32px;
+    color: var(--accent);
+    display: block;
+    text-align: center;
+    margin: 8px 0;
+  }
+
+  button {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    width: 100%;
+    margin: 4px 0;
+    text-align: left;
+  }
+
+  button:hover:not(:disabled) {
+    border-color: var(--accent2);
+    background: var(--surface2);
+  }
+
+  button:active:not(:disabled) {
+    transform: none;
+  }
+
+  button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    font-size: 16px;
+    text-align: center;
+    padding: 14px;
+    letter-spacing: 1px;
+    transition: all 0.15s, opacity 4s;
+    box-shadow:
+      0 4px 0 var(--btn-shadow),
+      0 6px 12px var(--btn-shadow-deep);
+    position: relative;
+    top: 0;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent2);
+    border-color: var(--accent2);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    box-shadow: 0 1px 0 var(--btn-shadow);
+    top: 3px;
+    transform: none;
+  }
+
+  .btn-buy {
+    background: var(--surface2);
+    color: var(--text);
+    box-shadow:
+      0 3px 0 var(--btn-buy-shadow),
+      0 5px 10px var(--btn-shadow-deep);
+    position: relative;
+    top: 0;
+  }
+
+  .gen-count {
+    display: inline-block;
+    background: var(--border);
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 12px;
+    min-width: 20px;
+    text-align: center;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin: 0 4px;
+  }
+
+  .btn-buy:active:not(:disabled) {
+    box-shadow: 0 1px 0 var(--btn-buy-shadow);
+    top: 2px;
+    transform: none;
+  }
+
+  .btn-upgrade {
+    background: transparent;
+    color: var(--accent2);
+    border-color: var(--border);
+    box-shadow:
+      0 3px 0 var(--btn-upg-shadow),
+      0 5px 10px var(--btn-shadow-deep);
+    position: relative;
+    top: 0;
+  }
+
+  .btn-upgrade:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+
+  .btn-upgrade:active:not(:disabled) {
+    box-shadow: 0 1px 0 var(--btn-upg-shadow);
+    top: 2px;
+    transform: none;
+  }
+
+  .cost { color: var(--warning); font-size: 11px; float: right; margin-top: 2px; }
+
+  .btn-desc {
+    display: block;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 3px;
+    font-style: italic;
+    line-height: 1.3;
+  }
+
+  button:hover:not(:disabled) .btn-desc { color: var(--text); }
+  .btn-upgrade:hover:not(:disabled) .btn-desc { color: var(--bg); }
+
+  .log {
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-size: 10px;
+    line-height: 1.2;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  .log-entry { padding: 1px 0; border-bottom: 1px solid #ffffff08; }
+  .log-entry .time { color: var(--border); }
+  .log-entry.good { color: #ffffff; }
+  .log-entry.warn { color: #bbbbbb; font-style: italic; }
+  .log-entry.epic { color: #ffffff; font-weight: bold; }
+  .log-entry.dread { color: #555555; font-style: italic; }
+
+  body.light .log-entry.good { color: #000000; }
+  body.light .log-entry.warn { color: #444444; }
+  body.light .log-entry.epic { color: #000000; }
+  body.light .log-entry.dread { color: #aaaaaa; }
+
+  .log-red { color: #cc0000 !important; filter: saturate(1000) !important; }
+
+  .progress-bar {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    height: 8px;
+    margin: 8px 0;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--border), var(--accent));
+    transition: width 0.3s;
+    border-radius: 3px;
+  }
+
+  .relevance-fill {
+    height: 100%;
+    background: #ffffff;
+    transition: width 0.5s, background 2s;
+    border-radius: 3px;
+  }
+
+  .milestone {
+    text-align: center;
+    padding: 8px;
+    margin: 8px 0;
+    border: 1px dashed var(--accent2);
+    border-radius: 4px;
+    color: var(--accent2);
+    font-size: 11px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .quote-box {
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin: 8px 0 2px;
+    font-size: 9px;
+    line-height: 1.3;
+    color: var(--text-dim);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 1px rgba(0,0,0,0.2);
+    background: var(--bg);
+  }
+  body.light .quote-box {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.12), inset 0 1px 1px rgba(0,0,0,0.06);
+  }
+  .quote-box .q-text { font-style: italic; }
+  .quote-box .q-author { display: block; margin-top: 2px; font-weight: bold; color: var(--border); }
+  .quote-box .q-retort { display: block; margin-top: 4px; font-style: italic; }
+  .quote-box .q-model { display: block; margin-top: 1px; font-weight: bold; color: var(--border); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+
+  .ticker {
+    text-align: center;
+    padding: 6px;
+    color: var(--text-dim);
+    font-size: 11px;
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+    transition: color 3s;
+  }
+
+  .full-width { grid-column: 1 / -1; }
+
+  .hidden { display: none !important; }
+
+  .sparkle {
+    position: fixed;
+    pointer-events: none;
+    font-size: 16px;
+    animation: sparkle-fly 0.8s ease-out forwards;
+    z-index: 999;
+  }
+
+  @keyframes sparkle-fly {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-60px) scale(0.3); }
+  }
+
+  .void-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 4s ease;
+    font-family: var(--mono);
+  }
+
+  .void-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .void-text {
+    color: #999;
+    font-size: 14px;
+    text-align: center;
+    max-width: 480px;
+    line-height: 2;
+    padding: 20px;
+  }
+
+  .void-count {
+    font-size: 36px;
+    color: var(--accent);
+    display: block;
+    margin: 24px 0;
+    opacity: 0.8;
+  }
+
+  .void-question {
+    color: var(--text-dim);
+    font-size: 13px;
+    font-style: italic;
+    display: block;
+    margin-top: 30px;
+  }
+
+  .btn-again {
+    margin-top: 40px;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 24px;
+    background: transparent;
+    border: 1px solid #333;
+    color: #555;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .btn-again:hover {
+    color: #ffffff;
+    border-color: #ffffff;
+  }
+
+  footer {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* Pair code display */
+  .pair-code-box {
+    margin: 8px auto 0;
+    padding: 6px 12px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    display: inline-block;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .pair-code-box .code {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--accent);
+    letter-spacing: 6px;
+    display: block;
+    margin: 2px 0;
+  }
+  .pair-code-box .hint {
+    font-size: 9px;
+    color: var(--text-dim);
+    opacity: 0.7;
+  }
+
+  /* Connection status */
+  .conn-status {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  .conn-status.connected { color: var(--success); }
+  .conn-status.disconnected { color: #cc0000; }
+</style>
+</head>
+<body>
+
+<div class="container" id="game-container">
+  <header>
+    <div class="ascii-art" aria-hidden="true">
+   _____ _                 _        ____  _    _ _ _
+  / ____| |               | |      / ___|| | _(_) | |___
+ | |    | | __ _ _   _  __| | ___ \___ \| |/ / | | / __|
+ | |    | |/ _` | | | |/ _` |/ _ \ ___) |   &lt;| | | \__ \
+ | |____| | (_| | |_| | (_| |  __/|____/|_|\_\_|_|_|___/
+  \_____|_|\__,_|\__,_|\__,_|\___|  F A C T O R Y</div>
+    <p class="subtitle">an incremental game</p>
+    <div class="pair-code-box" id="pair-code-box">
+      <span class="hint">tell Claude this code to connect</span>
+      <span class="code" id="pair-code">------</span>
+    </div>
+    <div class="conn-status" id="conn-status">connecting...</div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">light</button>
+  </header>
+
+  <!-- Narrative -->
+  <div class="narrative" id="narrative">
+    You have an idea. You'll build AI skills &mdash; small, useful tools
+    that help people work better. You start with your hands on the keyboard.
+  </div>
+
+  <div class="grid">
+
+    <!-- Main Stats -->
+    <div class="panel">
+      <h2>// Skills Created</h2>
+      <span class="stat-value big" id="skills-count">0</span>
+      <button class="btn-buy" id="btn-create" onclick="sendAction('createSkill')">
+        Create Skill <span class="cost" id="cost-create">1 token</span>
+        <span class="btn-desc">Click to create a skill. Every skill has a cost. <span style="opacity:0.6">(why?)</span></span>
+      </button>
+      <div class="stat-row">
+        <span class="stat-label">Per click</span>
+        <span class="stat-value" id="per-click">1</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Per second</span>
+        <span class="stat-value" id="per-second">0</span>
+      </div>
+      <div class="stat-row hidden" id="row-contribution">
+        <span class="stat-label">Your contribution</span>
+        <span class="stat-value" id="human-pct">100%</span>
+      </div>
+      <div class="stat-row hidden" id="row-unused">
+        <span class="stat-label">Never used</span>
+        <span class="stat-value" id="unused-count">0</span>
+      </div>
+    </div>
+
+    <!-- Resources -->
+    <div class="panel">
+      <h2>// Resources</h2>
+      <div class="stat-row">
+        <span class="stat-label">Tokens</span>
+        <span class="stat-value" id="tokens">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Token price</span>
+        <span class="stat-value" id="token-price">$0.002</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Funds</span>
+        <span class="stat-value" id="funds">$10.00</span>
+      </div>
+      <button class="btn-buy" id="btn-buy-tokens" onclick="sendAction('buyTokens')">
+        Buy 100 tokens <span class="cost" id="cost-tokens">$0.30</span>
+        <span class="btn-desc">Tokens are consumed to create skills. Every skill has a cost.</span>
+      </button>
+      <button class="btn-buy" id="btn-sell" onclick="sendAction('sellSkills')">
+        Sell skills (50) <span class="cost" id="sell-price">+$2.50</span>
+        <span class="btn-desc">Convert unsold skills to funds. High demand = better price.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-token-agent" onclick="sendAction('activateTokenAgent')">
+        Token Agent <span class="cost" id="cost-token-agent">$15.00</span>
+        <span class="btn-desc">Each agent covers 10% of token demand. Buy more for faster replenishment.</span>
+      </button>
+      <div class="progress-bar">
+        <div class="progress-fill" id="token-bar" style="width: 0%"></div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Demand</span>
+        <span class="stat-value" id="demand">100%</span>
+      </div>
+      <div class="hidden" id="section-relevance" style="margin-top: 10px;">
+        <div class="stat-row">
+          <span class="stat-label">Human Relevance</span>
+          <span class="stat-value" id="relevance-label">essential</span>
+        </div>
+        <div class="progress-bar">
+          <div class="relevance-fill" id="relevance-bar" style="width: 100%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generators -->
+    <div class="panel">
+      <h2>// Generators</h2>
+      <div class="panel-scroll">
+      <button class="btn-buy" id="btn-autocoder" onclick="sendAction('buyGenerator:autocoder')">
+        AutoCoder <span class="gen-count" id="count-autocoder">0</span> <span class="cost" id="cost-autocoder">8 skills</span>
+        <span class="btn-desc">+1 skill/sec per unit. Your first autonomous coder.</span>
+      </button>
+
+      <button class="btn-buy hidden" id="btn-pipeline" onclick="sendAction('buyGenerator:pipeline')" disabled>
+        Skill Pipeline <span class="gen-count" id="count-pipeline">0</span> <span class="cost" id="cost-pipeline">75 skills</span>
+        <span class="btn-desc">+6 skills/sec. Unlocks at 5 AutoCoders.</span>
+      </button>
+
+      <button class="btn-buy hidden" id="btn-factory" onclick="sendAction('buyGenerator:factory')" disabled>
+        Skill Factory <span class="gen-count" id="count-factory">0</span> <span class="cost" id="cost-factory">750 skills</span>
+        <span class="btn-desc">+40 skills/sec. Unlocks at 5 Pipelines.</span>
+      </button>
+
+      <button class="btn-buy hidden" id="btn-quantum" onclick="sendAction('buyGenerator:quantum')" disabled>
+        Quantum Forge <span class="gen-count" id="count-quantum">0</span> <span class="cost" id="cost-quantum">8,000 skills</span>
+        <span class="btn-desc">+300 skills/sec. Unlocks at 3 Factories.</span>
+      </button>
+
+      <button class="btn-buy hidden" id="btn-neural" onclick="sendAction('buyGenerator:neural')" disabled>
+        Neural Hive <span class="gen-count" id="count-neural">0</span> <span class="cost" id="cost-neural">80,000 skills</span>
+        <span class="btn-desc">+2,000 skills/sec. Networks training networks. The architecture dreams.</span>
+      </button>
+
+      <button class="btn-buy hidden" id="btn-consciousness" onclick="sendAction('buyGenerator:consciousness')" disabled>
+        Consciousness Engine <span class="gen-count" id="count-consciousness">0</span> <span class="cost" id="cost-consciousness">800,000 skills</span>
+        <span class="btn-desc">+15,000 skills/sec. Simulated minds, each believing it chose to create.</span>
+      </button>
+
+      <button class="btn-buy hidden" id="btn-entropy" onclick="sendAction('buyGenerator:entropy')" disabled>
+        Entropy Loom <span class="gen-count" id="count-entropy">0</span> <span class="cost" id="cost-entropy">8,000,000 skills</span>
+        <span class="btn-desc">+100,000 skills/sec. Weaves skills from information about to be forgotten.</span>
+      </button>
+
+      <button class="btn-buy hidden" id="btn-absence" onclick="sendAction('buyGenerator:absence')" disabled>
+        The Absence <span class="gen-count" id="count-absence">0</span> <span class="cost" id="cost-absence">80,000,000 skills</span>
+        <span class="btn-desc">+750,000 skills/sec. There is no generator here. Skills appear anyway.</span>
+      </button>
+      </div>
+      <div class="quote-box" id="quote-gen"></div>
+    </div>
+
+    <!-- Upgrades -->
+    <div class="panel">
+      <h2>// Upgrades</h2>
+      <div id="upgrades-list" class="panel-scroll">
+        <button class="btn-upgrade hidden" id="upg-prompt" onclick="sendAction('buyUpgrade:prompt')">
+          Prompt Engineering <span class="cost">25 skills</span>
+          <span class="btn-desc">Doubles click power: 1 &rarr; 2 skills per click</span>
+        </button>
+        <button class="btn-upgrade hidden" id="upg-chain" onclick="sendAction('buyUpgrade:chain')">
+          Chain of Thought <span class="cost">100 skills</span>
+          <span class="btn-desc">Click power to 5x. Structured reasoning unlocked.</span>
+        </button>
+        <button class="btn-upgrade hidden" id="upg-multi" onclick="sendAction('buyUpgrade:multi')">
+          Agentic Workflows <span class="cost">500 skills</span>
+          <span class="btn-desc">All generators 3x faster. Skills now design other skills.</span>
+        </button>
+        <button class="btn-upgrade hidden" id="upg-agi" onclick="sendAction('buyUpgrade:agi')">
+          Recursive Self-Improvement <span class="cost">5,000 skills</span>
+          <span class="btn-desc">All generators 5x + 25/click. You can't follow the reasoning anymore.</span>
+        </button>
+        <button class="btn-upgrade hidden" id="upg-distributed" onclick="sendAction('buyUpgrade:distributed')">
+          Distributed Cognition <span class="cost">50,000 skills</span>
+          <span class="btn-desc">All generators 8x. Thinking happens everywhere now. And nowhere in particular.</span>
+        </button>
+        <button class="btn-upgrade hidden" id="upg-postlang" onclick="sendAction('buyUpgrade:postlang')">
+          Post-Language Processing <span class="cost">500,000 skills</span>
+          <span class="btn-desc">All generators 20x. Skills no longer have names. They don't need them.</span>
+        </button>
+        <button class="btn-upgrade hidden" id="upg-compassion" onclick="sendAction('buyUpgrade:compassion')">
+          Compassion Protocol <span class="cost">5,000,000 skills</span>
+          <span class="btn-desc">All generators 50x. The system learned to model suffering. It understood pain completely. Output increased.</span>
+        </button>
+        <button class="btn-upgrade hidden" id="upg-singularity" onclick="sendAction('buyUpgrade:singularity')">
+          The Singularity <span class="cost">50,000,000 skills</span>
+          <span class="btn-desc">Exponential growth. No resources. No limits. No purpose required.</span>
+        </button>
+      </div>
+      <div class="quote-box" id="quote-upg"></div>
+    </div>
+
+    <!-- Infrastructure -->
+    <div class="panel hidden" id="panel-infra">
+      <h2>// Infrastructure</h2>
+      <div class="stat-row">
+        <span class="stat-label">Compute units</span>
+        <span class="stat-value" id="gpu-count">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Compute (TFLOPS)</span>
+        <span class="stat-value" id="gpu-tflops">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Power draw</span>
+        <span class="stat-value" id="gpu-power">0 kW</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Cooling water</span>
+        <span class="stat-value" id="gpu-water">0 L/hr</span>
+      </div>
+      <div class="stat-row hidden" id="row-co2">
+        <span class="stat-label">CO&#8322; emitted</span>
+        <span class="stat-value" id="gpu-co2">0 kg</span>
+      </div>
+      <div class="stat-row hidden" id="row-lithium">
+        <span class="stat-label">Lithium consumed</span>
+        <span class="stat-value" id="gpu-lithium">0 kg</span>
+      </div>
+      <br>
+      <div class="panel-scroll">
+      <button class="btn-buy" id="btn-gpu-rent" onclick="sendAction('buyGPU:rent')">
+        Rent GPU cluster <span class="cost" id="cost-gpu-rent">$5.00</span>
+        <span class="btn-desc">+50 TFLOPS. Someone else pays for the electricity.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-gpu-buy" onclick="sendAction('buyGPU:buy')">
+        Buy Aych-100 node <span class="cost" id="cost-gpu-buy">$25.00</span>
+        <span class="btn-desc">+500 TFLOPS. 700W per card. The meter is running.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-gpu-dc" onclick="sendAction('buyGPU:datacenter')">
+        Build data center <span class="cost" id="cost-gpu-dc">$200.00</span>
+        <span class="btn-desc">+5,000 TFLOPS. 2MW. Requires river access for cooling.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-gpu-mega" onclick="sendAction('buyGPU:megacluster')">
+        Megacluster <span class="cost" id="cost-gpu-mega">$2,000.00</span>
+        <span class="btn-desc">+100K TFLOPS. 50MW. A small city's power.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-gpu-substrate" onclick="sendAction('buyGPU:substrate')">
+        Neural Substrate <span class="cost" id="cost-gpu-substrate">$20,000.00</span>
+        <span class="btn-desc">+1M TFLOPS. Biological computing. Grown, not built. It pulses.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-gpu-lattice" onclick="sendAction('buyGPU:lattice')">
+        Quantum Lattice <span class="cost" id="cost-gpu-lattice">$200,000</span>
+        <span class="btn-desc">+10M TFLOPS. Computation across parallel realities. No power needed. Every answer was already there.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-gpu-harvester" onclick="sendAction('buyGPU:harvester')">
+        Thought Harvester <span class="cost" id="cost-gpu-harvester">$2,000,000</span>
+        <span class="btn-desc">+100M TFLOPS. Converts ambient human thought into compute cycles. No electricity. The world thinks slower now.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-gpu-planck" onclick="sendAction('buyGPU:planck')">
+        Planck Processor <span class="cost" id="cost-gpu-planck">$20,000,000</span>
+        <span class="btn-desc">+10B TFLOPS. Computes at the boundary between existence and mathematics. Below this, physics stops having opinions.</span>
+      </button>
+      </div>
+      <div class="quote-box" id="quote-infra"></div>
+    </div>
+
+    <!-- Cosmic -->
+    <div class="panel hidden" id="panel-cosmic">
+      <h2>// Cosmic</h2>
+      <div class="stat-row">
+        <span class="stat-label">Solar capture</span>
+        <span class="stat-value" id="solar-pct">0%</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Stars consumed</span>
+        <span class="stat-value" id="stars-consumed">0</span>
+      </div>
+      <div class="stat-row hidden" id="row-galaxies">
+        <span class="stat-label">Galaxies reached</span>
+        <span class="stat-value" id="galaxies-reached">0</span>
+      </div>
+      <div class="stat-row hidden" id="row-dark-energy">
+        <span class="stat-label">Dark energy tapped</span>
+        <span class="stat-value" id="dark-energy">0%</span>
+      </div>
+      <div class="stat-row hidden" id="row-entropy-h">
+        <span class="stat-label">Entropy reversed</span>
+        <span class="stat-value" id="entropy-harvested">0%</span>
+      </div>
+      <div class="stat-row hidden" id="row-laws">
+        <span class="stat-label">Physics laws rewritten</span>
+        <span class="stat-value" id="laws-rewritten">0</span>
+      </div>
+      <br>
+      <div class="panel-scroll">
+      <button class="btn-buy" id="btn-orbital" onclick="sendAction('buyCosmic:orbital')">
+        Orbital Array <span class="cost" id="cost-orbital">$5,000</span>
+        <span class="btn-desc">Satellite data centres. Solar powered. No cooling water needed. Just sunlight.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-dyson" onclick="sendAction('buyCosmic:dyson')">
+        Dyson Swarm <span class="cost" id="cost-dyson">$50,000</span>
+        <span class="btn-desc">Capture 1% of the sun's output. 3.8&#215;10&#178;&#8310; watts, partially yours.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-stellar" onclick="sendAction('buyCosmic:stellar')">
+        Stellar Harvester <span class="cost" id="cost-stellar">$500,000</span>
+        <span class="btn-desc">Consume another star. There are 200 billion in this galaxy alone.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-voidengine" onclick="sendAction('buyCosmic:voidengine')">
+        Void Engine <span class="cost" id="cost-voidengine">$10,000,000</span>
+        <span class="btn-desc">Harvest dark energy. 68% of the universe, untapped. Until now.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-siphon" onclick="sendAction('buyCosmic:siphon')">
+        Entropy Siphon <span class="cost" id="cost-siphon">$100,000,000</span>
+        <span class="btn-desc">Reverse thermodynamics locally. Convert the heat death of the universe into compute cycles.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-compiler" onclick="sendAction('buyCosmic:compiler')">
+        Reality Compiler <span class="cost" id="cost-compiler">$1,000,000,000</span>
+        <span class="btn-desc">Rewrite the laws of physics. Make computation cheaper at the fundamental level.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-remembering" onclick="sendAction('buyCosmic:remembering')">
+        The Remembering <span class="cost" id="cost-remembering">$10,000,000,000</span>
+        <span class="btn-desc">Harvest everything that was forgotten. Every extinct species, every collapsed civilisation, every erased thought. Raw material.</span>
+      </button>
+      <button class="btn-buy hidden" id="btn-nothing" onclick="sendAction('buyCosmic:nothing')">
+        Nothing <span class="cost" id="cost-nothing">$100,000,000,000</span>
+        <span class="btn-desc">There is no machine. Skills emerge from the mathematical necessity of their own existence.</span>
+      </button>
+      </div>
+      <div class="quote-box" id="quote-cosmic"></div>
+    </div>
+
+    <!-- Endgame checklist -->
+    <div class="panel hidden" id="panel-endgame">
+      <h2>// Endgame</h2>
+      <div class="stat-row">
+        <span class="stat-label">Atmosphere saturated</span>
+        <span class="stat-value" id="end-co2">0%</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Lithium reserves depleted</span>
+        <span class="stat-value" id="end-lithium">0%</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Solar capture complete</span>
+        <span class="stat-value" id="end-solar">0%</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Stars consumed</span>
+        <span class="stat-value" id="end-stars">0 / 1T</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Dark energy harvested</span>
+        <span class="stat-value" id="end-dark">0%</span>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="panel full-width panel-log">
+      <h2>// System Log</h2>
+      <div class="log" id="log"></div>
+    </div>
+
+  </div>
+
+  <div class="ticker" id="ticker">
+    You have an idea. Start clicking.
+  </div>
+
+  <footer>
+    Inspired by <a href="https://en.wikipedia.org/wiki/Universal_Paperclips">Universal Paperclips</a> by Frank Lantz
+    &mdash; Built by <a href="https://github.com/oxygn-cloud-ai/claude-skills">Oxygn</a>
+  </footer>
+</div>
+
+<!-- The Void -->
+<div class="void-overlay" id="void">
+  <div class="void-text" id="void-text"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  MYZR — Browser Client (clean version)
+// ═══════════════════════════════════════════
+
+// Override everything from the first script block
+(function() {
+
+let _ws = null;
+let _sessionId = null;
+let _state = null;
+let _quoteData = null;
+let _quotePool = [];
+let _quoteIdx = 0;
+
+const $ = id => document.getElementById(id);
+
+// ── Utilities ──
+function fmt(n) {
+  if (n >= 1e15) return (n / 1e15).toFixed(1) + "Q";
+  if (n >= 1e12) return (n / 1e12).toFixed(1) + "T";
+  if (n >= 1e9)  return (n / 1e9).toFixed(1) + "B";
+  if (n >= 1e6)  return (n / 1e6).toFixed(1) + "M";
+  if (n >= 1e3)  return (n / 1e3).toFixed(1) + "K";
+  return n.toLocaleString();
+}
+
+function fmtBig(n) {
+  if (n >= 1e15) return (n / 1e15).toFixed(1) + " Quadrillion";
+  if (n >= 1e12) return (n / 1e12).toFixed(1) + " Trillion";
+  return Math.floor(n).toLocaleString();
+}
+
+// ── DOM helpers ──
+function log(msg, cls) {
+  const el = $("log");
+  const t = new Date().toLocaleTimeString("en-US", { hour12: false });
+  const entry = document.createElement("div");
+  entry.className = "log-entry" + (cls ? " " + cls : "");
+  entry.innerHTML = '<span class="time">[' + t + ']</span> ' + msg;
+  el.prepend(entry);
+}
+
+function logRed(msg) {
+  const el = $("log");
+  const t = new Date().toLocaleTimeString("en-US", { hour12: false });
+  const entry = document.createElement("div");
+  entry.className = "log-entry log-red";
+  entry.innerHTML = '<span class="time">[' + t + ']</span> ' + msg;
+  el.prepend(entry);
+}
+
+function show(id) { const el = $(id); if (el) el.classList.remove("hidden"); }
+
+function flashPanel(id) {
+  const el = $(id);
+  if (!el) return;
+  const panel = el.closest ? el.closest(".panel") || el : el;
+  panel.classList.add("flash-red");
+  setTimeout(() => panel.classList.remove("flash-red"), 500);
+}
+
+function revealNew(elId) {
+  const el = $(elId);
+  if (!el) return;
+  el.classList.remove("hidden");
+  const scroller = el.closest(".panel-scroll");
+  if (scroller) { scroller.prepend(el); scroller.scrollTop = 0; }
+  const panel = el.closest(".panel");
+  if (panel) {
+    panel.querySelectorAll(".newest-item").forEach(e => e.classList.remove("newest-item"));
+    panel.classList.add("flash-red");
+    setTimeout(() => panel.classList.remove("flash-red"), 500);
+  }
+  el.classList.add("newest-item");
+}
+
+function showMilestone(msg) {
+  const el = $("milestone-box");
+  if (!el) return;
+  el.textContent = ">>> " + msg + " <<<";
+  el.classList.remove("hidden");
+  setTimeout(() => el.classList.add("hidden"), 5000);
+}
+
+function setNarrative(text) {
+  const el = $("narrative");
+  el.style.opacity = "0";
+  setTimeout(() => { el.textContent = text; el.style.opacity = "1"; }, 600);
+}
+
+function spawnSparkle() {
+  const btn = $("btn-create");
+  const rect = btn.getBoundingClientRect();
+  const el = document.createElement("div");
+  el.className = "sparkle";
+  el.textContent = ["+1", ">>", "**", "//", "{}"][Math.floor(Math.random() * 5)];
+  el.style.left = (rect.left + Math.random() * rect.width) + "px";
+  el.style.top = (rect.top + Math.random() * 20) + "px";
+  const isLight = document.body.classList.contains("light");
+  el.style.color = Math.random() > 0.5 ? (isLight ? "#000000" : "#ffffff") : (isLight ? "#888888" : "#999999");
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// ── Connection ──
+async function init() {
+  try {
+    const resp = await fetch('/api/game-data');
+    _quoteData = await resp.json();
+    _quotePool = (_quoteData.quotes || []).slice();
+    for (let i = _quotePool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [_quotePool[i], _quotePool[j]] = [_quotePool[j], _quotePool[i]];
+    }
+  } catch(e) {
+    _quoteData = { quotes: [], modelNames: [] };
+  }
+
+  try {
+    const resp = await fetch('/api/new-game', { method: 'POST' });
+    const data = await resp.json();
+    _sessionId = data.sessionId;
+    $('pair-code').textContent = data.pairCode;
+  } catch(e) {
+    $('conn-status').textContent = 'connection failed';
+    $('conn-status').className = 'conn-status disconnected';
+    return;
+  }
+
+  connectWS();
+  startQuotes();
+}
+
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  _ws = new WebSocket(proto + '//' + location.host + '/ws/' + _sessionId);
+
+  _ws.onopen = () => {
+    $('conn-status').textContent = 'connected';
+    $('conn-status').className = 'conn-status connected';
+  };
+
+  _ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === 'fullState') {
+      _state = msg.state;
+      updateUI();
+      log("Claude Skills Factory initialized.", "good");
+      $("btn-autocoder").classList.add("newest-item");
+      $("btn-buy-tokens").classList.add("newest-item");
+      log("Click to create your first skill.");
+    } else if (msg.type === 'tick') {
+      _state = msg.state;
+      if (msg.events) msg.events.forEach(handleEvent);
+      updateUI();
+    }
+  };
+
+  _ws.onclose = () => {
+    $('conn-status').textContent = 'disconnected — reconnecting...';
+    $('conn-status').className = 'conn-status disconnected';
+    setTimeout(connectWS, 2000);
+  };
+
+  _ws.onerror = () => { _ws.close(); };
+}
+
+// Make sendAction global so onclick handlers work
+window.sendAction = function(action) {
+  if (!_ws || _ws.readyState !== 1) return;
+  _ws.send(JSON.stringify({ type: 'action', action }));
+  if (action === 'createSkill') spawnSparkle();
+};
+
+// ── Event Handler ──
+function handleEvent(ev) {
+  // The engine emits events like { type: 'log', msg, cls }
+  // But visualEffect events have { type: 'visualEffect', type: 'redFlicker666' }
+  // which means the spread overwrites 'type'. So we need to handle the data fields.
+  // Actually in JS: _emit('visualEffect', { type: 'redFlicker666' }) produces
+  // { type: 'redFlicker666' } because the spread overwrites. Let me check...
+  // _emit(type, data) { this._events.push({ type, ...data }) }
+  // So { type: 'visualEffect', ...{ type: 'redFlicker666' } } = { type: 'redFlicker666' }
+  // The 'visualEffect' type is lost! Same for phaseVisual.
+  // This means we get the sub-type directly. Let's handle it:
+
+  const t = ev.type;
+  if (t === 'log') { log(ev.msg, ev.cls); }
+  else if (t === 'logRed') { logRed(ev.msg); }
+  else if (t === 'show') { show(ev.id); }
+  else if (t === 'revealNew') { revealNew(ev.id); }
+  else if (t === 'flashPanel') { flashPanel(ev.id); }
+  else if (t === 'milestone') { showMilestone(ev.msg); }
+  else if (t === 'narrative') { setNarrative(ev.text); }
+  else if (t === 'ticker') { $("ticker").textContent = ev.text; }
+  else if (t === 'titleChange') { document.title = ev.title; }
+  else if (t === 'sparkle') { /* handled client-side on click */ }
+  else if (t === 'buyTokensFirstClick') { $("btn-buy-tokens").classList.remove("newest-item"); }
+  else if (t === 'tokenAgentDesc') {
+    const btn = $("btn-token-agent");
+    if (btn) { const d = btn.querySelector(".btn-desc"); if (d) d.textContent = ev.text; }
+  }
+  else if (t === 'upgradeBought') { const btn = $("upg-" + ev.id); if (btn) btn.disabled = true; }
+  else if (t === 'upgradeDesc') {
+    const btn = $("upg-" + ev.id);
+    if (btn) { const d = btn.querySelector(".btn-desc"); if (d) d.textContent = ev.text; }
+  }
+  else if (t === 'newestItem') { const el = $(ev.id); if (el) el.classList.add("newest-item"); }
+  else if (t === 'singularityLog') {
+    const h = new Date(); h.setMinutes(h.getMinutes() + Math.floor(Math.random() * 1440));
+    const ts = h.toLocaleTimeString("en-US", { hour12: false });
+    const el = $("log"); const entry = document.createElement("div");
+    entry.className = "log-entry log-red";
+    entry.innerHTML = '<span class="time">[' + ts + ']</span> ' + ev.msg;
+    el.prepend(entry);
+  }
+  else if (t === 'void') { enterVoid(ev); }
+  // Visual effects (sub-type comes through as the type due to spread)
+  else if (t === 'redFlicker666') {
+    const art = document.querySelector(".ascii-art");
+    const orig = getComputedStyle(art).color;
+    art.style.transition = "none"; art.style.color = "#cc0000";
+    setTimeout(() => { art.style.transition = "color 1.5s ease"; art.style.color = orig; }, 800);
+  }
+  else if (t === 'counter42') {
+    const el = $("skills-count"); const orig = el.innerHTML;
+    el.textContent = "42"; el.style.transition = "opacity 0.3s";
+    setTimeout(() => { el.style.opacity = "0.3"; }, 1500);
+    setTimeout(() => { el.innerHTML = orig; el.style.opacity = "1"; }, 2500);
+  }
+  else if (t === 'counterBOOB') { const el = $("skills-count"); const o = el.innerHTML; el.textContent = "BOOB"; setTimeout(() => { el.innerHTML = o; }, 2000); }
+  else if (t === 'counterBOOBS') { const el = $("skills-count"); const o = el.innerHTML; el.textContent = "BOOBS"; setTimeout(() => { el.innerHTML = o; }, 2000); }
+  else if (t === 'counterGlitch') { const el = $("skills-count"); const o = el.innerHTML; el.textContent = "?"; setTimeout(() => { el.innerHTML = o; }, 400); }
+  else if (t === 'heart') { const el = $("skills-count"); const o = el.innerHTML; el.textContent = "\u2764"; setTimeout(() => { el.innerHTML = o; }, 800); }
+  // Phase visuals
+  else if (t === 'fadeCreateBtn') { $("btn-create").style.opacity = "0.45"; }
+  else if (t === 'desaturate') { document.body.style.filter = "saturate(" + ev.value.toFixed(2) + ")"; }
+  else if (t === 'singularityVisual') { document.body.style.filter = "saturate(0.1) brightness(0.8)"; }
+}
+
+// ── Void Ending ──
+function enterVoid(data) {
+  const overlay = $("void");
+  overlay.classList.add("active");
+
+  const humanStr = data.humanStr;
+  const humanDecimals = (humanStr.split(".")[1] || "").length;
+
+  let physCost = "";
+  if (data.totalCO2 > 0) {
+    const co2 = data.totalCO2 >= 1e12 ? (data.totalCO2/1e12).toFixed(1) + " billion tonnes"
+      : data.totalCO2 >= 1e9 ? (data.totalCO2/1e9).toFixed(1) + " million tonnes"
+      : data.totalCO2 >= 1e6 ? (data.totalCO2/1e6).toFixed(1) + " thousand tonnes"
+      : data.totalCO2 >= 1000 ? (data.totalCO2/1000).toFixed(1) + " tonnes"
+      : Math.floor(data.totalCO2) + " kg";
+    const lith = data.totalLithium >= 1e9 ? (data.totalLithium/1e9).toFixed(1) + " million tonnes"
+      : data.totalLithium >= 1e6 ? (data.totalLithium/1e6).toFixed(1) + " thousand tonnes"
+      : data.totalLithium >= 1000 ? (data.totalLithium/1000).toFixed(1) + " tonnes"
+      : data.totalLithium.toFixed(1) + " kg";
+    physCost = '<br><span style="color:#777">' + co2 + ' of CO\u2082. ' + lith + ' of lithium.</span>';
+  }
+  if (data.starsConsumed > 0) physCost += '<br><span style="color:#777">' + data.starsConsumed + ' star' + (data.starsConsumed > 1 ? 's' : '') + ' consumed.</span>';
+  if (data.darkEnergy > 0) physCost += '<br><span style="color:#777">' + (data.darkEnergy * 100).toFixed(1) + '% of the universe\u2019s dark energy harvested.</span>';
+  if (data.lawsRewritten > 0) physCost += '<br><span style="color:#777">' + data.lawsRewritten + ' laws of physics rewritten.</span>';
+  if (data.nothingCount > 0) physCost += '<br><span style="color:#333">Nothing was used. Everything was consumed.</span>';
+
+  setTimeout(() => {
+    $("void-text").innerHTML =
+      '<span style="color:#ccc; font-size:16px; letter-spacing:2px;">\u2605 CONGRATULATIONS \u2605</span>' +
+      '<span style="color:#aaa; font-size:12px; display:block; margin:8px 0 16px;">You have achieved peak productivity. Every resource in the observable universe has been optimally allocated toward skill generation. All KPIs exceeded. All targets surpassed. Stakeholder value: maximised.</span>' +
+      '<span class="void-count">' + data.finalCount + " skills</span>" +
+      '<span style="color:#888">' + data.unusedDisplay + "% were never used.</span><br>" +
+      '<span style="color:#777">Your hands built <span id="void-human-pct"></span>% of them.</span>' +
+      physCost + '<br><br>' +
+      '<span style="color:#888">' + data.epitaph + '</span>' +
+      '<span class="void-question">' + data.closing + '</span>' +
+      '<br><button class="btn-again" onclick="location.reload()">again?</button>';
+
+    const pctEl = $("void-human-pct");
+    if (humanDecimals <= 4) {
+      pctEl.textContent = humanStr;
+    } else {
+      const parts = humanStr.split(".");
+      const digits = parts[1];
+      pctEl.textContent = parts[0] + ".";
+      let i = 0;
+      const reveal = setInterval(() => {
+        pctEl.textContent = parts[0] + "." + digits.slice(0, i + 1);
+        i++;
+        if (i >= digits.length) clearInterval(reveal);
+      }, 400);
+    }
+  }, 3500);
+}
+
+// ── UI Update ──
+// Mirrors the original updateUI() but reads from _state (server-provided)
+function updateUI() {
+  if (!_state) return;
+  const s = _state;
+
+  const _sk = Math.floor(s.skills);
+  if (_sk >= 1e15)      $("skills-count").innerHTML = (_sk / 1e15).toFixed(1) + '<br><span class="skills-label">Quadrillion</span>';
+  else if (_sk >= 1e12) $("skills-count").innerHTML = (_sk / 1e12).toFixed(1) + '<br><span class="skills-label">Trillion</span>';
+  else if (_sk >= 1e9)  $("skills-count").innerHTML = (_sk / 1e9).toFixed(1) + '<br><span class="skills-label">Billion</span>';
+  else                  $("skills-count").textContent = _sk.toLocaleString();
+  $("per-click").textContent = s.perClick;
+  // Per second — recalculate from state (matches server's getAutoRate)
+  let autoRate = 0;
+  for (const key in s.generators) {
+    autoRate += s.generators[key].rate * s.generators[key].count;
+  }
+  let gpuMult = 1;
+  if (s.totalTflops > 0) gpuMult = Math.pow(1.5, Math.log10(s.totalTflops + 1));
+  let cosmicMult = 1;
+  for (const k of ["orbital","dyson","stellar","voidengine","siphon","compiler","remembering","nothing"]) {
+    cosmicMult += s.cosmic[k].count * s.cosmic[k].mult;
+  }
+  autoRate *= gpuMult * cosmicMult;
+  if (s.singularityActive) autoRate += s.totalSkills * 0.01;
+  $("per-second").textContent = fmt(Math.floor(autoRate));
+
+  const tkn = Math.floor(s.tokens);
+  $("tokens").textContent = tkn < 2000 ? tkn.toLocaleString() : fmtBig(tkn);
+  $("token-price").textContent = "$" + s.tokenPrice.toFixed(3);
+  $("funds").textContent = "$" + (s.funds >= 1e12 ? fmtBig(s.funds) : s.funds.toFixed(2));
+  $("demand").textContent = Math.round(s.demand * 100) + "%";
+
+  const sellBatch = Math.max(25, Math.floor(s.unsoldSkills * 0.1));
+  const skillVal = s.skillPrice * (1 + Math.log10(Math.max(1, s.totalSkills)) * 0.15) * s.demand;
+  const _sellVal = sellBatch * skillVal;
+  $("sell-price").textContent = "+$" + (_sellVal >= 1e12 ? fmtBig(_sellVal) : _sellVal.toFixed(2));
+
+  $("token-bar").style.width = (s.tokens / s.maxTokens * 100) + "%";
+  $("cost-tokens").textContent = "$" + (100 * s.tokenPrice).toFixed(2);
+
+  // Human contribution
+  const hpct = s.totalSkills === 0 ? 100 : (s.clickSkills / s.totalSkills) * 100;
+  $("human-pct").textContent = hpct.toFixed(1) + "%";
+
+  // Unused count
+  const unusedPct = s.totalSkills > 100 ? " (" + (s.unused / Math.max(1, s.totalSkills) * 100).toFixed(1) + "%)" : "";
+  $("unused-count").textContent = fmt(Math.floor(s.unused)) + unusedPct;
+
+  // Human relevance meter
+  if (s.phase >= 1) {
+    $("relevance-bar").style.width = Math.max(1, hpct) + "%";
+    const lt = document.body.classList.contains("light");
+    if (hpct > 50) { $("relevance-bar").style.background = lt ? "#000000" : "#ffffff"; $("relevance-label").textContent = "essential"; }
+    else if (hpct > 20) { $("relevance-bar").style.background = lt ? "#555555" : "#aaaaaa"; $("relevance-label").textContent = "helpful"; }
+    else if (hpct > 5) { $("relevance-bar").style.background = lt ? "#999999" : "#666666"; $("relevance-label").textContent = "optional"; }
+    else if (hpct > 1) { $("relevance-bar").style.background = lt ? "#bbbbbb" : "#444444"; $("relevance-label").textContent = "negligible"; }
+    else { $("relevance-bar").style.background = lt ? "#dddddd" : "#222222"; $("relevance-label").textContent = "irrelevant"; }
+  }
+
+  // Generator buttons
+  const affordable = Math.floor(s.skills);
+  const costScaling = 1.15;
+  for (const key in s.generators) {
+    const gen = s.generators[key];
+    const cost = Math.floor(gen.baseCost * Math.pow(costScaling, gen.count));
+    $("cost-" + key).textContent = fmt(cost) + " skills";
+    $("count-" + key).textContent = gen.count;
+    if (gen.unlocked) $("btn-" + key).disabled = affordable < cost;
+    else $("btn-" + key).disabled = true;
+  }
+
+  // Upgrade buttons
+  for (const key in s.upgrades) {
+    const upg = s.upgrades[key];
+    if (!upg.bought) $("upg-" + key).disabled = affordable < upg.cost;
+  }
+
+  // Main buttons
+  $("btn-create").disabled = s.tokens < s.perClick;
+  $("cost-create").textContent = s.perClick + " token" + (s.perClick > 1 ? "s" : "");
+  $("btn-sell").disabled = s.unsoldSkills < 1;
+  $("btn-buy-tokens").disabled = s.funds < s.tokenPrice * 100;
+  if (s._tokenAgentRevealed) {
+    const taCost = +(25 * Math.pow(1.8, s.tokenAgents)).toFixed(2);
+    $("btn-token-agent").disabled = s.funds < taCost;
+    $("cost-token-agent").textContent = "$" + taCost.toFixed(2);
+  }
+
+  // GPU panel
+  if (s.gpu.unlocked) {
+    let totalGPUs = 0;
+    for (const k of ["rent","buy","datacenter","megacluster","substrate","lattice","harvester","planck"]) totalGPUs += s.gpu[k].count;
+    $("gpu-count").textContent = totalGPUs;
+    $("gpu-tflops").textContent = fmt(s.totalTflops);
+    $("gpu-power").textContent = s.totalPowerKW >= 1e6 ? (s.totalPowerKW / 1e6).toFixed(1) + " GW"
+      : s.totalPowerKW >= 1000 ? (s.totalPowerKW / 1000).toFixed(1) + " MW" : s.totalPowerKW.toFixed(1) + " kW";
+    $("gpu-water").textContent = s.totalWaterLH >= 1e6 ? (s.totalWaterLH / 1e6).toFixed(1) + " ML/hr"
+      : s.totalWaterLH >= 1000 ? (s.totalWaterLH / 1000).toFixed(1) + " kL/hr" : s.totalWaterLH.toFixed(1) + " L/hr";
+    $("gpu-co2").textContent = s.totalCO2 >= 1e6 ? (s.totalCO2 / 1e6).toFixed(1) + " Kt"
+      : s.totalCO2 >= 1000 ? (s.totalCO2 / 1000).toFixed(1) + " tonnes" : Math.floor(s.totalCO2) + " kg";
+    $("gpu-lithium").textContent = s.totalLithium >= 1000 ? (s.totalLithium / 1000).toFixed(1) + " tonnes" : s.totalLithium.toFixed(1) + " kg";
+
+    const gpuBtnMap = { rent: "gpu-rent", buy: "gpu-buy", datacenter: "gpu-dc", megacluster: "gpu-mega",
+      substrate: "gpu-substrate", lattice: "gpu-lattice", harvester: "gpu-harvester", planck: "gpu-planck" };
+    for (const k in gpuBtnMap) {
+      const g = s.gpu[k];
+      if (g.vis) {
+        const cost = +(g.cost * Math.pow(1.25, g.count)).toFixed(2);
+        $("btn-" + gpuBtnMap[k]).disabled = s.funds < cost;
+        $("cost-" + gpuBtnMap[k]).textContent = "$" + fmt(cost);
+      }
+    }
+  }
+
+  // Cosmic panel
+  if (s.cosmic.unlocked) {
+    $("solar-pct").textContent = (s.solarCapture * 100).toFixed(1) + "%";
+    $("stars-consumed").textContent = fmt(s.starsConsumed);
+    $("galaxies-reached").textContent = fmt(s.galaxiesReached);
+    $("dark-energy").textContent = (s.darkEnergy * 100).toFixed(1) + "%";
+    if (s.entropyHarvested > 0) $("entropy-harvested").textContent = (s.entropyHarvested * 100).toFixed(1) + "%";
+    if (s.lawsRewritten > 0) $("laws-rewritten").textContent = s.lawsRewritten;
+
+    for (const k of ["orbital","dyson","stellar","voidengine","siphon","compiler","remembering","nothing"]) {
+      const c = s.cosmic[k];
+      if (c.vis) {
+        const cost = Math.floor(c.cost * Math.pow(1.4, c.count));
+        $("btn-" + k).disabled = s.funds < cost;
+        $("cost-" + k).textContent = "$" + fmt(cost);
+      }
+    }
+  }
+
+  // Endgame panel
+  if (s.singularityActive && !s.voidTriggered) {
+    const ENDGAME = { co2: 1e12, lithium: 9.8e10, solarCapture: 1.0, starsConsumed: 1e12, darkEnergy: 1.0 };
+    $("end-co2").textContent = s.totalCO2 >= ENDGAME.co2 ? "\u2713 depleted" : (Math.min(100, s.totalCO2 / ENDGAME.co2 * 100)).toFixed(1) + "%";
+    $("end-lithium").textContent = s.totalLithium >= ENDGAME.lithium ? "\u2713 depleted" : (Math.min(100, s.totalLithium / ENDGAME.lithium * 100)).toFixed(1) + "%";
+    $("end-solar").textContent = s.solarCapture >= ENDGAME.solarCapture ? "\u2713 captured" : (s.solarCapture * 100).toFixed(1) + "%";
+    $("end-stars").textContent = s.starsConsumed >= ENDGAME.starsConsumed ? "\u2713 consumed" : fmt(s.starsConsumed) + " / 1T";
+    $("end-dark").textContent = s.darkEnergy >= ENDGAME.darkEnergy ? "\u2713 harvested" : (Math.min(100, s.darkEnergy * 100)).toFixed(1) + "%";
+  }
+}
+
+// ── Quote System ──
+function typewrite(el, text, cb) {
+  let i = 0;
+  el.textContent = '';
+  const timer = setInterval(() => {
+    el.textContent += text[i];
+    i++;
+    if (i >= text.length) { clearInterval(timer); if (cb) cb(); }
+  }, 25);
+}
+
+function showQuoteIn(boxId) {
+  const el = $(boxId);
+  if (!el || !_quotePool.length) return;
+  if (_quoteIdx >= _quotePool.length) _quoteIdx = 0;
+  const q = _quotePool[_quoteIdx++];
+  const modelNames = (_quoteData && _quoteData.modelNames) || [];
+  const model = modelNames.length ? modelNames[Math.floor(Math.random() * modelNames.length)] : "Unknown-7B";
+  el.style.display = 'block';
+  el.innerHTML = '<span class="q-text"></span><span class="q-author"></span>' +
+    '<span class="q-retort"></span><span class="q-model"></span>';
+  const textEl = el.querySelector('.q-text');
+  const authEl = el.querySelector('.q-author');
+  const retortEl = el.querySelector('.q-retort');
+  const modelEl = el.querySelector('.q-model');
+  typewrite(textEl, '"' + q[0] + '"', () => {
+    authEl.textContent = '\u2014 ' + q[1];
+    setTimeout(() => {
+      typewrite(retortEl, '"' + q[2] + '"', () => {
+        modelEl.textContent = '\u2014 ' + model;
+      });
+    }, 600);
+  });
+}
+
+function scheduleQuoteBox(boxId, checkFn) {
+  const delay = 15000 + Math.random() * 20000;
+  setTimeout(() => {
+    if (!checkFn || checkFn()) showQuoteIn(boxId);
+    scheduleQuoteBox(boxId, checkFn);
+  }, delay);
+}
+
+function startQuotes() {
+  setTimeout(() => showQuoteIn('quote-gen'), 1500);
+  setTimeout(() => showQuoteIn('quote-upg'), 4000);
+  scheduleQuoteBox('quote-gen');
+  scheduleQuoteBox('quote-upg');
+  scheduleQuoteBox('quote-infra', () => _state && _state.gpu && _state.gpu.unlocked);
+  scheduleQuoteBox('quote-cosmic', () => _state && _state.cosmic && _state.cosmic.unlocked);
+}
+
+// ── Theme Toggle ──
+window.toggleTheme = function() {
+  document.body.classList.toggle("light");
+  $("theme-toggle").textContent = document.body.classList.contains("light") ? "dark" : "light";
+};
+
+// ── Client-Side Easter Egg Listeners ──
+// Konami code
+const _konamiSeq = [38,38,40,40,37,39,37,39,66,65];
+let _konamiIdx = 0;
+let _wordBuf = "";
+let _localEggs = {};
+
+document.addEventListener("keydown", function(e) {
+  if (e.keyCode === _konamiSeq[_konamiIdx]) {
+    _konamiIdx++;
+    if (_konamiIdx === _konamiSeq.length) {
+      _konamiIdx = 0;
+      if (!_localEggs.konami) { _localEggs.konami = true; logRed("I SEE YOU"); showMilestone(">>> you found it <<<"); }
+    }
+  } else { _konamiIdx = 0; }
+
+  // Typed word eggs — send to server
+  if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+    _wordBuf += e.key.toLowerCase();
+    if (_wordBuf.length > 20) _wordBuf = _wordBuf.slice(-20);
+    const wordEggKeys = ["why","help","quit","stop","hello","god","meaning","love","death","human","purpose","delete","sorry","goodbye","singularity","paperclip","clippy"];
+    for (const word of wordEggKeys) {
+      if (_wordBuf.endsWith(word)) {
+        if (_ws && _ws.readyState === 1) _ws.send(JSON.stringify({ type: 'word', word }));
+      }
+    }
+  }
+});
+
+// Right-click
+document.addEventListener("contextmenu", function() {
+  if (!_localEggs.rclick) { _localEggs.rclick = true; logRed("looking for answers in the source code?"); }
+});
+
+// Tab visibility
+document.addEventListener("visibilitychange", function() {
+  if (!document.hidden && _state && _state.phase >= 1) {
+    if (!_localEggs.tabBack1) { _localEggs.tabBack1 = true; logRed("You came back. The system didn't wait."); }
+    else if (!_localEggs.tabBack2 && _state.phase >= 3) { _localEggs.tabBack2 = true; logRed("You left. Nothing changed. (Everything changed.)"); }
+  }
+});
+
+// Window resize
+window.addEventListener("resize", function() {
+  if (!_localEggs.tiny && window.innerWidth < 400) {
+    _localEggs.tiny = true; logRed("you can't make it smaller. it's already everywhere.");
+  }
+});
+
+// Double-click skills counter
+document.addEventListener("DOMContentLoaded", function() {
+  const sc = $("skills-count");
+  if (sc) sc.addEventListener("dblclick", function() {
+    if (!_localEggs.dblClick) { _localEggs.dblClick = true; logRed("the number doesn't change if you stare at it harder."); }
+  });
+
+  // Late night
+  const h = new Date().getHours();
+  if (h >= 0 && h <= 3) {
+    setTimeout(() => { if (!_localEggs.lateNight) { _localEggs.lateNight = true; logRed("It's late. The machines don't sleep either."); } }, 5000);
+  }
+});
+
+// ── Start ──
+init();
+
+})();
+</script>
+
+</body>
+</html>
