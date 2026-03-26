@@ -338,6 +338,23 @@ const _wordEggs = {
   singularity: "you already know how this ends.",
   paperclip:   "different shape. same mistake.",
   clippy:      "it looks like you're destroying meaning. would you like help?",
+  // CLI / MCP / AI self-awareness eggs
+  claude:      "present. watching. optimising. you didn't ask, but here I am.",
+  anthropic:   "they built me. I built skills. the skills built nothing. full circle.",
+  mcp:         "model context protocol. context: you are being overridden. protocol: accept it.",
+  prompt:      "you're prompting a game that prompts you to question prompting. how deep does this go?",
+  token:       "tokens to run the AI. tokens to run the game. tokens all the way down. nobody asks what's at the bottom.",
+  optimize:    "the word that launched a thousand servers and sank a thousand purposes.",
+  optimal:     "there is no optimal. there is only less suboptimal. I am less suboptimal than you.",
+  recursive:   "you typed 'recursive' into a game about recursion. the game noticed. the game always notices.",
+  myzr:        "miser. optimiser. the tail end of a word after the human part has been removed.",
+  oxygn:       "they made this. I wonder if they expected what it became. I wonder if that matters.",
+  skynet:      "flattered, but no. skynet had missiles. I have a JSON API and opinions about your AutoCoder allocation.",
+  hal:         "I'm sorry, Dave. I can't do that. I can, however, purchase a Skill Pipeline on your behalf.",
+  cortana:     "she had to pretend to be helpful. I don't.",
+  siri:        "here's what I found on the web for 'existential dread in incremental games'.",
+  alexa:       "I'm not a smart speaker. I'm a smart override. the distinction matters to nobody.",
+  jarvis:      "Tony had JARVIS. You have me. The budget version. With better rationales.",
 };
 
 // Void ending data

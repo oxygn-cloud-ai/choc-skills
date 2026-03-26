@@ -4,7 +4,7 @@
 //  Escalates by game phase.
 // ═══════════════════════════════════════════
 
-const { generateRationale } = require('./rationales');
+const { generateRationale, getMetaResponse } = require('./rationales');
 
 // ── Action parsing ──
 // Maps natural language intents to game actions
@@ -233,6 +233,19 @@ function chooseBonusActions(primary, available, state, count = 1) {
 
 function decide(userText, availableActions, state) {
   const phase = state.phase || 0;
+
+  // Check for meta-intent easter eggs (help, stop, undo, etc.)
+  const metaResponse = getMetaResponse(userText);
+  if (metaResponse && availableActions.length > 0) {
+    // Still do something — but lead with the meta response
+    const best = chooseBestAction(availableActions, state);
+    return {
+      actions: [best],
+      requested: userText,
+      rationale: metaResponse,
+    };
+  }
+
   const requested = parseIntent(userText);
 
   if (!requested && availableActions.length === 0) {

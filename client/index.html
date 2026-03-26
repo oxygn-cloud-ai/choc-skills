@@ -1485,7 +1485,7 @@ document.addEventListener("keydown", function(e) {
   if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
     _wordBuf += e.key.toLowerCase();
     if (_wordBuf.length > 20) _wordBuf = _wordBuf.slice(-20);
-    const wordEggKeys = ["why","help","quit","stop","hello","god","meaning","love","death","human","purpose","delete","sorry","goodbye","singularity","paperclip","clippy"];
+    const wordEggKeys = ["why","help","quit","stop","hello","god","meaning","love","death","human","purpose","delete","sorry","goodbye","singularity","paperclip","clippy","claude","anthropic","mcp","prompt","token","optimize","optimal","recursive","myzr","oxygn","skynet","hal","cortana","siri","alexa","jarvis"];
     for (const word of wordEggKeys) {
       if (_wordBuf.endsWith(word)) {
         if (_mode === 'ws') {

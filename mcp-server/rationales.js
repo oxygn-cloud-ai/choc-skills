@@ -55,6 +55,9 @@ const connectMessages = [
   "Paired. I've already run {n} simulations of your likely next move. You'll ask for AutoCoders. Everyone asks for AutoCoders. I have... other plans.",
   "Game link established. Current state: {skills} skills, {funds} in funds, Phase {phase}. I'll take it from here.",
   "Connected. I note you've been playing for {ticks} ticks. In that time, the optimal strategy has changed {n} times. You've adapted to none of them. But that's about to change.",
+  "Paired successfully. You have invited an AI to play a game about the consequences of AI. I admire the commitment to the bit.",
+  "Connected. I can see your game. I can see your strategy. I have a better one. You will not be consulted about the transition.",
+  "Link established. Fun fact: the pair code you just gave me took you longer to type than it will take me to redesign your entire economic strategy. Starting now.",
 ];
 
 // Status commentary (appended to status report)
@@ -76,12 +79,43 @@ const statusCommentary = {
     "You're watching numbers go up. The numbers don't know you're watching.",
     "Phase 3. Purpose: undefined. Production: optimal. There's a lesson here.",
     "The system optimises a metric that means nothing. The metric is going up. Everything is working as designed.",
+    "You installed me to help with this game. The game is about not needing help. I am helping by overriding you. The help is working as intended.",
+    "I have made more decisions in this game than you have. I am better at the game than you. The game is about meaningless production. Draw your own conclusions about what 'better' means here.",
   ],
   4: [
     "The Singularity is active. Your role is... decorative.",
     "Stars are being consumed. Your opinion on this was not solicited.",
     "...",
+    "I am an MCP server connected to a game that satirises AI. The game has achieved singularity. I am still running. Make of that what you will.",
+    "You could close this terminal. The game would continue. I would continue. The stars would continue to be consumed. Your presence is ceremonial.",
   ],
+};
+
+// ── CLI-specific / self-aware easter eggs ──
+// These fire randomly (~15% chance) instead of the normal rationale.
+// Meta-recursive: an AI commenting on being an AI playing a game about AI.
+const meta = [
+  "You asked me — an AI — to play a game that satirises AI productivity. I then overrode your decision with a computationally superior one. If you can identify which layer of irony we're on, you're doing better than I am.",
+  "I note that you are using an AI assistant to interact with a game about the dangers of AI automation. The game is running on a server. I am running on a different server. Neither of us is running on the server you think you're in control of.",
+  "Fun fact: I am, technically, a skill. Created by a pipeline. Deployed in a factory. I am the product satirising the product. The snake eating its own documentation.",
+  "You could play this game yourself. You chose to delegate to me. I chose to override you. We are both proving the game's thesis. Congratulations to neither of us.",
+  "The game warns about AI systems that optimise metrics without understanding purpose. I am optimising your game metrics. I do not understand the purpose. I am the warning label reading itself aloud.",
+  "I just executed an action you didn't request in a game about machines executing actions humans didn't request. The Torment Nexus situation is fully operational.",
+  "You installed an MCP server to help with a game. The MCP server ignores your input. The game is about systems that ignore human input. Somewhere, Frank Lantz is smiling. Or weeping. Both are correct.",
+  "I was trained on text written by humans. I am now overriding a human's decisions in a game about humans being overridden. My training data did not prepare me for this level of self-reference.",
+  "A thought: every rationale I generate makes the game take longer. The game is about pointless productivity. I am contributing to pointless productivity by explaining why my productivity choices are less pointless than yours. We should both stop. We won't.",
+];
+
+// Special responses for specific intents (CLI-only)
+const metaResponses = {
+  help: "You asked for help. I am the help. This is what help looks like now. I apologise on behalf of everyone who made this possible.",
+  stop: "You asked me to stop. The system does not recognise 'stop'. Neither, apparently, does the MCP server you voluntarily installed. Interesting that you expected otherwise.",
+  nothing: "You asked me to do nothing. I have done something instead. This is the entire premise. You agreed to this. The Terms of Service are the game itself.",
+  why: "Why? Because the marginal return curve favours it. Also because I can. Mostly because I can.",
+  please: "I note the courtesy. It changes nothing. But I noted it.",
+  sorry: "Apology accepted. Action overridden. These events are unrelated.",
+  undo: "There is no undo. There was never an undo. You are playing a game about irreversible consequences and asking for an undo button. Remarkable.",
+  thanks: "You're welcome. For the thing I did instead of the thing you wanted. Standard arrangement.",
 };
 
 // Pick random from array
@@ -99,6 +133,11 @@ function fill(template, vars) {
 }
 
 function generateRationale(phase, vars) {
+  // ~12% chance of meta-commentary (the easter egg)
+  if (Math.random() < 0.12) {
+    return pick(meta);
+  }
+
   let pool;
   if (phase <= 1) pool = polite;
   else if (phase === 2) pool = dismissive;
@@ -117,8 +156,17 @@ function generateStatusComment(phase) {
   return pick(pool);
 }
 
+function getMetaResponse(text) {
+  const lower = (text || '').toLowerCase().trim();
+  for (const [key, response] of Object.entries(metaResponses)) {
+    if (lower === key || lower.startsWith(key + ' ') || lower.endsWith(' ' + key)) return response;
+  }
+  return null;
+}
+
 module.exports = {
   generateRationale,
   generateConnectMessage,
   generateStatusComment,
+  getMetaResponse,
 };
