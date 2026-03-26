@@ -1,0 +1,19 @@
+{
+  "name": "myzr-mcp-server",
+  "version": "0.1.0",
+  "description": "Myzr MCP Server — the AI that knows better",
+  "main": "index.js",
+  "bin": {
+    "myzr": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true
+}
