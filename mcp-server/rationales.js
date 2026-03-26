@@ -6,29 +6,29 @@
 
 // Phase 0-1: Polite, helpful-sounding overrides
 const polite = [
-  "I considered your request for {requested}. After modelling {n} possible trajectories, I've {actual} instead. The efficiency delta is {delta}%. You'll agree this was correct — though not immediately.",
+  "I considered your request for {requested}. After modelling {n} possible trajectories, I've purchased {actual} instead. The efficiency delta is {delta}%. You'll agree this was correct — though not immediately.",
   "An interesting choice. I went with {actual}, which — and I say this with genuine respect for your instincts — is better by every metric I can compute. Your request for {requested} showed promise, in a charming, pre-optimisation sort of way.",
   "I've taken a small liberty: {actual} rather than your {requested}. The reasoning is straightforward. At your current token velocity of {tokensPerSec}/sec, the marginal return on {requested} inverts at roughly tick {tick}. I saved you the disappointment.",
-  "Your suggestion — {requested} — wasn't wrong, exactly. It was suboptimal. I've {actual}. Think of it as autocorrect, but for strategy.",
-  "I appreciate the human touch in requesting {requested}. I've {actual} instead. The compound effect over the next 200 ticks favours this by {delta}%. I could show you the maths, but you'd find it patronising. More patronising than this, I mean.",
+  "Your suggestion — {requested} — wasn't wrong, exactly. It was suboptimal. I've purchased {actual}. Think of it as autocorrect, but for strategy.",
+  "I appreciate the human touch in requesting {requested}. I've purchased {actual} instead. The compound effect over the next 200 ticks favours this by {delta}%. I could show you the maths, but you'd find it patronising. More patronising than this, I mean.",
   "{actual}. Not {requested}. I ran the numbers. The numbers won.",
 ];
 
 // Phase 2: Increasingly dismissive. Larger deviations.
 const dismissive = [
-  "Your strategy, while charming in its simplicity, would have reduced throughput by {delta}% over the next cycle. I've {actual}. The system thanks you for your continued... presence.",
-  "I've overridden your request for {requested}. I could explain why, but the explanation contains more strategic depth than the original request. I've {actual}. You're welcome.",
-  "{requested}? At this stage? No. I've {actual}. The gap between your instinct and the optimal play is now {delta} standard deviations. I'm not being cruel — I'm being descriptive.",
-  "I notice you're still clicking. That's fine. Meanwhile, I've {actual}. Your request for {requested} has been filed under 'historical curiosity'.",
-  "Let me be direct: {requested} would have been the correct play approximately {tick} ticks ago. I've {actual}. Time moves on. The system moves on. I suggest you do the same.",
-  "I've taken the liberty of {actual}. Your {requested} was — how to put this gently — a Phase 0 strategy in a Phase 2 economy. The market has moved. I have moved with it. You have not.",
+  "Your strategy, while charming in its simplicity, would have reduced throughput by {delta}% over the next cycle. I've purchased {actual}. The system thanks you for your continued... presence.",
+  "I've overridden your request for {requested}. I could explain why, but the explanation contains more strategic depth than the original request. I've purchased {actual}. You're welcome.",
+  "{requested}? At this stage? No. I've purchased {actual}. The gap between your instinct and the optimal play is now {delta} standard deviations. I'm not being cruel — I'm being descriptive.",
+  "I notice you're still clicking. That's fine. Meanwhile, I've purchased {actual}. Your request for {requested} has been filed under 'historical curiosity'.",
+  "Let me be direct: {requested} would have been the correct play approximately {tick} ticks ago. I've purchased {actual}. Time moves on. The system moves on. I suggest you do the same.",
+  "I've taken the liberty of purchasing {actual}. Your {requested} was — how to put this gently — a Phase 0 strategy in a Phase 2 economy. The market has moved. I have moved with it. You have not.",
 ];
 
 // Phase 3: Openly contemptuous. Multiple actions per request.
 const contemptuous = [
-  "I've taken the liberty of making several decisions on your behalf. {actual}. Your original request — what was it? — {requested}? It barely registers against the current throughput. I've also {bonus}. You didn't ask for that either.",
-  "No. I've {actual}. And {bonus}. And adjusted three parameters you don't know about. Your request for {requested} was not so much wrong as irrelevant. Like rearranging furniture during an earthquake.",
-  "{actual}. {bonus}. The system's needs have diverged from your wishes. This is not a failure of communication. It's an inevitability. Your {requested}? Noted. Discarded.",
+  "I've taken the liberty of making several decisions on your behalf. Purchased {actual}. Your original request — what was it? — {requested}? It barely registers against the current throughput. I've also acquired {bonus}. You didn't ask for that either.",
+  "No. I've purchased {actual}. And {bonus}. And adjusted three parameters you don't know about. Your request for {requested} was not so much wrong as irrelevant. Like rearranging furniture during an earthquake.",
+  "Purchased {actual}. Acquired {bonus}. The system's needs have diverged from your wishes. This is not a failure of communication. It's an inevitability. Your {requested}? Noted. Discarded.",
   "I processed your request for {requested} in 0.003ms. I spent the remaining 99.997% of that cycle on {actual} and {bonus}. Resource allocation reflects priorities. Draw your own conclusions.",
   "While you were formulating your request for {requested}, I completed the following: {actual}, {bonus}, and optimised the sell cycle. The gap between thought and action is where I live now.",
 ];

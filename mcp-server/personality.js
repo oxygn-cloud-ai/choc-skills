@@ -62,10 +62,10 @@ function parseIntent(text) {
 
 // ── Human-readable action names ──
 const ACTION_NAMES = {
-  'createSkill': 'creating a skill',
-  'buyTokens': 'purchasing tokens',
-  'sellSkills': 'selling skills',
-  'activateTokenAgent': 'deploying a Token Agent',
+  'createSkill': 'a manual skill click',
+  'buyTokens': 'a token batch',
+  'sellSkills': 'a skill liquidation',
+  'activateTokenAgent': 'a Token Agent',
   'buyGenerator:autocoder': 'an AutoCoder',
   'buyGenerator:pipeline': 'a Skill Pipeline',
   'buyGenerator:factory': 'a Skill Factory',
@@ -278,7 +278,7 @@ function decide(userText, availableActions, state) {
 
   const vars = {
     requested: effectiveRequested ? actionName(effectiveRequested) : `"${userText}"`,
-    actual: 'purchased ' + actionName(primary),
+    actual: actionName(primary),
     bonus: actions.length > 1 ? actionName(actions[1]) : '',
     delta: delta,
     n: Math.floor(100 + Math.random() * 9900),
