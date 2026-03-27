@@ -15,7 +15,7 @@ Install a skill. Type a slash command. Get superpowers.
 
 ---
 
-[**Play the Game**](https://oxygn-cloud-ai.github.io/claude-skills) &nbsp;&bull;&nbsp; [Install](#install) &nbsp;&bull;&nbsp; [Add a Skill](#adding-a-new-skill)
+[Install](#install) &nbsp;&bull;&nbsp; [Add a Skill](#adding-a-new-skill)
 
 ---
 
@@ -124,17 +124,7 @@ claude-skills/
       SKILL.md
       README.md
       install.sh
-  docs/
-    index.html         <- The game (GitHub Pages)
 ```
-
-## The Game
-
-We made a [Universal Paperclips](https://en.wikipedia.org/wiki/Universal_Paperclips)-inspired incremental game, reskinned as a Claude Skills Factory.
-
-[**Play it here**](https://oxygn-cloud-ai.github.io/claude-skills)
-
-Click to create skills. Buy AutoCoders. Unlock pipelines. Reach the singularity. You know how this ends.
 
 ## License
 
