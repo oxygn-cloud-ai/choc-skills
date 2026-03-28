@@ -15,7 +15,7 @@ Install a skill. Type a slash command. Get superpowers.
 
 ---
 
-[Install](#install) &nbsp;&bull;&nbsp; [Add a Skill](#adding-a-new-skill)
+[Install](#install) &nbsp;&bull;&nbsp; [Available Skills](#available-skills) &nbsp;&bull;&nbsp; [Add a Skill](#adding-a-new-skill)
 
 ---
 
@@ -26,6 +26,13 @@ Install a skill. Type a slash command. Get superpowers.
 | Skill | Command | Description |
 |-------|---------|-------------|
 | **chk1** | `/chk1` | Adversarial implementation audit — fault-finding, risk-exposing, deviation-detecting review of recent changes |
+
+## Prerequisites
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and working
+- `git` (required by most skills)
+- `bash` (macOS, Linux, or WSL on Windows)
+- `curl` (only for manual install method)
 
 ## Install
 
@@ -51,16 +58,55 @@ curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/ski
   -o ~/.claude/skills/chk1/SKILL.md
 ```
 
+### Pipe-friendly
+
+```bash
+curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/install.sh | bash
+```
+
+Non-interactive mode is auto-detected. Use `--force` to overwrite existing installations.
+
+### Verify installation
+
+```bash
+./install.sh --check
+```
+
+### Update all skills
+
+```bash
+git pull && ./install.sh --update
+```
+
 ### List available skills
 
 ```bash
 ./install.sh --list
 ```
 
-### Uninstall a skill
+### Uninstall
 
 ```bash
-rm -rf ~/.claude/skills/<skill-name>
+./install.sh --uninstall chk1        # Remove one skill
+./install.sh --uninstall --all        # Remove all skills
+```
+
+## Installer Reference
+
+```
+./install.sh                    Install all skills
+./install.sh <name>             Install a specific skill
+./install.sh --uninstall <name> Uninstall a skill
+./install.sh --uninstall --all  Uninstall all skills
+./install.sh --update           Reinstall all (no prompts)
+./install.sh --check            Verify installation health
+./install.sh --list             List available skills
+./install.sh --version          Show installer version
+./install.sh --help             Full help
+
+Options:
+  -f, --force     Overwrite without prompting
+  -q, --quiet     Suppress non-error output
 ```
 
 ## How Skills Work
@@ -71,7 +117,7 @@ Each skill lives in `skills/<name>/` and contains:
 skills/chk1/
   SKILL.md      <- The skill definition (YAML frontmatter + instructions)
   README.md     <- Documentation
-  install.sh    <- Per-skill installer (optional)
+  install.sh    <- Per-skill installer (optional, delegates to root)
 ```
 
 The installer copies `SKILL.md` to `~/.claude/skills/<name>/SKILL.md`, which Claude Code automatically discovers and makes available as a slash command.
@@ -81,15 +127,21 @@ The installer copies `SKILL.md` to `~/.claude/skills/<name>/SKILL.md`, which Cla
 ```yaml
 ---
 name: my-skill
+version: 1.0.0
 description: What it does (shown in skill listings)
 user-invocable: true
 disable-model-invocation: true       # only runs when YOU invoke it
 allowed-tools: Read, Grep, Glob      # restrict tool access
-argument-hint: [optional args]
+argument-hint: [args | help | doctor | version]
 ---
 
 # Skill instructions in Markdown...
 ```
+
+Every skill should support these subcommands:
+- `help` — usage guide
+- `doctor` — environment health check
+- `version` — installed version
 
 ## Adding a New Skill
 
@@ -100,12 +152,14 @@ argument-hint: [optional args]
 
 2. Edit `skills/my-skill/SKILL.md` — fill in the frontmatter and write your instructions
 
-3. Edit `skills/my-skill/README.md` — document usage
+3. Edit `skills/my-skill/README.md` — document usage, prerequisites, troubleshooting
 
 4. Test locally:
    ```bash
    ./install.sh my-skill
-   # Then in Claude Code: /my-skill
+   # Then in Claude Code: /my-skill help
+   # Then: /my-skill doctor
+   # Then: /my-skill (actual usage)
    ```
 
 5. Submit a PR
@@ -115,7 +169,8 @@ argument-hint: [optional args]
 ```
 claude-skills/
   README.md            <- You are here
-  install.sh           <- Root installer (all skills or by name)
+  install.sh           <- Root installer
+  LICENSE              <- MIT
   _template/           <- Skeleton for new skills
     SKILL.md
     README.md
@@ -125,6 +180,16 @@ claude-skills/
       README.md
       install.sh
 ```
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| Skill not appearing in Claude Code | Verify: `ls ~/.claude/skills/<name>/SKILL.md` |
+| "Permission denied" during install | Check permissions: `ls -la ~/.claude/` |
+| Skill is outdated | `git pull && ./install.sh --force <name>` |
+| Installation health check fails | `./install.sh --check` then `./install.sh --update` |
+| Non-interactive install skips skills | Add `--force`: `./install.sh --force` |
 
 ## License
 

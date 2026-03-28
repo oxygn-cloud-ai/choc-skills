@@ -2,9 +2,10 @@
 
 A Claude Code skill that does X.
 
-## What it does
+## Prerequisites
 
-Describe the skill's purpose and methodology.
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+- List any other requirements (git, node, etc.)
 
 ## Installation
 
@@ -14,11 +15,12 @@ Describe the skill's purpose and methodology.
 ./install.sh my-skill
 ```
 
-### Manual
+### Manual (no clone needed)
 
 ```bash
 mkdir -p ~/.claude/skills/my-skill
-cp SKILL.md ~/.claude/skills/my-skill/SKILL.md
+curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/skills/my-skill/SKILL.md \
+  -o ~/.claude/skills/my-skill/SKILL.md
 ```
 
 ## Usage
@@ -26,13 +28,39 @@ cp SKILL.md ~/.claude/skills/my-skill/SKILL.md
 In Claude Code:
 
 ```
-/my-skill              # Run with defaults
-/my-skill <arg>        # Run with a specific argument
-/my-skill help         # Display usage guide
+/my-skill              Run with defaults
+/my-skill <arg>        Run with a specific argument
+/my-skill doctor       Check environment health
+/my-skill help         Display usage guide
+```
+
+## What it does
+
+Describe the skill's purpose and methodology.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| Skill not appearing | Verify: `ls ~/.claude/skills/my-skill/SKILL.md` |
+| Skill is outdated | `./install.sh --force my-skill` |
+
+## Update
+
+```bash
+cd claude-skills && git pull && ./install.sh --force my-skill
 ```
 
 ## Uninstall
 
 ```bash
-rm -rf ~/.claude/skills/my-skill
+./install.sh --uninstall my-skill
 ```
+
+## Version
+
+Current: **1.0.0**
+
+## License
+
+MIT
