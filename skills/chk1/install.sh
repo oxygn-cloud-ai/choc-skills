@@ -35,6 +35,27 @@ if [ ! -f "$SOURCE_FILE" ]; then
   die "SKILL.md not found in ${SCRIPT_DIR}"
 fi
 
+# Handle --help
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+  echo "chk1 skill installer (standalone mode)"
+  echo ""
+  echo "Usage:"
+  echo "  ./install.sh              Install chk1"
+  echo "  ./install.sh --force      Install/overwrite without prompting"
+  echo "  ./install.sh --check      Verify installation health"
+  echo "  ./install.sh --uninstall  Remove chk1"
+  echo "  ./install.sh --help       Show this help"
+  echo "  ./install.sh --version    Show version"
+  exit 0
+fi
+
+# Handle --version
+if [ "${1:-}" = "--version" ] || [ "${1:-}" = "-v" ]; then
+  local_ver=$(grep -m1 '^version:' "$SOURCE_FILE" 2>/dev/null | sed 's/^version: *//' || true)
+  echo "chk1 v${local_ver:-unknown}"
+  exit 0
+fi
+
 # Handle --uninstall
 if [ "${1:-}" = "--uninstall" ]; then
   if [ -d "$TARGET_DIR" ]; then

@@ -27,6 +27,12 @@ FORCE=false
 INTERACTIVE=true
 [ -t 0 ] || INTERACTIVE=false  # piped/non-interactive
 
+# --- Pipe detection ---
+if [[ "${BASH_SOURCE[0]}" == "/dev/stdin" || "${BASH_SOURCE[0]}" == "/dev/fd/"* || "${BASH_SOURCE[0]}" == "-" ]]; then
+  die "Pipe install not supported. Clone the repo first:
+  git clone https://github.com/oxygn-cloud-ai/claude-skills.git && cd claude-skills && ./install.sh"
+fi
+
 usage() {
   cat <<EOF
 ${BOLD}claude-skills installer${RESET} v${VERSION}
@@ -105,12 +111,26 @@ confirm() {
 get_skill_version() {
   local skill_file="$1"
   [ -f "$skill_file" ] || return 1
-  grep -m1 '^version:' "$skill_file" 2>/dev/null | sed 's/^version: *//' || echo "unknown"
+  local ver
+  ver=$(grep -m1 '^version:' "$skill_file" 2>/dev/null | sed 's/^version: *//' || true)
+  echo "${ver:-unknown}"
+}
+
+# --- Skill name validation (prevent path traversal) ---
+validate_name() {
+  local name="$1"
+  if [ -z "$name" ]; then
+    die "Empty skill name"
+  fi
+  if [[ ! "$name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    die "Invalid skill name '${name}' — only letters, numbers, hyphens, and underscores allowed"
+  fi
 }
 
 # --- Install a single skill ---
 install_skill() {
   local name="$1"
+  validate_name "$name"
   local source="${SKILLS_DIR}/${name}"
   local target="${TARGET_BASE}/${name}"
 
@@ -169,6 +189,7 @@ install_skill() {
 # --- Uninstall a single skill ---
 uninstall_skill() {
   local name="$1"
+  validate_name "$name"
   local target="${TARGET_BASE}/${name}"
 
   if [ ! -d "$target" ]; then
@@ -345,10 +366,11 @@ case "$ACTION" in
       if ! confirm "Uninstall ALL skills from ${TARGET_BASE}?"; then
         die "Aborted"
       fi
+      FORCE=true
       for dir in "${TARGET_BASE}"/*/; do
         [ -d "$dir" ] || continue
         name="$(basename "$dir")"
-        FORCE=true uninstall_skill "$name"
+        uninstall_skill "$name"
       done
       ok "All skills uninstalled"
     elif [ ${#TARGETS[@]} -eq 0 ]; then

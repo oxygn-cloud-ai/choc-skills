@@ -58,14 +58,6 @@ curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/ski
   -o ~/.claude/skills/chk1/SKILL.md
 ```
 
-### Pipe-friendly
-
-```bash
-curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/install.sh | bash
-```
-
-Non-interactive mode is auto-detected. Use `--force` to overwrite existing installations.
-
 ### Verify installation
 
 ```bash
