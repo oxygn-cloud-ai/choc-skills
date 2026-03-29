@@ -351,10 +351,10 @@ else
 
 # --- iterm2-tmux auto-start (managed by install.sh — do not edit) ---
 if [[ "\$TERM_PROGRAM" == "iTerm.app" && -z "\$TMUX" ]]; then
-  _itmlk="/tmp/iterm2-tmux-autostart.lock"
+  _itmlk="/tmp/.iterm2-tmux-autostart"
+  [[ -d "\$_itmlk" ]] && (( \$(date +%s) - \$(/usr/bin/stat -f%m "\$_itmlk") > 15 )) && rm -rf "\$_itmlk"
   if mkdir "\$_itmlk" 2>/dev/null; then
-    ( { "${INSTALL_DIR}/tmux-iterm-tabs.sh" >/dev/null 2>&1 || true; rm -rf "\$_itmlk"; } & )
-    ( { sleep 30; rm -rf "\$_itmlk"; } & ) 2>/dev/null
+    "${INSTALL_DIR}/tmux-iterm-tabs.sh" >/dev/null 2>&1 || true
   fi
   unset _itmlk
 fi
