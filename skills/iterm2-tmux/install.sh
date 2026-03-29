@@ -351,18 +351,20 @@ else
 
 # --- iterm2-tmux auto-start (managed by install.sh — do not edit) ---
 if [[ "\$TERM_PROGRAM" == "iTerm.app" && -z "\$TMUX" ]]; then
-  _lockdir="/tmp/iterm2-tmux-autostart.lock"
-  _ttl=30
-  if mkdir "\$_lockdir" 2>/dev/null; then
-    (
-      "${INSTALL_DIR}/tmux-iterm-tabs.sh" 2>/dev/null || true
-      rm -rf "\$_lockdir"
-    ) &
-    disown
-    ( sleep "\$_ttl" && rm -rf "\$_lockdir" ) &>/dev/null &
-    disown
-  fi
-  unset _lockdir _ttl
+  () {
+    setopt LOCAL_OPTIONS NO_MONITOR
+    local _lockdir="/tmp/iterm2-tmux-autostart.lock"
+    local _ttl=30
+    if mkdir "\$_lockdir" 2>/dev/null; then
+      (
+        "${INSTALL_DIR}/tmux-iterm-tabs.sh" 2>/dev/null || true
+        rm -rf "\$_lockdir"
+      ) &
+      disown
+      ( sleep "\$_ttl" && rm -rf "\$_lockdir" ) &>/dev/null &
+      disown
+    fi
+  }
 fi
 # --- end iterm2-tmux auto-start ---
 AUTOSTART_BLOCK
