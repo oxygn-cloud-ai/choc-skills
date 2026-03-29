@@ -28,7 +28,7 @@ INTERACTIVE=true
 [ -t 0 ] || INTERACTIVE=false  # piped/non-interactive
 
 # --- Pipe detection ---
-if [[ "${BASH_SOURCE[0]}" == "/dev/stdin" || "${BASH_SOURCE[0]}" == "/dev/fd/"* || "${BASH_SOURCE[0]}" == "-" ]]; then
+if [[ -z "${BASH_SOURCE[0]}" || "${BASH_SOURCE[0]}" == "/dev/stdin" || "${BASH_SOURCE[0]}" == "/dev/fd/"* || "${BASH_SOURCE[0]}" == "-" ]]; then
   die "Pipe install not supported. Clone the repo first:
   git clone https://github.com/oxygn-cloud-ai/claude-skills.git && cd claude-skills && ./install.sh"
 fi
@@ -57,7 +57,6 @@ ${BOLD}EXAMPLES${RESET}
   ./install.sh -f chk1            Install/overwrite without prompting
   ./install.sh --uninstall chk1   Remove chk1
   ./install.sh --check            Verify all installations are healthy
-  curl ... | bash                  Pipe-friendly (auto-detects, no prompts)
 
 ${BOLD}MANUAL INSTALL${RESET} (no clone needed)
   mkdir -p ~/.claude/skills/chk1
@@ -366,12 +365,14 @@ case "$ACTION" in
       if ! confirm "Uninstall ALL skills from ${TARGET_BASE}?"; then
         die "Aborted"
       fi
+      local saved_force="$FORCE"
       FORCE=true
       for dir in "${TARGET_BASE}"/*/; do
         [ -d "$dir" ] || continue
         name="$(basename "$dir")"
         uninstall_skill "$name"
       done
+      FORCE="$saved_force"
       ok "All skills uninstalled"
     elif [ ${#TARGETS[@]} -eq 0 ]; then
       die "Specify a skill name: ./install.sh --uninstall <name> (or --all)"
