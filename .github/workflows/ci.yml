@@ -14,9 +14,9 @@ jobs:
     name: ShellCheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@2.0.0
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         with:
           scandir: .
           severity: warning
@@ -25,7 +25,7 @@ jobs:
     name: Validate Skills
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Make scripts executable
         run: chmod +x scripts/*.sh
       - name: Validate all skill definitions
@@ -35,7 +35,7 @@ jobs:
     name: Installer Smoke Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: List available skills
         run: ./install.sh --list
       - name: Install all skills
@@ -61,7 +61,7 @@ jobs:
     name: Verify Checksums
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Make scripts executable
         run: chmod +x scripts/*.sh
       - name: Regenerate checksums
@@ -84,7 +84,7 @@ jobs:
     name: File Permissions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Check install.sh files are executable
         run: |
           failed=0

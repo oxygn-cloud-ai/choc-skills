@@ -13,7 +13,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Validate skills
         run: |
@@ -39,16 +39,18 @@ jobs:
         id: changelog
         run: |
           # Extract the section for the current version from CHANGELOG.md
+          # Uses awk instead of sed to avoid regex metacharacter issues in version strings
           version="${{ steps.version.outputs.version }}"
-          changelog=$(sed -n "/^## \[${version}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
-          if [ -z "$changelog" ]; then
-            changelog="Release ${GITHUB_REF_NAME}"
+          awk -v ver="$version" '
+            /^## \[/ { if (found) exit; if (index($0, "[" ver "]")) found=1 }
+            found { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "Release ${GITHUB_REF_NAME}" > /tmp/release-notes.md
           fi
-          # Write to file for the release body
-          echo "$changelog" > /tmp/release-notes.md
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
         with:
           body_path: /tmp/release-notes.md
           files: CHECKSUMS.sha256

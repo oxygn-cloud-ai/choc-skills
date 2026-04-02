@@ -75,8 +75,16 @@ mkdir -p ~/.claude/skills/chk1
 curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/skills/chk1/SKILL.md \
   -o ~/.claude/skills/chk1/SKILL.md
 
-# chk2 — web service security audit (has sub-commands — use skill installer)
-cd claude-skills/skills/chk2 && ./install.sh
+# chk2 — web service security audit (skill + 33 sub-commands)
+mkdir -p ~/.claude/skills/chk2 ~/.claude/commands/chk2
+REPO="https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main"
+curl -sL "$REPO/skills/chk2/SKILL.md" -o ~/.claude/skills/chk2/SKILL.md
+for f in all quick headers tls dns cors api ws waf infra brute scale disclosure fix \
+         cookies cache smuggling auth transport redirect fingerprint timing \
+         compression jwt graphql sse ipv6 reporting hardening negotiation \
+         proxy business backend; do
+  curl -sL "$REPO/skills/chk2/commands/${f}.md" -o ~/.claude/commands/chk2/${f}.md
+done
 ```
 
 ### Verify installation
