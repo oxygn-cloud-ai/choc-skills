@@ -285,8 +285,8 @@ for file in "${ORCHESTRATOR_SOURCE}"/*; do
   [ -f "$file" ] || continue
   name=$(basename "$file")
   cp "$file" "${SKILL_TARGET}/orchestrator/${name}"
-  # Make .sh files executable
-  if [[ "$name" == *.sh ]]; then
+  # Make .sh and .py files executable
+  if [[ "$name" == *.sh || "$name" == *.py ]]; then
     chmod +x "${SKILL_TARGET}/orchestrator/${name}"
   fi
   orch_count=$((orch_count + 1))
