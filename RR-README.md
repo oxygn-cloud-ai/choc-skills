@@ -178,7 +178,7 @@ rr doctor -- Environment Health Check
   [PASS] orchestrator scripts: 9 files found
   [PASS] sub-commands: 10 files in ~/.claude/commands/rr/
   [PASS] Atlassian MCP: connected (1 result)
-  [PASS] version: 2.9.0
+  [PASS] version: 2.9.1
 
   Result: 10 passed, 0 warnings, 0 failed
 ```
@@ -268,7 +268,15 @@ Monitor: /rr monitor (or /rr status for a snapshot)
 /rr monitor
 ```
 
-Opens a live dashboard in a new terminal window (requires Python `rich` library: `pip3 install rich`). Refreshes every 2 seconds showing current phase, file counts for each stage, a progress bar, and tailed log output. Exits automatically when the batch completes.
+Opens a comprehensive live dashboard in a new terminal window (requires Python `rich` library: `pip3 install rich`). Full-screen display refreshing every 2 seconds with:
+
+- **Per-batch sub-agent table** — each batch numbered with dispatch status (pending/sent), result (waiting/success/failed), and error detail
+- **Per-risk status panel** — summary counts (published/assessed/failed/pending) plus a table of all non-published risks with their current state and error messages
+- **Error detail panel** — actual Jira and sub-agent error messages parsed from the JSON error files (not just counts)
+- **30-line color-coded log stream** — green for success, red for failures, yellow for retries/rate limits, cyan for phase transitions
+- **Phase-aware progress bar** — percentage reflects the current phase (not just publication), with elapsed time
+
+Exits automatically when the batch completes.
 
 For a one-shot snapshot instead:
 
