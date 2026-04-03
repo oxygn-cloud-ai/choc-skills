@@ -70,6 +70,10 @@ done
 mkdir -p "$WORK_DIR"/{extracts,payloads,results,errors,assessments,individual,jira-payloads,jira-results,jira-errors,logs}
 : > "$LOG_FILE"
 
+# Clean stale results/errors from previous runs at startup
+rm -f "$WORK_DIR/jira-results"/*.json 2>/dev/null
+rm -f "$WORK_DIR/jira-errors"/*.json 2>/dev/null
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE" >&2
 }
@@ -426,10 +430,6 @@ phase_collection() {
 
 phase_publication() {
     log "PHASE 6: PUBLICATION"
-
-    # Clean stale results/errors from previous runs
-    rm -f "$WORK_DIR/jira-results"/*.json 2>/dev/null
-    rm -f "$WORK_DIR/jira-errors"/*.json 2>/dev/null
 
     # Export env vars needed by _publish_one.sh
     export WORK_DIR JIRA_BASE_URL JIRA_AUTH PROJECT_KEY RR_QUARTER_OVERRIDE="$QUARTER_OVERRIDE"
