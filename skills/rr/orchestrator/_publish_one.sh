@@ -181,11 +181,129 @@ fi
 # BUILD JIRA PAYLOAD — with all required fields
 #=============================================================================
 
+# Build ADF description from rendered markdown
+# Jira REST API v3 requires Atlassian Document Format, not raw strings.
+# Split markdown into paragraphs and render each as an ADF node.
+adf_desc=$(echo "$rendered_md" | python3 -c '
+import sys, json
+
+lines = sys.stdin.read().split("\n")
+nodes = []
+i = 0
+while i < len(lines):
+    line = lines[i]
+
+    # Skip empty lines
+    if not line.strip():
+        i += 1
+        continue
+
+    # Horizontal rule
+    if line.strip() == "---":
+        nodes.append({"type": "rule"})
+        i += 1
+        continue
+
+    # Headings
+    if line.startswith("### "):
+        nodes.append({"type": "heading", "attrs": {"level": 3},
+            "content": [{"type": "text", "text": line[4:]}]})
+        i += 1
+        continue
+    if line.startswith("## "):
+        nodes.append({"type": "heading", "attrs": {"level": 2},
+            "content": [{"type": "text", "text": line[3:]}]})
+        i += 1
+        continue
+
+    # Table (collect all | lines)
+    if line.startswith("|"):
+        rows = []
+        while i < len(lines) and lines[i].startswith("|"):
+            cells = [c.strip() for c in lines[i].split("|")[1:-1]]
+            # Skip separator rows (|---|---|)
+            if cells and all(set(c) <= set("-: ") for c in cells):
+                i += 1
+                continue
+            rows.append(cells)
+            i += 1
+        if rows:
+            header = rows[0] if rows else []
+            body = rows[1:] if len(rows) > 1 else []
+            table_rows = []
+            # Header row
+            if header:
+                table_rows.append({"type": "tableRow", "content": [
+                    {"type": "tableHeader", "content": [
+                        {"type": "paragraph", "content": [{"type": "text", "text": c}]}
+                    ]} for c in header
+                ]})
+            for row in body:
+                table_rows.append({"type": "tableRow", "content": [
+                    {"type": "tableCell", "content": [
+                        {"type": "paragraph", "content": [{"type": "text", "text": c}]}
+                    ]} for c in row
+                ]})
+            nodes.append({"type": "table", "content": table_rows})
+        continue
+
+    # Bold paragraph (starts with **)
+    # Bullet list (starts with -)
+    if line.startswith("- "):
+        items = []
+        while i < len(lines) and lines[i].startswith("- "):
+            text = lines[i][2:]
+            items.append({"type": "listItem", "content": [
+                {"type": "paragraph", "content": [{"type": "text", "text": text}]}
+            ]})
+            i += 1
+        nodes.append({"type": "bulletList", "content": items})
+        continue
+
+    # Regular paragraph (collect consecutive non-empty non-special lines)
+    para_lines = []
+    while i < len(lines) and lines[i].strip() and not lines[i].startswith("#") and not lines[i].startswith("|") and not lines[i].startswith("- ") and lines[i].strip() != "---":
+        para_lines.append(lines[i])
+        i += 1
+    if para_lines:
+        text = " ".join(para_lines)
+        # Handle bold markers
+        content = []
+        parts = text.split("**")
+        for j, part in enumerate(parts):
+            if not part:
+                continue
+            if j % 2 == 1:  # odd = bold
+                content.append({"type": "text", "text": part, "marks": [{"type": "strong"}]})
+            else:
+                content.append({"type": "text", "text": part})
+        if content:
+            nodes.append({"type": "paragraph", "content": content})
+
+doc = {"type": "doc", "version": 1, "content": nodes if nodes else [
+    {"type": "paragraph", "content": [{"type": "text", "text": "Assessment rendered but ADF conversion produced no nodes."}]}
+]}
+print(json.dumps(doc))
+' 2>/dev/null)
+
+# Fallback if Python ADF conversion fails
+if [ -z "$adf_desc" ] || ! echo "$adf_desc" | jq -e '.type' >/dev/null 2>&1; then
+    log "${risk_key}:WARN:ADF_FALLBACK"
+    adf_desc=$(jq -n --arg text "$rendered_md" '{
+        type: "doc", version: 1,
+        content: [{
+            type: "codeBlock",
+            attrs: {language: "markdown"},
+            content: [{type: "text", text: $text}]
+        }]
+    }')
+fi
+
 payload=$(jq -n \
     --arg project "$PROJECT_KEY" \
     --arg parent "$risk_key" \
     --arg summary "$summary" \
-    --arg desc "$rendered_md" \
+    --argjson desc "$adf_desc" \
     --arg assignee "$ASSIGNEE_ID" \
     --arg duedate "$today" \
     --arg startdate "$today" \
