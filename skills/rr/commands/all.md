@@ -38,11 +38,12 @@ Verify all three environment variables are set (do not display values):
 ### Handle --reset
 
 If `--reset` flag is set:
-1. Ask user to confirm: "This will delete all batch progress in ${RR_WORK_DIR:-~/rr-work}. Continue? (y/n)"
+1. Ask user to confirm: "This will delete the entire batch work directory at ${RR_WORK_DIR:-~/rr-work}. Continue? (y/n)"
 2. If confirmed:
    ```bash
-   rm -rf ${RR_WORK_DIR:-~/rr-work}/results/ ${RR_WORK_DIR:-~/rr-work}/errors/ ${RR_WORK_DIR:-~/rr-work}/jira-results/ ${RR_WORK_DIR:-~/rr-work}/jira-errors/ ${RR_WORK_DIR:-~/rr-work}/progress.md ${RR_WORK_DIR:-~/rr-work}/batch.log
+   rm -rf "${RR_WORK_DIR:-$HOME/rr-work}"
    ```
+   This removes everything: results, errors, payloads, extracts, assessments, logs, and all other intermediate files. A clean slate.
 3. Report cleared and continue to launch
 
 ### Launch

@@ -41,7 +41,7 @@ JIRA_CLOUD_ID="81a55da4-28c8-4a49-8a47-03a98a73f152"
 PROJECT_KEY="RR"
 
 MAX_PARALLEL_SUBAGENTS=20
-MAX_PARALLEL_JIRA=50
+MAX_PARALLEL_JIRA=10
 RISKS_PER_SUBAGENT=10
 SUBAGENT_TIMEOUT=300
 SUBAGENT_MAX_RETRIES=3
@@ -456,7 +456,7 @@ phase_completion() {
     local filtered=$(jq '.to_process' "$WORK_DIR/filter-result.json")
     local assessed=$(ls "$WORK_DIR/individual" 2>/dev/null | wc -l | tr -d ' ')
     local published=$(ls "$WORK_DIR/jira-results" 2>/dev/null | wc -l | tr -d ' ')
-    local failed=$((filtered - published))
+    local failed=$(ls "$WORK_DIR/jira-errors" 2>/dev/null | wc -l | tr -d ' ')
 
     # Generate progress report
     cat > "$WORK_DIR/progress.md" << EOF
