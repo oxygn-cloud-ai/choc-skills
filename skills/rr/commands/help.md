@@ -1,9 +1,11 @@
 # rr:help — Usage Guide
 
-Display this and stop. Do not proceed to any other action.
+First, read the `version:` field from `~/.claude/skills/rr/SKILL.md` frontmatter to get the current version number.
+
+Display the following and stop. Do not proceed to any other action. Replace `{version}` with the actual version read above.
 
 ```
-rr v2.8.2 — Risk Register Assessment
+rr v{version} — Risk Register Assessment
 
 USAGE
   /rr RR-220           Review a specific risk (interactive 6-step workflow)
@@ -14,7 +16,6 @@ USAGE
   /rr status           Check batch progress (snapshot)
   /rr monitor          Real-time batch progress monitor (live refresh)
   /rr fix              Re-run failed assessments
-  /rr remove           Delete Review tickets (testing only)
   /rr update           Update rr to latest version
   /rr help             Display this usage guide
   /rr doctor           Check environment health

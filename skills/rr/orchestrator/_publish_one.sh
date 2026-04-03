@@ -346,18 +346,46 @@ while [ $attempt -lt $MAX_PUBLISH_RETRIES ]; do
             new_key=$(echo "$http_body" | jq -r '.key')
             log "${risk_key}:SUCCESS:${new_key}"
 
-            # Attach assessment JSON to the ticket
+            # Extract and attach workflow JSON files
+            # In batch mode, the single individual/<key>.json contains everything.
+            # Split into spec files before attaching.
             if [ -f "$assessment_file" ]; then
-                attach_code=$(curl -s -o /dev/null -w "%{http_code}" \
-                    -X POST "$JIRA_BASE_URL/rest/api/3/issue/${new_key}/attachments" \
-                    -H "Authorization: Basic $JIRA_AUTH" \
-                    -H "X-Atlassian-Token: no-check" \
-                    -F "file=@${assessment_file}" \
-                    --max-time 30)
-                if [ "$attach_code" = "200" ]; then
-                    log "${risk_key}:ATTACHED:${assessment_file##*/}"
-                else
-                    log "${risk_key}:ATTACH_FAILED:HTTP_${attach_code}"
+                attach_dir="$WORK_DIR/attachments/${risk_key}"
+                mkdir -p "$attach_dir"
+                risk_key_lower=$(echo "$risk_key" | tr '[:upper:]' '[:lower:]')
+
+                # 1. Final assessment (the .assessment object)
+                jq '.assessment' "$assessment_file" > "$attach_dir/${risk_key_lower}_${today}_assessment_final.json" 2>/dev/null
+
+                # 2. Adversarial review summary
+                jq '.adversarial_summary' "$assessment_file" > "$attach_dir/${risk_key_lower}_${today}_adversarial_review.json" 2>/dev/null
+
+                # 3. Full combined file (the raw sub-agent output)
+                cp "$assessment_file" "$attach_dir/${risk_key_lower}_${today}_combined.json"
+
+                # 4. Jira ticket record (the API response we just got)
+                echo "$http_body" > "$attach_dir/${risk_key_lower}_${today}_jira_ticket.json"
+
+                # Attach all files in one curl call
+                attach_args=""
+                for f in "$attach_dir"/*.json; do
+                    [ -f "$f" ] || continue
+                    attach_args="$attach_args -F file=@$f"
+                done
+
+                if [ -n "$attach_args" ]; then
+                    attach_code=$(eval curl -s -o /dev/null -w '"%{http_code}"' \
+                        -X POST '"$JIRA_BASE_URL/rest/api/3/issue/${new_key}/attachments"' \
+                        -H '"Authorization: Basic $JIRA_AUTH"' \
+                        -H '"X-Atlassian-Token: no-check"' \
+                        $attach_args \
+                        --max-time 60)
+                    file_count=$(ls "$attach_dir"/*.json 2>/dev/null | wc -l | tr -d ' ')
+                    if [ "$attach_code" = "200" ]; then
+                        log "${risk_key}:ATTACHED:${file_count}_files"
+                    else
+                        log "${risk_key}:ATTACH_FAILED:HTTP_${attach_code}"
+                    fi
                 fi
             fi
 

@@ -171,7 +171,7 @@ rr doctor -- Environment Health Check
   [PASS] orchestrator scripts: 2 files found
   [PASS] sub-commands: 4 files in ~/.claude/commands/rr/
   [PASS] Atlassian MCP: connected (1 result)
-  [PASS] version: 2.8.2
+  [PASS] version: 2.8.3
 
   Result: 10 passed, 0 warnings, 0 failed
 ```

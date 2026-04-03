@@ -1,6 +1,6 @@
 ---
 name: rr
-version: 2.8.2
+version: 2.8.3
 description: "Risk register assessment for Chocolate Finance. Invoke with /rr followed by a ticket key (e.g. /rr RR-220) or /rr all for batch mode."
 user-invocable: true
 disable-model-invocation: true
@@ -9,19 +9,6 @@ argument-hint: [RR-NNN | all | status | monitor | fix | update | help | doctor |
 ---
 
 # rr — Risk Register Assessment
-
-## Subcommands
-
-Check $ARGUMENTS before proceeding. If it matches one of the following subcommands, invoke the corresponding sub-skill via the Skill tool and stop.
-
-| Argument | Action |
-|----------|--------|
-| `help`, `--help`, `-h` | Invoke `/rr:help` |
-| `doctor`, `--doctor`, `check` | Invoke `/rr:doctor` |
-| `version`, `--version`, `-v` | Invoke `/rr:version` |
-| `update`, `--update`, `upgrade` | Invoke `/rr:update` |
-
----
 
 ## Pre-flight Checks
 
