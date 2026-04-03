@@ -23,7 +23,7 @@ If no work directory exists, tell user to run `/rr all` first. Stop here.
 
 ## Display Dashboard
 
-Run the following bash script via the Bash tool. It takes a single snapshot and returns immediately.
+Run the following bash script. It takes a single snapshot and returns immediately.
 
 ```bash
 WORK_DIR="${RR_WORK_DIR:-$HOME/rr-work}"
@@ -127,6 +127,12 @@ fi
 
 If the batch is complete: also display the full `progress.md` content.
 
-If the batch is still running: tell the user "Run `/rr monitor` again to refresh, or `/rr status` for a summary."
+If the batch is still running: use the `/loop` skill to auto-refresh. Invoke:
 
-Do NOT loop or sleep. Return immediately after displaying the dashboard.
+```
+/loop 10s /rr monitor
+```
+
+This will re-run the monitor every 10 seconds, giving the user a live-updating view. The `/loop` skill handles the repetition — the monitor itself just takes a single snapshot each time.
+
+Tell the user: "Monitoring every 10 seconds. Press Escape to stop."
