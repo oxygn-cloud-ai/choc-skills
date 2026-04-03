@@ -69,7 +69,7 @@ mkdir -p "$WORK_DIR"/{extracts,payloads,results,errors,assessments,individual,ji
 : > "$LOG_FILE"
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE" >&2
 }
 
 die() {
