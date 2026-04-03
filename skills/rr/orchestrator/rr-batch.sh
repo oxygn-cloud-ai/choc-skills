@@ -172,12 +172,9 @@ phase_discovery() {
 
         all_risks=$(echo "$all_risks" "$response" | jq -s '.[0] + .[1].issues')
 
-        # Cursor-based pagination: check isLast and nextPageToken
-        local is_last=$(echo "$response" | jq -r '.isLast // true')
-        if [ "$is_last" = "true" ]; then
-            break
-        fi
-
+        # Cursor-based pagination: nextPageToken is authoritative
+        # NOTE: Jira /search/jql may return isLast:true even when more pages exist.
+        # Always check for nextPageToken presence — continue if token exists.
         next_page_token=$(echo "$response" | jq -r '.nextPageToken // empty')
         if [ -z "$next_page_token" ]; then
             break
@@ -240,8 +237,8 @@ phase_filter() {
             break
         fi
         all_reviews=$(echo "$all_reviews" "$reviews_response" | jq -s '.[0] + .[1].issues')
-        local is_last=$(echo "$reviews_response" | jq -r '.isLast // true')
-        [ "$is_last" = "true" ] && break
+        # NOTE: Jira /search/jql may return isLast:true with a valid nextPageToken.
+        # Always check token presence — continue if token exists.
         next_page_token=$(echo "$reviews_response" | jq -r '.nextPageToken // empty')
         [ -z "$next_page_token" ] && break
     done
@@ -334,7 +331,7 @@ create_payload() {
 
     local payload=$(jq -n \
         --arg model "$MODEL" \
-        --argjson max_tokens 12000 \
+        --argjson max_tokens 20000 \
         --arg system "$SUBAGENT_PROMPT" \
         --arg user "Assess these risks and return JSON only: $risks" \
         '{
