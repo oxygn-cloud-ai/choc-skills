@@ -1,6 +1,6 @@
 ---
 name: rr
-version: 2.5.0
+version: 2.5.1
 description: "Risk register assessment for Chocolate Finance. Invoke with /rr followed by a ticket key (e.g. /rr RR-220) or /rr all for batch mode."
 user-invocable: true
 disable-model-invocation: true
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-rr v2.5.0 — Risk Register Assessment
+rr v2.5.1 — Risk Register Assessment
 
 USAGE
   /rr RR-220           Review a specific risk (interactive 6-step workflow)
@@ -106,7 +106,7 @@ rr doctor — Environment Health Check
   [PASS] orchestrator scripts: 2 files found
   [PASS] sub-commands: 4 files in ~/.claude/commands/rr/
   [PASS] Atlassian MCP: connected (1 result)
-  [PASS] version: 2.5.0
+  [PASS] version: 2.5.1
 
   Result: N passed, N warnings, N failed
 ```
@@ -118,7 +118,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-rr v2.5.0
+rr v2.5.1
 ```
 
 End of version output. Do not continue.
@@ -174,6 +174,7 @@ Parse $ARGUMENTS and route:
 | `status` | Invoke `/rr:status` via Skill tool |
 | `monitor` | Invoke `/rr:monitor` via Skill tool |
 | `fix` | Invoke `/rr:fix` via Skill tool |
+| `remove` | Invoke `/rr:remove` via Skill tool (hidden — testing only, deletes Review tickets) |
 | anything else | Show help |
 
 If the sub-command `.md` files exist in `~/.claude/commands/rr/`, invoke them via the Skill tool. Otherwise, execute the logic inline using the workflow overview below.

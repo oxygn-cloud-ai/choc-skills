@@ -118,10 +118,10 @@ if [ "${1:-}" = "--check" ]; then
   # Sub-commands
   if [ -d "$COMMANDS_TARGET" ]; then
     count=$(find "$COMMANDS_TARGET" -name "*.md" | wc -l | tr -d ' ')
-    if [ "$count" -ge 5 ]; then
+    if [ "$count" -ge 6 ]; then
       ok "Sub-commands: ${count} files in ${COMMANDS_TARGET}"
     else
-      warn "Sub-commands: only ${count}/5 files in ${COMMANDS_TARGET}"
+      warn "Sub-commands: only ${count}/6 files in ${COMMANDS_TARGET}"
       issues=$((issues + 1))
     fi
   else
