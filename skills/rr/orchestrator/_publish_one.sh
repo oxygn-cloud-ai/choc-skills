@@ -70,7 +70,7 @@ case $month in
     10|11|12) quarter="Q4" ;;
 esac
 
-# Allow override from env var (set by --qtr:Q1 flag in rr-batch.sh)
+# Allow override from env var (set by --qtr:Q1 flag in rr-finalize.sh)
 quarter="${RR_QUARTER_OVERRIDE:-$quarter}"
 
 # Summary format: "Review: 2026: Q2"

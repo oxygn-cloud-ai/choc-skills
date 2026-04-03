@@ -121,14 +121,13 @@ Each completed review produces 7 JSON files in `$RR_OUTPUT_DIR` (default: `~/rr-
   SKILL.md                           Main skill definition
   .source-repo                       Repo path (for /rr update)
   orchestrator/
-    rr-batch.sh                      Main batch orchestrator
-    dispatch.sh                      Parallel sub-agent dispatch
-    collect.sh                       Result collection/validation
-    retry.sh                         Failed batch retry
-    publish.sh                       Jira publication manifest
-    _dispatch_one.sh                 Per-batch dispatch wrapper
-    _publish_one.sh                  Per-risk publish wrapper
-    sub-agent-system-prompt.txt      Sub-agent system prompt
+    rr-prepare.sh                    Phases 1-3: discovery, filter, extraction
+    rr-finalize.sh                   Phases 5-7: collection, publication, completion
+    sub-agent-prompt.md              Sub-agent prompt template for Agent dispatch
+    _publish_one.sh                  Per-risk Jira publish wrapper
+    monitor.py                       Terminal dashboard (Rich)
+    monitor_server.py                HTTP API server for web dashboard
+    monitor_dashboard.html           Web dashboard frontend
   references/
     business-context.md              Operational facts and business context
     jira-config.md                   Jira API config
