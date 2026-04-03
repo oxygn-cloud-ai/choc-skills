@@ -33,7 +33,7 @@ Slash-command skills installed via the root `./install.sh` into `~/.claude/skill
 |-------|---------|-------------|
 | **chk1** | `/chk1` | Adversarial implementation audit — fault-finding, risk-exposing, deviation-detecting review of recent changes |
 | **chk2** | `/chk2` | Adversarial security audit for web services — headers, TLS, DNS, CORS, API injection, WebSocket, WAF, infrastructure, brute force, scaling, and info disclosure |
-| **rr** | `/rr` | Risk register assessment for Chocolate Finance — interactive 6-step workflow or autonomous batch mode with parallel sub-agents. [Full documentation](RR-README.md) |
+| **rr** | `/rr` | Risk register assessment — interactive 6-step workflow or autonomous batch mode with parallel sub-agents. [Full documentation](RR-README.md) |
 
 ### Standalone Tools
 

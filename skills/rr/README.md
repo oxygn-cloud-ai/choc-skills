@@ -1,6 +1,6 @@
 # rr — Risk Register Assessment
 
-A Claude Code CLI skill for structured risk assessment of Chocolate Finance's Jira risk register (project RR). Single-risk interactive mode or fully autonomous batch mode with parallel sub-agents.
+A Claude Code CLI skill for structured risk assessment of a Jira-based risk register (project RR). Single-risk interactive mode or fully autonomous batch mode with parallel sub-agents.
 
 ## Prerequisites
 
@@ -132,7 +132,7 @@ Each completed review produces 7 JSON files in `$RR_OUTPUT_DIR` (default: `~/rr-
     _publish_one.sh                  Per-risk publish wrapper
     sub-agent-system-prompt.txt      Sub-agent system prompt
   references/
-    business-context.md              Chocolate Finance facts
+    business-context.md              Operational facts and business context
     jira-config.md                   Jira API config
     quality-standards.md             Validation rules
     regulatory-framework.md          MAS/SFC instruments

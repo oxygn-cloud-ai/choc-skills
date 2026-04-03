@@ -2,7 +2,7 @@
 
 **Full documentation for the `rr` Claude Code skill.**
 
-A structured, adversarial risk assessment workflow for Chocolate Finance's Jira-based risk register (project RR). Produces time-stamped, schema-validated Review tickets with full audit trail.
+A structured, adversarial risk assessment workflow for a Jira-based risk register (project RR). Produces time-stamped, schema-validated Review tickets with full audit trail.
 
 ---
 
@@ -27,7 +27,7 @@ A structured, adversarial risk assessment workflow for Chocolate Finance's Jira-
 
 ## 1. What the Skill Does
 
-The `rr` skill automates the quarterly review of Chocolate Finance's risk register. It connects to Jira (project key: `RR`), retrieves risk items, and produces structured assessments that are published back as Review child tickets under each parent Risk.
+The `rr` skill automates the quarterly review of a Jira-based risk register. It connects to Jira (project key: `RR`), retrieves risk items, and produces structured assessments that are published back as Review child tickets under each parent Risk.
 
 ### Two Operating Modes
 
@@ -86,7 +86,7 @@ If `ANTHROPIC_API_KEY` is not set or the orchestrator scripts are missing, batch
 |------------|-------------|----------------|
 | Claude Code CLI | `claude --version` | [docs.anthropic.com](https://docs.anthropic.com/en/docs/claude-code) |
 | Atlassian MCP integration | `/rr doctor` (checks MCP connectivity) | Connect via Claude Code settings or [claude.ai](https://claude.ai) integrations |
-| Access to Jira project RR | Verify in Jira: chocolatefinance.atlassian.net | Request from Jira admin |
+| Access to Jira project RR | Verify in Jira: your-instance.atlassian.net | Request from Jira admin |
 | `curl` | `which curl` | Pre-installed on macOS |
 | `bash` 3.2+ | `bash --version` | Pre-installed on macOS |
 
@@ -357,11 +357,11 @@ rm -rf ~/rr-work     # Batch mode working directory
 
 ### Jira Configuration
 
-These values are hard-coded in the reference files and orchestrator scripts. They are specific to Chocolate Finance's Jira instance:
+These values are hard-coded in the reference files and orchestrator scripts:
 
 | Setting | Value |
 |---------|-------|
-| Jira Instance | chocolatefinance.atlassian.net |
+| Jira Instance | your-instance.atlassian.net |
 | Cloud ID | `81a55da4-28c8-4a49-8a47-03a98a73f152` |
 | Project Key | `RR` |
 | Risk Issue Type ID | `12724` |
@@ -400,7 +400,7 @@ Review tickets are automatically labelled based on the month of assessment:
     _publish_one.sh                       Per-risk publish wrapper (macOS-safe parallelism)
     sub-agent-system-prompt.txt           System prompt embedded in all sub-agent API calls
   references/
-    business-context.md                   Chocolate Finance operational facts
+    business-context.md                   Operational facts and business context
     jira-config.md                        Jira API connection details and MCP tool usage
     quality-standards.md                  Validation rules and prohibited actions
     regulatory-framework.md              MAS/SFC applicable regulatory instruments
