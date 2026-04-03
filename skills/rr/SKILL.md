@@ -1,6 +1,6 @@
 ---
 name: rr
-version: 2.1.2
+version: 2.3.0
 description: "Risk register assessment for Chocolate Finance. Invoke with /rr followed by a ticket key (e.g. /rr RR-220) or /rr all for batch mode."
 user-invocable: true
 disable-model-invocation: true
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-rr v2.1.2 — Risk Register Assessment
+rr v2.3.0 — Risk Register Assessment
 
 USAGE
   /rr RR-220           Review a specific risk (interactive 6-step workflow)
@@ -105,7 +105,7 @@ rr doctor — Environment Health Check
   [PASS] orchestrator scripts: 2 files found
   [PASS] sub-commands: 4 files in ~/.claude/commands/rr/
   [PASS] Atlassian MCP: connected (1 result)
-  [PASS] version: 2.1.2
+  [PASS] version: 2.3.0
 
   Result: N passed, N warnings, N failed
 ```
@@ -117,7 +117,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-rr v2.1.2
+rr v2.3.0
 ```
 
 End of version output. Do not continue.
