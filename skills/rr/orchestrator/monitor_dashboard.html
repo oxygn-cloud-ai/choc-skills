@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RR Batch Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #0a0e17;
+  --bg-surface: #111827;
+  --bg-card: #1a2235;
+  --bg-elevated: #1f2a3f;
+  --border: #2a3650;
+  --border-bright: #3b4d6e;
+  --text-primary: #e8edf5;
+  --text-secondary: #8b9cc0;
+  --text-muted: #5a6a8a;
+  --cyan: #22d3ee;
+  --cyan-dim: #0e7490;
+  --cyan-glow: rgba(34, 211, 238, 0.15);
+  --green: #34d399;
+  --green-dim: #065f46;
+  --green-glow: rgba(52, 211, 153, 0.12);
+  --amber: #fbbf24;
+  --amber-dim: #92400e;
+  --red: #f87171;
+  --red-dim: #7f1d1d;
+  --red-glow: rgba(248, 113, 113, 0.1);
+  --purple: #a78bfa;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app { position: relative; z-index: 1; padding: 20px 24px; max-width: 1600px; margin: 0 auto; }
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header-logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #000;
+  font-family: var(--font-mono);
+}
+.header h1 {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+}
+.header-meta {
+  display: flex; align-items: center; gap: 16px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);
+}
+.header-meta .pulse {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+.header-meta .pulse.complete { background: var(--cyan); animation: none; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* Phase & Progress */
+.phase-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.phase-top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 14px;
+}
+.phase-label {
+  font-family: var(--font-mono); font-size: 13px;
+  color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;
+}
+.phase-name { font-size: 22px; font-weight: 700; color: var(--cyan); }
+.phase-name.complete { color: var(--green); }
+.phase-pct {
+  font-family: var(--font-mono); font-size: 28px; font-weight: 600;
+  color: var(--text-primary);
+}
+.progress-track {
+  height: 6px; background: var(--bg-deep); border-radius: 3px; overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.progress-fill.complete {
+  background: linear-gradient(90deg, var(--green-dim), var(--green));
+}
+.progress-fill::after {
+  content: '';
+  position: absolute; right: 0; top: -2px; bottom: -2px; width: 20px;
+  background: linear-gradient(90deg, transparent, var(--cyan));
+  border-radius: 3px;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+.progress-fill.complete::after { display: none; }
+@keyframes shimmer { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+.phase-stats {
+  display: flex; gap: 32px; margin-top: 14px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);
+}
+.phase-stats span { color: var(--text-secondary); }
+
+/* Grid layout */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid-full { grid-column: 1 / -1; }
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+}
+.card-header .badge {
+  font-size: 11px; padding: 2px 8px; border-radius: 4px;
+  font-weight: 600; letter-spacing: 0;
+}
+.badge-green { background: var(--green-glow); color: var(--green); }
+.badge-red { background: var(--red-glow); color: var(--red); }
+.badge-cyan { background: var(--cyan-glow); color: var(--cyan); }
+.card-body { padding: 14px 18px; }
+
+/* Batch table */
+.batch-table { width: 100%; border-collapse: collapse; }
+.batch-table th {
+  font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--text-muted); text-align: left;
+  padding: 6px 10px; border-bottom: 1px solid var(--border);
+}
+.batch-table td {
+  font-family: var(--font-mono); font-size: 12px; padding: 7px 10px;
+  border-bottom: 1px solid rgba(42, 54, 80, 0.4);
+  color: var(--text-secondary);
+}
+.batch-table tr:last-child td { border-bottom: none; }
+.batch-table tr:hover td { background: rgba(34, 211, 238, 0.03); }
+
+.status-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  margin-right: 6px; vertical-align: middle;
+}
+.status-dot.success { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.running { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: pulse 1.5s infinite; }
+.status-dot.error { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.status-dot.pending { background: var(--text-muted); }
+
+/* Risk summary */
+.risk-counts {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-bottom: 16px;
+}
+.risk-count-card {
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  padding: 14px 16px;
+  text-align: center;
+}
+.risk-count-card .num {
+  font-family: var(--font-mono); font-size: 28px; font-weight: 600;
+  line-height: 1;
+}
+.risk-count-card .label {
+  font-size: 11px; color: var(--text-muted); margin-top: 4px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.risk-count-card.published .num { color: var(--green); }
+.risk-count-card.assessed .num { color: var(--cyan); }
+.risk-count-card.failed .num { color: var(--red); }
+.risk-count-card.pending .num { color: var(--text-muted); }
+
+/* Risk grid */
+.risk-grid {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  max-height: 140px; overflow: hidden;
+}
+.risk-cell {
+  width: 8px; height: 8px; border-radius: 2px;
+  transition: background 0.3s;
+}
+.risk-cell.published { background: var(--green); }
+.risk-cell.assessed { background: var(--cyan); }
+.risk-cell.failed { background: var(--red); }
+.risk-cell.pending { background: var(--border); }
+
+/* Error panel */
+.error-list { max-height: 200px; overflow-y: auto; }
+.error-item {
+  display: flex; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid rgba(42, 54, 80, 0.3);
+  font-family: var(--font-mono); font-size: 11px;
+}
+.error-item:last-child { border-bottom: none; }
+.error-key { color: var(--red); font-weight: 600; white-space: nowrap; min-width: 60px; }
+.error-msg { color: var(--text-muted); word-break: break-word; }
+.no-errors {
+  color: var(--text-muted); font-family: var(--font-mono);
+  font-size: 12px; padding: 20px 0; text-align: center;
+}
+
+/* Log stream */
+.log-stream {
+  max-height: 400px; overflow-y: auto;
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.7;
+  padding: 4px 0;
+}
+.log-line { padding: 1px 0; white-space: pre-wrap; word-break: break-all; }
+.log-line.phase { color: var(--cyan); font-weight: 600; }
+.log-line.success { color: var(--green); }
+.log-line.error { color: var(--red); }
+.log-line.warn { color: var(--amber); }
+.log-line.attached { color: var(--green); opacity: 0.6; }
+.log-line.dim { color: var(--text-muted); }
+.log-line.banner { color: var(--cyan); font-weight: 600; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .grid { grid-template-columns: 1fr; }
+  .risk-counts { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">RR</div>
+      <h1>Batch Monitor</h1>
+    </div>
+    <div class="header-meta">
+      <div class="pulse" id="pulse"></div>
+      <span id="updated"></span>
+      <span id="elapsed"></span>
+    </div>
+  </div>
+
+  <!-- Phase & Progress -->
+  <div class="phase-bar">
+    <div class="phase-top">
+      <div>
+        <div class="phase-label">Current Phase</div>
+        <div class="phase-name" id="phaseName">Loading...</div>
+      </div>
+      <div class="phase-pct" id="phasePct">0%</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    <div class="phase-stats">
+      <div>Risks: <span id="statRisks">--</span></div>
+      <div>To process: <span id="statProcess">--</span></div>
+      <div>Assessed: <span id="statAssessed">--</span></div>
+      <div>Published: <span id="statPublished">--</span></div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid">
+    <!-- Batch Status -->
+    <div class="card">
+      <div class="card-header">
+        Sub-Agent Batches
+        <span class="badge badge-cyan" id="batchBadge">--</span>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <table class="batch-table">
+          <thead>
+            <tr><th>#</th><th>Risks</th><th>Dispatch</th><th>Result</th><th>Status</th></tr>
+          </thead>
+          <tbody id="batchBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Risk Status -->
+    <div class="card">
+      <div class="card-header">
+        Risk Status
+        <span class="badge badge-green" id="riskBadge">--</span>
+      </div>
+      <div class="card-body">
+        <div class="risk-counts" id="riskCounts"></div>
+        <div class="risk-grid" id="riskGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Errors -->
+  <div class="card" id="errorCard" style="margin-bottom: 16px; display: none;">
+    <div class="card-header">
+      Errors
+      <span class="badge badge-red" id="errorBadge">0</span>
+    </div>
+    <div class="card-body">
+      <div class="error-list" id="errorList"></div>
+    </div>
+  </div>
+
+  <!-- Log Stream -->
+  <div class="card">
+    <div class="card-header">
+      Log Stream
+      <span class="badge badge-cyan" id="logBadge">--</span>
+    </div>
+    <div class="card-body" style="padding: 10px 18px;">
+      <div class="log-stream" id="logStream"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api/status';
+let lastLogLength = 0;
+
+function classifyLog(line) {
+  const u = line.toUpperCase();
+  if (u.includes('PHASE') || u.includes('====') || u.includes('BATCH COMPLETE')) return 'banner';
+  if (u.includes('SUCCESS')) return 'success';
+  if (u.includes('FAILED') || u.includes('ERROR')) return 'error';
+  if (u.includes('WARN') || u.includes('RETRY') || u.includes('RATE LIMITED')) return 'warn';
+  if (u.includes('ATTACHED')) return 'attached';
+  if (u.includes('PUBLISHING') || u.includes('DISPATCHING')) return 'dim';
+  return 'dim';
+}
+
+function calcProgress(data) {
+  const p = data.phase.num;
+  const tp = data.to_process || 1;
+  if (p <= 3) return p * 10;
+  if (p === 4) {
+    const r = data.counts.results;
+    const b = Math.max(data.counts.extracts, 1);
+    return 30 + Math.round(20 * r / b);
+  }
+  if (p === 5) return 50 + Math.round(20 * data.counts.individual / tp);
+  if (p === 6) return 70 + Math.round(30 * data.counts.jira_results / tp);
+  if (p >= 7) return 100;
+  return 0;
+}
+
+function formatElapsed(startStr) {
+  if (!startStr) return '';
+  const start = new Date(startStr.replace(' ', 'T'));
+  const now = new Date();
+  const diff = Math.floor((now - start) / 1000);
+  const m = Math.floor(diff / 60);
+  const s = diff % 60;
+  return `${m}m ${s}s`;
+}
+
+function update(data) {
+  const now = new Date().toLocaleTimeString();
+  const pct = Math.min(calcProgress(data), 100);
+  const complete = data.complete;
+
+  // Header
+  document.getElementById('updated').textContent = now;
+  document.getElementById('elapsed').textContent = data.start_time ? formatElapsed(data.start_time) : '';
+  const pulse = document.getElementById('pulse');
+  pulse.className = complete ? 'pulse complete' : 'pulse';
+
+  // Phase
+  const phaseName = document.getElementById('phaseName');
+  phaseName.textContent = complete
+    ? `Complete — Phase ${data.phase.num}: ${data.phase.name}`
+    : `Phase ${data.phase.num}: ${data.phase.name}`;
+  phaseName.className = complete ? 'phase-name complete' : 'phase-name';
+
+  document.getElementById('phasePct').textContent = pct + '%';
+
+  const fill = document.getElementById('progressFill');
+  fill.style.width = pct + '%';
+  fill.className = complete ? 'progress-fill complete' : 'progress-fill';
+
+  // Stats
+  document.getElementById('statRisks').textContent = data.total_risks;
+  document.getElementById('statProcess').textContent = data.to_process;
+  document.getElementById('statAssessed').textContent = data.counts.individual;
+  document.getElementById('statPublished').textContent = data.counts.jira_results;
+
+  // Batch table
+  const batchBody = document.getElementById('batchBody');
+  const done = data.batches.filter(b => b.status === 'success').length;
+  document.getElementById('batchBadge').textContent = `${done}/${data.batches.length}`;
+  batchBody.innerHTML = data.batches.map(b => {
+    const dispatch = b.dispatched
+      ? '<span style="color:var(--green)">sent</span>'
+      : '<span style="color:var(--text-muted)">pending</span>';
+    const result = b.result
+      ? '<span style="color:var(--green)">success</span>'
+      : b.error
+        ? '<span style="color:var(--red)">failed</span>'
+        : b.dispatched
+          ? '<span style="color:var(--amber)">waiting</span>'
+          : '<span style="color:var(--text-muted)">&mdash;</span>';
+    const statusDot = `<span class="status-dot ${b.status}"></span>`;
+    const statusText = b.status === 'success' ? 'done'
+      : b.status === 'error' ? 'failed'
+      : b.status === 'running' ? 'running'
+      : 'pending';
+    return `<tr>
+      <td>${b.num}</td>
+      <td>${b.risks}</td>
+      <td>${dispatch}</td>
+      <td>${result}</td>
+      <td>${statusDot}${statusText}</td>
+    </tr>`;
+  }).join('');
+
+  // Risk counts
+  const rc = data.risks.counts;
+  document.getElementById('riskBadge').textContent = `${rc.published}/${data.risks.total}`;
+  document.getElementById('riskCounts').innerHTML = [
+    { cls: 'published', num: rc.published, label: 'Published' },
+    { cls: 'assessed', num: rc.assessed, label: 'Assessed' },
+    { cls: 'failed', num: rc.failed, label: 'Failed' },
+    { cls: 'pending', num: rc.pending, label: 'Pending' },
+  ].map(c => `
+    <div class="risk-count-card ${c.cls}">
+      <div class="num">${c.num}</div>
+      <div class="label">${c.label}</div>
+    </div>
+  `).join('');
+
+  // Risk grid
+  document.getElementById('riskGrid').innerHTML = data.risks.risks.map(r =>
+    `<div class="risk-cell ${r.status}" title="${r.key}: ${r.status}"></div>`
+  ).join('');
+
+  // Errors
+  const errors = data.risks.risks.filter(r => r.status === 'failed');
+  const errorCard = document.getElementById('errorCard');
+  if (errors.length > 0) {
+    errorCard.style.display = 'block';
+    document.getElementById('errorBadge').textContent = errors.length;
+    document.getElementById('errorList').innerHTML = errors.map(e => `
+      <div class="error-item">
+        <span class="error-key">${e.key}</span>
+        <span class="error-msg">${e.error || 'Unknown error'}</span>
+      </div>
+    `).join('');
+  } else {
+    errorCard.style.display = 'none';
+  }
+
+  // Log stream
+  const logStream = document.getElementById('logStream');
+  const shouldScroll = logStream.scrollHeight - logStream.scrollTop - logStream.clientHeight < 50;
+  document.getElementById('logBadge').textContent = `${data.log.length} lines`;
+  logStream.innerHTML = data.log.map(line =>
+    `<div class="log-line ${classifyLog(line)}">${line.replace(/</g, '&lt;')}</div>`
+  ).join('');
+  if (shouldScroll) logStream.scrollTop = logStream.scrollHeight;
+}
+
+async function poll() {
+  try {
+    const resp = await fetch(API);
+    if (resp.ok) {
+      const data = await resp.json();
+      update(data);
+    }
+  } catch (e) {
+    document.getElementById('phaseName').textContent = 'Connection lost';
+  }
+}
+
+poll();
+setInterval(poll, 2000);
+
+document.title = 'RR Batch Monitor';
+</script>
+</body>
+</html>
