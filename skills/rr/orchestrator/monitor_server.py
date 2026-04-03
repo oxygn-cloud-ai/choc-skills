@@ -273,8 +273,8 @@ def main():
         print("Start a batch first: /rr all")
         sys.exit(1)
 
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), MonitorHandler) as httpd:
-        httpd.allow_reuse_address = True
         print(f"RR Monitor server running at http://localhost:{PORT}")
         print(f"Monitoring: {WORK_DIR}")
         print("Press Ctrl+C to stop")
