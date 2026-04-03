@@ -115,15 +115,16 @@ def build_dashboard():
     complete = is_complete()
     pct = (jira_ok * 100 // to_process) if to_process > 0 else 0
 
-    # Status line
+    # Status line with timestamp so user can see it's refreshing
+    now = time.strftime("%H:%M:%S")
     if complete:
         status = Text(
-            f"  COMPLETE — Phase {phase_num}: {phase_name}",
+            f"  COMPLETE — Phase {phase_num}: {phase_name}  (at {now})",
             style="bold green",
         )
     else:
         status = Text(
-            f"  Phase {phase_num}: {phase_name}  [{pct}%]",
+            f"  Phase {phase_num}: {phase_name}  [{pct}%]  (updated {now})",
             style="bold cyan",
         )
 
