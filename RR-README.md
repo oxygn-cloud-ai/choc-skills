@@ -97,7 +97,7 @@ If `ANTHROPIC_API_KEY` is not set or the orchestrator scripts are missing, batch
 | `jq` | `which jq` | `brew install jq` |
 | `ANTHROPIC_API_KEY` | `echo $ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
 | `JIRA_EMAIL` | `echo $JIRA_EMAIL` | Your Jira account email |
-| `JIRA_API_TOKEN` | `echo $JIRA_API_TOKEN` | [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens) |
+| `JIRA_API_KEY` | `echo $JIRA_API_KEY` | [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens) |
 
 ### Optional
 
@@ -112,7 +112,7 @@ Add to your shell profile (`~/.zshrc`, `~/.bashrc`, or `~/.zprofile`):
 ```bash
 export ANTHROPIC_API_KEY="your-key-here"
 export JIRA_EMAIL="your-email@company.com"
-export JIRA_API_TOKEN="your-token-here"
+export JIRA_API_KEY="your-token-here"
 export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."  # optional
 ```
 
@@ -166,7 +166,7 @@ rr doctor -- Environment Health Check
   [PASS] jq: /usr/bin/jq
   [PASS] ANTHROPIC_API_KEY: set
   [PASS] JIRA_EMAIL: set
-  [PASS] JIRA_API_TOKEN: set
+  [PASS] JIRA_API_KEY: set
   [PASS] reference files: 9 files found
   [PASS] orchestrator scripts: 2 files found
   [PASS] sub-commands: 4 files in ~/.claude/commands/rr/
@@ -233,7 +233,7 @@ Do a risk review of RR-315
 /rr all
 ```
 
-If `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, and `JIRA_API_TOKEN` are set, this launches the parallel orchestrator in the background. You'll see:
+If `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, and `JIRA_API_KEY` are set, this launches the parallel orchestrator in the background. You'll see:
 
 ```
 RR batch review launched.
@@ -349,7 +349,7 @@ rm -rf ~/rr-work     # Batch mode working directory
 | `RR_WORK_DIR` | `~/rr-work` | No | Working directory for batch orchestrator (intermediate files, logs, results) |
 | `ANTHROPIC_API_KEY` | _(none)_ | For batch parallel mode | API key for Claude sub-agent dispatch |
 | `JIRA_EMAIL` | _(none)_ | For batch mode | Email address for Jira REST API basic auth |
-| `JIRA_API_TOKEN` | _(none)_ | For batch mode | API token for Jira REST API basic auth |
+| `JIRA_API_KEY` | _(none)_ | For batch mode | API token for Jira REST API basic auth |
 | `SLACK_WEBHOOK_URL` | _(none)_ | No | Incoming webhook URL for batch completion notification |
 | `RR_MODEL` | `claude-sonnet-4-20250514` | No | Claude model used by batch sub-agents |
 | `ANTHROPIC_API_VERSION` | `2023-06-01` | No | Anthropic API version header |
@@ -538,14 +538,14 @@ The full regulatory reference with applicability notes is in `~/.claude/skills/r
 | `/rr doctor` shows `[FAIL]` for reference files | Installed via root `./install.sh` instead of per-skill installer | `cd skills/rr && ./install.sh --force` |
 | `/rr RR-220` says "Atlassian MCP not available" | Atlassian MCP integration not connected | Connect Atlassian in Claude Code settings or at claude.ai |
 | "Project RR not found" from Jira | Your Atlassian account doesn't have access to the RR project | Request access from Jira admin |
-| Batch mode says "Missing required environment variables" | `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, or `JIRA_API_TOKEN` not set | Add to `~/.zshrc` and `source ~/.zshrc` |
+| Batch mode says "Missing required environment variables" | `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, or `JIRA_API_KEY` not set | Add to `~/.zshrc` and `source ~/.zshrc` |
 | Batch mode falls back to sequential | Orchestrator scripts missing or env vars not set | Run `/rr doctor` to identify what's missing |
 | `jq: command not found` during batch | jq not installed | `brew install jq` |
 | Batch progress lost | Work directory deleted or session crashed | Check `~/rr-work/progress.md` or `~/rr-output/rr-progress.md` |
 | Duplicate Review tickets created | Ran batch twice on same day without `--force` | The quarterly filter should prevent this. If it didn't, check the filter-result.json for issues |
 | Step 6 fails with 401 | Jira credentials expired or wrong | Regenerate API token at id.atlassian.com |
 | Step 6 fails with 403 | No permission to create issues in RR project | Request Create permission from Jira admin |
-| File attachments fail | `JIRA_EMAIL` or `JIRA_API_TOKEN` not set for curl-based attachment | Set both env vars |
+| File attachments fail | `JIRA_EMAIL` or `JIRA_API_KEY` not set for curl-based attachment | Set both env vars |
 | Assessment JSON validation fails | Sub-agent returned non-compliant data | Check the error in `~/rr-work/errors/`. The collect phase auto-corrects rating matrix violations but other errors are logged |
 | `/rr update` says "source repo not configured" | Installed manually instead of via install.sh | Re-install: `cd skills/rr && ./install.sh --force` |
 | Context limit reached during sequential batch | Too many risks processed in one session | Normal behaviour. Start a new chat and type `/rr all` to resume |
@@ -556,7 +556,7 @@ The full regulatory reference with applicability notes is in `~/.claude/skills/r
 
 ### Secrets Handling
 
-- **Environment variables only.** The skill never stores API keys, tokens, or credentials in files. All secrets are referenced via `$ANTHROPIC_API_KEY`, `$JIRA_EMAIL`, `$JIRA_API_TOKEN`, and `$SLACK_WEBHOOK_URL`.
+- **Environment variables only.** The skill never stores API keys, tokens, or credentials in files. All secrets are referenced via `$ANTHROPIC_API_KEY`, `$JIRA_EMAIL`, `$JIRA_API_KEY`, and `$SLACK_WEBHOOK_URL`.
 - **Doctor never displays values.** The `/rr doctor` command reports whether variables are set, never their contents.
 - **Orchestrator scripts inherit from shell.** Batch mode scripts read credentials from the environment at runtime. They are never written to disk.
 

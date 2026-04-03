@@ -43,7 +43,7 @@ ENVIRONMENT VARIABLES
   RR_WORK_DIR           Batch work directory (default: ~/rr-work)
   ANTHROPIC_API_KEY     Required for batch parallel mode
   JIRA_EMAIL            Required for batch mode Jira API
-  JIRA_API_TOKEN        Required for batch mode Jira API
+  JIRA_API_KEY        Required for batch mode Jira API
   SLACK_WEBHOOK_URL     Optional batch completion notification
   RR_MODEL              Sub-agent model (default: claude-sonnet-4-20250514)
 
@@ -74,7 +74,7 @@ If $ARGUMENTS equals "doctor", "--doctor", or "check", run environment diagnosti
 3. Check env vars (report set/not set, **never display values**):
    - `ANTHROPIC_API_KEY`
    - `JIRA_EMAIL`
-   - `JIRA_API_TOKEN`
+   - `JIRA_API_KEY`
 4. Check reference files exist:
    - `ls ~/.claude/skills/rr/references/schemas/enums.schema.json`
    - `ls ~/.claude/skills/rr/references/business-context.md`
@@ -100,7 +100,7 @@ rr doctor — Environment Health Check
   [PASS] jq: /usr/local/bin/jq
   [PASS] ANTHROPIC_API_KEY: set
   [WARN] JIRA_EMAIL: not set
-  [WARN] JIRA_API_TOKEN: not set
+  [WARN] JIRA_API_KEY: not set
   [PASS] reference files: 9 files found
   [PASS] orchestrator scripts: 2 files found
   [PASS] sub-commands: 4 files in ~/.claude/commands/rr/
@@ -187,7 +187,7 @@ If the sub-command `.md` files exist in `~/.claude/commands/rr/`, invoke them vi
 | `RR_WORK_DIR` | `~/rr-work` | Batch mode working directory |
 | `ANTHROPIC_API_KEY` | (none) | Required for parallel batch sub-agents |
 | `JIRA_EMAIL` | (none) | Required for batch mode Jira REST API |
-| `JIRA_API_TOKEN` | (none) | Required for batch mode Jira REST API |
+| `JIRA_API_KEY` | (none) | Required for batch mode Jira REST API |
 | `SLACK_WEBHOOK_URL` | (none) | Optional Slack notification on batch completion |
 | `RR_MODEL` | `claude-sonnet-4-20250514` | Model used by batch sub-agents |
 

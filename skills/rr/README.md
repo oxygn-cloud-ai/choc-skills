@@ -87,7 +87,7 @@ Fully autonomous parallel processing:
 
 **Total: ~30 minutes for 200 risks**
 
-Requires `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, and `JIRA_API_TOKEN`. Falls back to sequential mode if these are not set.
+Requires `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, and `JIRA_API_KEY`. Falls back to sequential mode if these are not set.
 
 ## Environment Variables
 
@@ -97,7 +97,7 @@ Requires `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, and `JIRA_API_TOKEN`. Falls back to 
 | `RR_WORK_DIR` | `~/rr-work` | Batch mode |
 | `ANTHROPIC_API_KEY` | — | Batch parallel mode |
 | `JIRA_EMAIL` | — | Batch mode Jira API |
-| `JIRA_API_TOKEN` | — | Batch mode Jira API |
+| `JIRA_API_KEY` | — | Batch mode Jira API |
 | `SLACK_WEBHOOK_URL` | — | Optional: completion notification |
 | `RR_MODEL` | `claude-sonnet-4-20250514` | Optional: override sub-agent model |
 | `ANTHROPIC_API_VERSION` | `2023-06-01` | Optional: override API version |
@@ -172,7 +172,7 @@ Each completed review produces 7 JSON files in `$RR_OUTPUT_DIR` (default: `~/rr-
 | `/rr doctor` fails | Run `cd skills/rr && ./install.sh --force` |
 | Jira tools not available | Connect Atlassian MCP integration in Claude Code |
 | "Project RR not found" | Verify Atlassian account has RR project access |
-| Batch mode not launching | Check `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, `JIRA_API_TOKEN` are set |
+| Batch mode not launching | Check `ANTHROPIC_API_KEY`, `JIRA_EMAIL`, `JIRA_API_KEY` are set |
 | jq not found | `brew install jq` |
 | Batch progress lost | Check `~/rr-work/progress.md` or `~/rr-output/rr-progress.md` |
 

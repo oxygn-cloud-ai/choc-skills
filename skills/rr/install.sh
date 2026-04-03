@@ -183,7 +183,7 @@ if [ "${1:-}" = "--check" ]; then
   done
 
   # Environment variables
-  for var in ANTHROPIC_API_KEY JIRA_EMAIL JIRA_API_TOKEN; do
+  for var in ANTHROPIC_API_KEY JIRA_EMAIL JIRA_API_KEY; do
     if [ -n "${!var:-}" ]; then
       ok "${var}: set"
     else

@@ -18,7 +18,7 @@ Check if the parallel orchestrator is available by running these checks via Bash
 ```bash
 test -x ~/.claude/skills/rr/orchestrator/rr-batch.sh && echo "orchestrator_available"
 test -n "${ANTHROPIC_API_KEY:-}" && echo "api_key_set"
-test -n "${JIRA_EMAIL:-}" && test -n "${JIRA_API_TOKEN:-}" && echo "jira_creds_set"
+test -n "${JIRA_EMAIL:-}" && test -n "${JIRA_API_KEY:-}" && echo "jira_creds_set"
 ```
 
 If ALL three checks pass: use **Parallel Orchestrator Mode**.
@@ -33,7 +33,7 @@ Otherwise: use **Sequential Mode** (fallback).
 Verify all three environment variables are set (do not display values):
 - `ANTHROPIC_API_KEY` — required for sub-agent API calls
 - `JIRA_EMAIL` — required for Jira REST API authentication
-- `JIRA_API_TOKEN` — required for Jira REST API authentication
+- `JIRA_API_KEY` — required for Jira REST API authentication
 
 ### Handle --reset
 

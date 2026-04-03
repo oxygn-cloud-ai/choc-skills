@@ -169,7 +169,7 @@ Use the Bash tool to attach files to Jira tickets:
 
 ```bash
 curl -s -X POST \
-  -u "${JIRA_EMAIL}:${JIRA_API_TOKEN}" \
+  -u "${JIRA_EMAIL}:${JIRA_API_KEY}" \
   -H "X-Atlassian-Token: no-check" \
   -F "file=@${RR_OUTPUT_DIR}/<key>_export.json" \
   -F "file=@${RR_OUTPUT_DIR}/<key>_<date>_assessment_1.json" \
@@ -180,14 +180,14 @@ curl -s -X POST \
   "https://chocfin.atlassian.net/rest/api/3/issue/<review-ticket-key>/attachments"
 ```
 
-Requires `JIRA_EMAIL` and `JIRA_API_TOKEN` environment variables.
+Requires `JIRA_EMAIL` and `JIRA_API_KEY` environment variables.
 
 ### Attachment Error Codes
 
 | HTTP Code | Meaning | Action |
 |-----------|---------|--------|
 | 200 | Success | Continue |
-| 401 | Authentication failed | Verify JIRA_EMAIL and JIRA_API_TOKEN |
+| 401 | Authentication failed | Verify JIRA_EMAIL and JIRA_API_KEY |
 | 403 | Permission denied | Verify attach permission on ticket |
 | 404 | Ticket not found | Verify ticket key |
 | 413 | File too large | Jira Cloud limit is 10MB per file |

@@ -15,7 +15,7 @@
 # Required environment variables:
 #   ANTHROPIC_API_KEY    — For sub-agent API calls
 #   JIRA_EMAIL           — Jira account email
-#   JIRA_API_TOKEN       — Jira API token
+#   JIRA_API_KEY       — Jira API token
 #   SLACK_WEBHOOK_URL    — Slack incoming webhook (optional)
 #
 # Optional:
@@ -83,7 +83,7 @@ check_env() {
     local missing=()
     [ -z "${ANTHROPIC_API_KEY:-}" ] && missing+=("ANTHROPIC_API_KEY")
     [ -z "${JIRA_EMAIL:-}" ] && missing+=("JIRA_EMAIL")
-    [ -z "${JIRA_API_TOKEN:-}" ] && missing+=("JIRA_API_TOKEN")
+    [ -z "${JIRA_API_KEY:-}" ] && missing+=("JIRA_API_KEY")
 
     if [ ${#missing[@]} -gt 0 ]; then
         die "Missing required environment variables: ${missing[*]}"
@@ -488,7 +488,7 @@ main() {
     log "=========================================="
 
     check_env
-    JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_TOKEN}" | base64 | tr -d '\n')
+    JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 
     notify_slack "RR batch review starting (force=$FORCE_MODE)"
 
