@@ -390,7 +390,7 @@ def build_dashboard():
 
     sections.append(build_log_panel())
 
-    subtitle = "[green]Batch complete[/]" if complete else "[dim]Ctrl+C to exit — refreshes every 2s[/]"
+    subtitle = "[green]Batch complete — Ctrl+C to close[/]" if complete else "[dim]Ctrl+C to exit — refreshes every 2s[/]"
     return Panel(
         Group(*sections),
         title="[bold] RR BATCH MONITOR [/]",
@@ -413,9 +413,6 @@ def main():
             while True:
                 time.sleep(2)
                 live.update(build_dashboard())
-                if is_complete():
-                    time.sleep(5)
-                    break
     except KeyboardInterrupt:
         pass
 
