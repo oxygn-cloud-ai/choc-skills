@@ -108,8 +108,10 @@ def build_batch_status():
         num = bf.stem.replace("batch_", "")
         try:
             data = json.loads(bf.read_text())
-            risk_count = len(data) if isinstance(data, list) else 0
-            risk_keys = [r.get("key", "?") for r in data] if isinstance(data, list) else []
+            # Handle both dict format {"batch_id": N, "risks": [...]} and raw list
+            risks = data.get("risks", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+            risk_count = len(risks)
+            risk_keys = [r.get("key", "?") for r in risks]
         except Exception:
             risk_count = 0
             risk_keys = []

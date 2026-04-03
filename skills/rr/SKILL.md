@@ -1,6 +1,6 @@
 ---
 name: rr
-version: 3.1.0
+version: 4.0.0
 description: "Risk register assessment for Chocolate Finance. Invoke with /rr followed by a ticket key (e.g. /rr RR-220) or /rr all for batch mode."
 user-invocable: true
 disable-model-invocation: true
@@ -51,11 +51,9 @@ If the sub-command `.md` files exist in `~/.claude/commands/rr/`, invoke them vi
 |---------------------|---------|---------|
 | `RR_OUTPUT_DIR` | `~/rr-output` | Directory for individual risk output files |
 | `RR_WORK_DIR` | `~/rr-work` | Batch mode working directory |
-| `ANTHROPIC_API_KEY` | (none) | Required for parallel batch sub-agents |
 | `JIRA_EMAIL` | (none) | Required for batch mode Jira REST API |
 | `JIRA_API_KEY` | (none) | Required for batch mode Jira REST API |
 | `SLACK_WEBHOOK_URL` | (none) | Optional Slack notification on batch completion |
-| `RR_MODEL` | `claude-sonnet-4-20250514` | Model used by batch sub-agents |
 
 ---
 

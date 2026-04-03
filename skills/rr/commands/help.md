@@ -23,16 +23,14 @@ USAGE
 
 MODES
   Single Risk    /rr RR-NNN    Interactive 6-step workflow with user discussion
-  Batch Mode     /rr all       Autonomous parallel processing via sub-agents
+  Batch Mode     /rr all       Autonomous parallel processing via Claude Code agents
 
 ENVIRONMENT VARIABLES
   RR_OUTPUT_DIR         Output directory (default: ~/rr-output)
   RR_WORK_DIR           Batch work directory (default: ~/rr-work)
-  ANTHROPIC_API_KEY     Required for batch parallel mode
   JIRA_EMAIL            Required for batch mode Jira API
   JIRA_API_KEY          Required for batch mode Jira API
   SLACK_WEBHOOK_URL     Optional batch completion notification
-  RR_MODEL              Sub-agent model (default: claude-sonnet-4-20250514)
 
 WORKFLOW (Single Risk)
   Step 1: Extract & Draft     Retrieve from Jira, initial assessment

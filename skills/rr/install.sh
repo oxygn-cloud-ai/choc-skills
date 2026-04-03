@@ -131,14 +131,14 @@ if [ "${1:-}" = "--check" ]; then
 
   # Orchestrator
   if [ -d "${SKILL_TARGET}/orchestrator" ]; then
-    count=$(find "${SKILL_TARGET}/orchestrator" -name "*.sh" | wc -l | tr -d ' ')
+    count=$(find "${SKILL_TARGET}/orchestrator" -type f | wc -l | tr -d ' ')
     if [ "$count" -ge 7 ]; then
-      ok "Orchestrator: ${count} scripts in ${SKILL_TARGET}/orchestrator"
+      ok "Orchestrator: ${count} files in ${SKILL_TARGET}/orchestrator"
     else
-      warn "Orchestrator: only ${count}/7 scripts in ${SKILL_TARGET}/orchestrator"
+      warn "Orchestrator: only ${count}/7 files in ${SKILL_TARGET}/orchestrator"
       issues=$((issues + 1))
     fi
-    if [ -f "${SKILL_TARGET}/orchestrator/sub-agent-system-prompt.txt" ]; then
+    if [ -f "${SKILL_TARGET}/orchestrator/sub-agent-prompt.md" ]; then
       ok "Sub-agent prompt: present"
     else
       warn "Sub-agent prompt: missing"
@@ -183,7 +183,7 @@ if [ "${1:-}" = "--check" ]; then
   done
 
   # Environment variables
-  for var in ANTHROPIC_API_KEY JIRA_EMAIL JIRA_API_KEY; do
+  for var in JIRA_EMAIL JIRA_API_KEY; do
     if [ -n "${!var:-}" ]; then
       ok "${var}: set"
     else

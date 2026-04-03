@@ -6,7 +6,7 @@ Context from user: $ARGUMENTS
 
 Check both parallel orchestrator and sequential mode for failed assessments.
 
-### Sub-agent Failures (Parallel Orchestrator)
+### Sub-agent Failures (Agent Orchestrator)
 
 List files in the errors directory:
 ```bash
@@ -18,7 +18,17 @@ For each error file found:
 2. Extract `batch_id`, `risk_key`, error type, and error message
 3. Collect into a failures list
 
-### Jira Publication Failures (Parallel Orchestrator)
+Also check for batches that have extracts but no results and no errors:
+```bash
+for f in ${RR_WORK_DIR:-~/rr-work}/extracts/batch_*.json; do
+  id=$(basename "$f" | sed 's/batch_//;s/\.json//')
+  [ ! -f "${RR_WORK_DIR:-~/rr-work}/results/result_${id}.json" ] && \
+  [ ! -f "${RR_WORK_DIR:-~/rr-work}/errors/error_${id}.json" ] && \
+  echo "Batch $id: no result or error (agent may have crashed)"
+done
+```
+
+### Jira Publication Failures (Agent Orchestrator)
 
 List files in the jira-errors directory:
 ```bash
@@ -42,10 +52,10 @@ Display a structured summary of all failures:
 rr fix — Failed Assessment Summary
 
 Sub-agent failures: N
-| # | Risk Key | Error Type | Message |
-|---|----------|------------|---------|
-| 1 | RR-220   | timeout    | Sub-agent exceeded 10 min limit |
-| 2 | RR-225   | api_error  | 429 rate limited |
+| # | Batch | Risk Keys | Error Type | Message |
+|---|-------|-----------|------------|---------|
+| 1 | 3     | RR-220... | timeout    | Agent did not complete |
+| 2 | 7     | RR-225... | api_error  | Reference file not found |
 
 Jira publication failures: M
 | # | Risk Key | HTTP Code | Error |
@@ -73,20 +83,32 @@ Stop here.
 ### For Sub-agent Failures
 
 If sub-agent failures exist:
-1. Ask user: "Re-run N failed assessments via orchestrator retry script? (y/n)"
-2. If yes, check that `~/.claude/skills/rr/orchestrator/retry.sh` exists and is executable
-3. Run via Bash tool:
-   ```bash
-   ~/.claude/skills/rr/orchestrator/retry.sh
-   ```
-4. Report that retries have been launched
+1. Ask user: "Re-run N failed batches via Agent dispatch? (y/n)"
+2. If yes:
+   a. Read the sub-agent prompt template from `~/.claude/skills/rr/orchestrator/sub-agent-prompt.md`
+   b. For each failed batch:
+      - Determine the batch_id from the error file or missing result
+      - Verify the extract file exists: `${RR_WORK_DIR:-~/rr-work}/extracts/batch_<batch_id>.json`
+      - Delete the old error file if it exists
+      - Construct the Agent prompt: prepend batch-specific values (batch_id, batch file path, work directory) to the sub-agent prompt contents, replacing `BATCH_ID`, `BATCH_FILE`, `WORK_DIR`, and `SKILLS_DIR` with actual values
+      - Spawn Agent tool (model: "opus") with the constructed prompt
+      - After agent completes, check if result file was created:
+        ```bash
+        test -f ${RR_WORK_DIR:-~/rr-work}/results/result_<batch_id>.json && echo "SUCCESS" || echo "FAILED"
+        ```
+      - Report success or persistent failure
+   c. After all retries, run finalization for any newly completed assessments:
+      ```bash
+      ~/.claude/skills/rr/orchestrator/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4 if applicable]
+      ```
+3. Report retry results
 
 ### For Jira Publication Failures
 
 If Jira publication failures exist:
 1. Ask user: "Re-publish M failed assessments to Jira via MCP tools? (y/n)"
 2. If yes, for each failed risk_key:
-   a. Read the completed assessment from `${RR_WORK_DIR:-~/rr-work}/results/<risk_key>.json`
+   a. Read the completed assessment from `${RR_WORK_DIR:-~/rr-work}/individual/<risk_key>.json`
    b. Verify the assessment file exists and is valid JSON
    c. Render to markdown for Jira description
    d. Attempt to create the Review child ticket via `mcp__claude_ai_Atlassian__createJiraIssue`

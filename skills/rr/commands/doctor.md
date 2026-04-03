@@ -9,7 +9,6 @@ Run these checks and report results. Do not proceed to any other action after.
 3. Verify `python3` is available: `which python3`
 4. Check `rich` is installed: `python3 -c "import rich" 2>/dev/null`
 5. Check env vars (report set/not set, **never display values**):
-   - `ANTHROPIC_API_KEY`
    - `JIRA_EMAIL`
    - `JIRA_API_KEY`
 6. Check reference files exist:
@@ -23,8 +22,9 @@ Run these checks and report results. Do not proceed to any other action after.
    - `ls ~/.claude/skills/rr/references/workflow/step-5-finalise.md`
    - `ls ~/.claude/skills/rr/references/workflow/step-6-publish.md`
 7. Check orchestrator scripts exist:
-   - `ls ~/.claude/skills/rr/orchestrator/rr-batch.sh`
-   - `ls ~/.claude/skills/rr/orchestrator/retry.sh`
+   - `ls ~/.claude/skills/rr/orchestrator/rr-prepare.sh`
+   - `ls ~/.claude/skills/rr/orchestrator/rr-finalize.sh`
+   - `ls ~/.claude/skills/rr/orchestrator/sub-agent-prompt.md`
    - `ls ~/.claude/skills/rr/orchestrator/monitor.py`
 8. Check sub-command files exist:
    - `ls ~/.claude/commands/rr/*.md`
@@ -39,14 +39,13 @@ rr doctor — Environment Health Check
   [PASS] jq: /usr/bin/jq
   [PASS] python3: /usr/bin/python3
   [PASS] rich: installed
-  [PASS] ANTHROPIC_API_KEY: set
-  [WARN] JIRA_EMAIL: not set
+  [PASS] JIRA_EMAIL: set
   [WARN] JIRA_API_KEY: not set
   [PASS] reference files: 9 files found
-  [PASS] orchestrator scripts: 3 files found
+  [PASS] orchestrator: 4 files found
   [PASS] sub-commands: N files in ~/.claude/commands/rr/
   [PASS] Atlassian MCP: connected (1 result)
-  [PASS] version: 2.8.2
+  [PASS] version: 4.0.0
 
   Result: N passed, N warnings, N failed
 ```

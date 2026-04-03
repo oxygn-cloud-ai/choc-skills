@@ -14,25 +14,25 @@ Parse any flags or filters from $ARGUMENTS (everything after the `all` keyword):
 
 ## Mode Selection
 
-Check if the parallel orchestrator is available by running these checks via Bash:
+Check if the agent orchestrator is available by running these checks via Bash:
 
 ```bash
-test -x ~/.claude/skills/rr/orchestrator/rr-batch.sh && echo "orchestrator_available"
-test -n "${ANTHROPIC_API_KEY:-}" && echo "api_key_set"
+test -x ~/.claude/skills/rr/orchestrator/rr-prepare.sh && echo "orchestrator_available"
 test -n "${JIRA_EMAIL:-}" && test -n "${JIRA_API_KEY:-}" && echo "jira_creds_set"
 ```
 
-If ALL three checks pass: use **Parallel Orchestrator Mode**.
+If BOTH checks pass: use **Agent Orchestrator Mode**.
 Otherwise: use **Sequential Mode** (fallback).
+
+Note: ANTHROPIC_API_KEY is NOT required. Sub-agents run via Claude Code Agent tool.
 
 ---
 
-## Parallel Orchestrator Mode
+## Agent Orchestrator Mode
 
 ### Pre-flight
 
-Verify all three environment variables are set (do not display values):
-- `ANTHROPIC_API_KEY` — required for sub-agent API calls
+Verify environment variables are set (do not display values):
 - `JIRA_EMAIL` — required for Jira REST API authentication
 - `JIRA_API_KEY` — required for Jira REST API authentication
 
@@ -44,34 +44,134 @@ If `--reset` flag is set:
    ```bash
    rm -rf "${RR_WORK_DIR:-$HOME/rr-work}"
    ```
-   This removes everything: results, errors, payloads, extracts, assessments, logs, and all other intermediate files. A clean slate.
 3. Report cleared and continue to launch
 
-### Launch
+### Notify User
 
-Build the command with applicable flags and run via Bash tool in background:
+Tell the user:
+```
+Batch review starting (runs in this session, ~30-45 min for full register).
+Open a second Claude Code session for other work if needed.
+Monitor progress: /rr monitor (in separate terminal)
+```
+
+### Phase 1-3: Preparation
+
+Build the command with applicable flags and run via Bash tool:
 
 ```bash
-~/.claude/skills/rr/orchestrator/rr-batch.sh [--force] [--category X] [--qtr:Q1|Q2|Q3|Q4]
+RR_CATEGORY_FILTER="${category_filter}" ~/.claude/skills/rr/orchestrator/rr-prepare.sh [--force] [--qtr:Q1|Q2|Q3|Q4]
+```
+
+Capture the batch count from the last line of stdout. If 0, report "No risks to process" and stop.
+
+### Phase 4: Agent Dispatch
+
+#### Setup
+
+1. Write a phase marker to the batch log:
+   ```bash
+   echo "[$(date '+%Y-%m-%d %H:%M:%S')] PHASE 4: SUB-AGENT DISPATCH" >> ${RR_WORK_DIR:-~/rr-work}/batch.log
+   ```
+
+2. Read the sub-agent prompt template:
+   ```
+   ~/.claude/skills/rr/orchestrator/sub-agent-prompt.md
+   ```
+
+3. List all batch files:
+   ```bash
+   ls ${RR_WORK_DIR:-~/rr-work}/extracts/batch_*.json | sort -V
+   ```
+
+#### Dispatch in Waves
+
+Process batches in waves of up to 5 concurrent agents.
+
+For each wave of batches:
+
+1. For EACH batch in this wave, write a dispatch marker via Bash:
+   ```bash
+   echo '{"dispatched":true,"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > ${RR_WORK_DIR:-~/rr-work}/payloads/payload_<batch_id>.json
+   ```
+
+2. For EACH batch in this wave, spawn an Agent tool call with these settings:
+   - **model**: `"opus"`
+   - **prompt**: Construct the prompt by combining:
+     - A preamble with batch-specific values:
+       ```
+       Process batch <batch_id>.
+       Batch file: <absolute path to extracts/batch_<batch_id>.json>
+       Work directory: <absolute path to ${RR_WORK_DIR:-~/rr-work}>
+       ```
+     - The FULL contents of `sub-agent-prompt.md` read above, with these literal replacements applied:
+       - Replace every occurrence of `BATCH_ID` with the actual batch number
+       - Replace every occurrence of `BATCH_FILE` with the actual absolute path to the batch extract file
+       - Replace every occurrence of `WORK_DIR` with the actual absolute path to the work directory
+       - Replace every occurrence of `SKILLS_DIR` with `~/.claude/skills/rr`
+
+   Launch ALL agents in this wave in a single message (parallel Agent tool calls).
+
+3. After the wave completes, log results for each batch via Bash:
+   ```bash
+   for id in <batch_ids_in_wave>; do
+     if [ -f "${RR_WORK_DIR:-~/rr-work}/results/result_${id}.json" ]; then
+       echo "[$(date '+%Y-%m-%d %H:%M:%S')] BATCH_${id}:SUCCESS" >> ${RR_WORK_DIR:-~/rr-work}/batch.log
+     else
+       echo "[$(date '+%Y-%m-%d %H:%M:%S')] BATCH_${id}:FAILED" >> ${RR_WORK_DIR:-~/rr-work}/batch.log
+     fi
+   done
+   ```
+
+4. Proceed to the next wave.
+
+#### Retry Failures
+
+After all waves complete, check for failed batches:
+```bash
+ls ${RR_WORK_DIR:-~/rr-work}/extracts/batch_*.json | while read f; do
+  id=$(basename "$f" | sed 's/batch_//;s/\.json//')
+  [ ! -f "${RR_WORK_DIR:-~/rr-work}/results/result_${id}.json" ] && echo "$id"
+done
+```
+
+For any failed batches (up to 3), retry once by re-spawning an Agent with the same prompt. Log retry outcomes.
+
+#### Dispatch Summary
+
+Log the dispatch summary:
+```bash
+succeeded=$(ls ${RR_WORK_DIR:-~/rr-work}/results/ 2>/dev/null | wc -l | tr -d ' ')
+total=$(ls ${RR_WORK_DIR:-~/rr-work}/extracts/ 2>/dev/null | wc -l | tr -d ' ')
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dispatch complete: ${succeeded}/${total} batches succeeded" >> ${RR_WORK_DIR:-~/rr-work}/batch.log
+```
+
+### Phase 5-7: Finalization
+
+Run via Bash tool:
+
+```bash
+~/.claude/skills/rr/orchestrator/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4]
 ```
 
 ### Report to User
 
 ```
-Batch review launched.
+Batch review complete.
 
-Running in background (~30 minutes for 200 risks).
-Slack notification on completion (if SLACK_WEBHOOK_URL set).
+Published: N reviews to Jira
+Failed:    M assessments, K publications
+Assessed:  P of Q risks
 
-Monitor progress:  /rr status
-Re-run failures:   /rr fix
+Full report:  ~/rr-work/progress.md
+Re-run fails: /rr fix
 ```
 
 ---
 
 ## Sequential Mode (Fallback)
 
-Report to user why parallel mode is not available, then proceed sequentially.
+Report to user why agent orchestrator mode is not available, then proceed sequentially.
 
 ### Check for Existing Progress
 
