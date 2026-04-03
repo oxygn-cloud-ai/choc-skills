@@ -201,7 +201,7 @@ body::before {
 
 /* Risk summary */
 .risk-counts {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
   margin-bottom: 16px;
 }
 .risk-count-card {
@@ -220,6 +220,7 @@ body::before {
 }
 .risk-count-card.published .num { color: var(--green); }
 .risk-count-card.assessed .num { color: var(--cyan); }
+.risk-count-card.in_progress .num { color: var(--amber); }
 .risk-count-card.failed .num { color: var(--red); }
 .risk-count-card.pending .num { color: var(--text-muted); }
 
@@ -234,6 +235,7 @@ body::before {
 }
 .risk-cell.published { background: var(--green); }
 .risk-cell.assessed { background: var(--cyan); }
+.risk-cell.in_progress { background: var(--amber); animation: pulse 1.5s infinite; }
 .risk-cell.failed { background: var(--red); }
 .risk-cell.pending { background: var(--border); }
 
@@ -299,7 +301,7 @@ body::before {
 /* Responsive */
 @media (max-width: 1000px) {
   .grid { grid-template-columns: 1fr; }
-  .risk-counts { grid-template-columns: repeat(2, 1fr); }
+  .risk-counts { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
 </head>
@@ -349,7 +351,7 @@ body::before {
       <div class="card-body" style="padding: 0;">
         <table class="batch-table">
           <thead>
-            <tr><th>#</th><th>Risks</th><th>Dispatch</th><th>Result</th><th>Status</th></tr>
+            <tr><th>#</th><th>Risks</th><th>Dispatch</th><th>Progress</th><th>Result</th><th>Status</th></tr>
           </thead>
           <tbody id="batchBody"></tbody>
         </table>
@@ -427,7 +429,11 @@ function calcProgress(data) {
     const b = Math.max(data.counts.extracts, 1);
     return 30 + Math.round(20 * r / b);
   }
-  if (p === 5) return 50 + Math.round(20 * data.counts.individual / tp);
+  if (p === 5) {
+    const done = data.counts.individual;
+    const inProg = (data.risks.counts.in_progress || 0);
+    return 50 + Math.round(20 * (done + inProg * 0.5) / tp);
+  }
   if (p === 6) return 70 + Math.round(30 * data.counts.jira_results / tp);
   if (p >= 7) return 100;
   return 0;
@@ -481,6 +487,12 @@ function update(data) {
     const dispatch = b.dispatched
       ? '<span style="color:var(--green)">sent</span>'
       : '<span style="color:var(--text-muted)">pending</span>';
+    const reported = b.reported || 0;
+    const progress = b.dispatched && !b.result
+      ? `<span style="color:var(--amber)">${reported}/${b.risks}</span>`
+      : b.result
+        ? `<span style="color:var(--green)">${b.risks}/${b.risks}</span>`
+        : '<span style="color:var(--text-muted)">&mdash;</span>';
     const result = b.result
       ? '<span style="color:var(--green)">success</span>'
       : b.error
@@ -497,6 +509,7 @@ function update(data) {
       <td>${b.num}</td>
       <td>${b.risks}</td>
       <td>${dispatch}</td>
+      <td>${progress}</td>
       <td>${result}</td>
       <td>${statusDot}${statusText}</td>
     </tr>`;
@@ -508,6 +521,7 @@ function update(data) {
   document.getElementById('riskCounts').innerHTML = [
     { cls: 'published', num: rc.published, label: 'Published' },
     { cls: 'assessed', num: rc.assessed, label: 'Assessed' },
+    { cls: 'in_progress', num: rc.in_progress || 0, label: 'In Progress' },
     { cls: 'failed', num: rc.failed, label: 'Failed' },
     { cls: 'pending', num: rc.pending, label: 'Pending' },
   ].map(c => `

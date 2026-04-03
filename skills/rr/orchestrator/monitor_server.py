@@ -101,6 +101,8 @@ def build_batch_status():
         WORK_DIR.glob("extracts/batch_*.json"),
         key=lambda p: int(p.stem.replace("batch_", ""))
     )
+    in_progress_keys = set(list_stems("progress"))
+
     result = []
     for bf in batches:
         num = bf.stem.replace("batch_", "")
@@ -115,6 +117,9 @@ def build_batch_status():
         has_payload = (WORK_DIR / f"payloads/payload_{num}.json").exists()
         has_result = (WORK_DIR / f"results/result_{num}.json").exists()
         has_error = (WORK_DIR / f"errors/error_{num}.json").exists()
+
+        # Count how many risks in this batch have reported progress
+        reported = sum(1 for k in risk_keys if k in in_progress_keys)
 
         status = "pending"
         if has_result:
@@ -132,6 +137,7 @@ def build_batch_status():
             "result": has_result,
             "error": has_error,
             "status": status,
+            "reported": reported,
         })
     return result
 
@@ -140,6 +146,7 @@ def build_risk_status():
     assessed = set(list_stems("individual"))
     published = set(list_stems("jira-results"))
     pub_errors = set(list_stems("jira-errors"))
+    in_progress = set(list_stems("progress"))  # tool-use progress reports
 
     disco = WORK_DIR / "discovery.json"
     all_keys = []
@@ -151,7 +158,7 @@ def build_risk_status():
             pass
 
     risks = []
-    counts = {"published": 0, "assessed": 0, "failed": 0, "pending": 0}
+    counts = {"published": 0, "assessed": 0, "failed": 0, "in_progress": 0, "pending": 0}
     for key in all_keys:
         if key in published:
             counts["published"] += 1
@@ -176,6 +183,15 @@ def build_risk_status():
         elif key in assessed:
             counts["assessed"] += 1
             risks.append({"key": key, "status": "assessed"})
+        elif key in in_progress:
+            counts["in_progress"] += 1
+            prog_data = read_json_safe(WORK_DIR / f"progress/{key}.json")
+            risks.append({
+                "key": key,
+                "status": "in_progress",
+                "inherent_rating": prog_data.get("inherent_rating") if prog_data else None,
+                "residual_rating": prog_data.get("residual_rating") if prog_data else None,
+            })
         else:
             counts["pending"] += 1
             risks.append({"key": key, "status": "pending"})
