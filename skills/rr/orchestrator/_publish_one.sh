@@ -83,7 +83,7 @@ quarterly_label="${quarter}-Risk-Review"
 # IDEMPOTENCY CHECK — skip if same-day Review already exists
 #=============================================================================
 
-check_jql="project = $PROJECT_KEY AND parent = $risk_key AND issuetype = Review AND summary ~ \"$today\""
+check_jql="project = $PROJECT_KEY AND parent = $risk_key AND issuetype = Review AND summary ~ \"${year}: ${quarter}\""
 check_payload=$(jq -n --arg jql "$check_jql" '{jql: $jql, maxResults: 1, fields: ["summary"]}')
 
 existing_response=$(curl -s -X POST "$JIRA_BASE_URL/rest/api/3/search/jql" \

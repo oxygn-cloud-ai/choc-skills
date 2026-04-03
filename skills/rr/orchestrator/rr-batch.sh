@@ -470,8 +470,8 @@ phase_completion() {
     if [ "$failed" -gt 0 ]; then
         failed_list=$(for f in "$WORK_DIR/jira-errors"/*.json; do
             [ -f "$f" ] || continue
-            local key=$(basename "$f" .json)
-            local error=$(jq -r '.error // "unknown"' "$f" 2>/dev/null)
+            key=$(basename "$f" .json)
+            error=$(jq -r '.error // "unknown"' "$f" 2>/dev/null)
             echo "- $key: $error"
         done)
     fi
