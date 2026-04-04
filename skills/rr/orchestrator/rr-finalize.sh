@@ -115,7 +115,7 @@ phase_collection() {
 
             total=$((total + 1))
 
-            if [ "$status" = "success" ]; then
+            if [ "$status" = "success" ] || [ "$status" = "complete" ] || [ "$status" = "completed" ] || [ "$status" = "final" ]; then
                 echo "$assessment" > "$WORK_DIR/individual/${risk_key}.json"
                 valid=$((valid + 1))
             fi
