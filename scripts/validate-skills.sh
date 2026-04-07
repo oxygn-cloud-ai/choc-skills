@@ -48,8 +48,10 @@ for dir in "${SKILLS_DIR}"/*/; do
   fi
 
   # --- Check: Required frontmatter fields ---
-  # Extract frontmatter (between first and second ---)
-  frontmatter=$(sed -n '/^---$/,/^---$/p' "$skill_file" | sed '1d;$d')
+  # Extract frontmatter (between first and second ---).
+  # awk stops at the second --- explicitly, so horizontal rules in the
+  # SKILL.md body don't leak into the captured frontmatter.
+  frontmatter=$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$skill_file")
 
   for field in name version description; do
     if echo "$frontmatter" | grep -q "^${field}:"; then
