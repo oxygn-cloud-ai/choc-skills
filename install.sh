@@ -201,20 +201,15 @@ install_skill() {
     die "Failed to copy SKILL.md to ${target} — check disk space and permissions"
   fi
 
-  # Verify copy — byte comparison + SHA256 checksum
+  # Verify copy with byte-level comparison against the source we just
+  # copied from. cmp -s short-circuits on the first differing byte and
+  # is the correct tool here: a SHA256 hash would only add value if we
+  # were verifying against an external reference (see CHECKSUMS.sha256),
+  # not against the source file itself.
   if ! cmp -s "${source}/SKILL.md" "${target}/SKILL.md"; then
     err "Verification failed — source and installed SKILL.md differ"
     err "Source: ${source}/SKILL.md"
     err "Target: ${target}/SKILL.md"
-    die "Installation may be corrupt. Try again with --force"
-  fi
-  local src_sha dst_sha
-  src_sha=$(shasum -a 256 "${source}/SKILL.md" | cut -d' ' -f1)
-  dst_sha=$(shasum -a 256 "${target}/SKILL.md" | cut -d' ' -f1)
-  if [ "$src_sha" != "$dst_sha" ]; then
-    err "SHA256 mismatch after copy"
-    err "Source: ${src_sha}"
-    err "Target: ${dst_sha}"
     die "Installation may be corrupt. Try again with --force"
   fi
 
