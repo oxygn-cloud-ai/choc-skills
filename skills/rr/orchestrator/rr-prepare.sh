@@ -33,14 +33,16 @@ RISKS_PER_SUBAGENT=10
 
 FORCE_MODE=false
 CATEGORY_FILTER="${RR_CATEGORY_FILTER:-}"
-QUARTER_OVERRIDE=""
 
 # Parse arguments
+# Note: --qtr:Q[1-4] is accepted by rr-finalize.sh (where the quarter override
+# affects Jira publication) but is not consumed here. Unknown args are silently
+# ignored by the case statement below, so wrapper scripts that pass --qtr: to
+# both scripts continue to work.
 for arg in "$@"; do
     case $arg in
         --force) FORCE_MODE=true ;;
         --reset) rm -rf "$WORK_DIR"; echo "Work directory reset"; exit 0 ;;
-        --qtr:Q[1-4]) QUARTER_OVERRIDE="${arg#--qtr:}" ;;
     esac
 done
 
@@ -144,13 +146,15 @@ phase_discovery() {
     while true; do
         page=$((page + 1))
         log "Fetching risks (page $page)..."
-        local response=$(jira_search "$jql" 100 "$next_page_token")
+        local response
+        response=$(jira_search "$jql" 100 "$next_page_token")
 
         if [ -z "$response" ] || ! echo "$response" | jq -e '.issues' >/dev/null 2>&1; then
             die "Failed to query Jira"
         fi
 
-        local batch_count=$(echo "$response" | jq '.issues | length')
+        local batch_count
+        batch_count=$(echo "$response" | jq '.issues | length')
         log "Page $page: $batch_count risks"
 
         all_risks=$(echo "$all_risks" "$response" | jq -s '.[0] + .[1].issues')
@@ -162,7 +166,8 @@ phase_discovery() {
         fi
     done
 
-    local risk_count=$(echo "$all_risks" | jq 'length')
+    local risk_count
+    risk_count=$(echo "$all_risks" | jq 'length')
     log "Discovered $risk_count risks"
 
     echo "$all_risks" | jq '{
@@ -188,9 +193,9 @@ phase_filter() {
     log "PHASE 2: QUARTERLY FILTER"
 
     # Calculate quarter start
-    local month=$(date +%m)
-    local year=$(date +%Y)
-    local quarter_start
+    local month year quarter_start
+    month=$(date +%m)
+    year=$(date +%Y)
 
     case $month in
         01|02|03) quarter_start="$year-01-01" ;;
@@ -203,7 +208,8 @@ phase_filter() {
 
     if [ "$FORCE_MODE" = true ]; then
         log "Force mode: skipping quarterly filter"
-        local count=$(jq '.risks | length' "$WORK_DIR/discovery.json")
+        local count
+        count=$(jq '.risks | length' "$WORK_DIR/discovery.json")
         jq --argjson tp "$count" '. + {to_process: $tp}' "$WORK_DIR/discovery.json" > "$WORK_DIR/filter-result.json"
         echo "$count"
         return
@@ -214,7 +220,8 @@ phase_filter() {
     local all_reviews="[]"
     local next_page_token=""
     while true; do
-        local reviews_response=$(jira_search "$jql" 100 "$next_page_token")
+        local reviews_response
+        reviews_response=$(jira_search "$jql" 100 "$next_page_token")
         if [ -z "$reviews_response" ] || ! echo "$reviews_response" | jq -e '.issues' >/dev/null 2>&1; then
             break
         fi
@@ -224,14 +231,16 @@ phase_filter() {
     done
 
     # Extract parent keys of existing reviews
-    local reviewed_parents=$(echo "$all_reviews" | jq -r '[.[].fields.parent.key // empty] | unique | .[]')
+    local reviewed_parents
+    reviewed_parents=$(echo "$all_reviews" | jq -r '[.[].fields.parent.key // empty] | unique | .[]')
 
     # Filter out already-reviewed risks
     local reviewed_count=0
     local to_process="[]"
 
     while read -r risk; do
-        local key=$(echo "$risk" | jq -r '.key')
+        local key
+        key=$(echo "$risk" | jq -r '.key')
         if echo "$reviewed_parents" | grep -q "^${key}$"; then
             reviewed_count=$((reviewed_count + 1))
         else
@@ -239,7 +248,8 @@ phase_filter() {
         fi
     done < <(jq -c '.risks[]' "$WORK_DIR/discovery.json")
 
-    local to_process_count=$(echo "$to_process" | jq 'length')
+    local to_process_count
+    to_process_count=$(echo "$to_process" | jq 'length')
 
     log "Quarterly reviewed (skipped): $reviewed_count"
     log "To process: $to_process_count"
@@ -264,7 +274,8 @@ phase_filter() {
 phase_extraction() {
     log "PHASE 3: EXTRACTION"
 
-    local risks=$(jq -c '.risks[]' "$WORK_DIR/filter-result.json")
+    local risks
+    risks=$(jq -c '.risks[]' "$WORK_DIR/filter-result.json")
     local risk_array=()
 
     while read -r risk; do
@@ -282,7 +293,8 @@ phase_extraction() {
             batch_risks=$(echo "$batch_risks" | jq --argjson r "${risk_array[$j]}" '. + [$r]')
         done
 
-        local batch_size=$(echo "$batch_risks" | jq 'length')
+        local batch_size
+        batch_size=$(echo "$batch_risks" | jq 'length')
         log "Batch $batch_num: $batch_size risks"
 
         echo "{\"batch_id\": $batch_num, \"risks\": $batch_risks}" > "$WORK_DIR/extracts/batch_${batch_num}.json"
@@ -308,17 +320,20 @@ main() {
 
     notify_slack "RR batch review starting (force=$FORCE_MODE)"
 
-    local total_risks=$(phase_discovery)
+    local total_risks
+    total_risks=$(phase_discovery)
     [ "$total_risks" -eq 0 ] && die "No risks found"
 
-    local to_process=$(phase_filter)
+    local to_process
+    to_process=$(phase_filter)
     if [ "$to_process" -eq 0 ]; then
         log "No risks to process"
         echo "0"
         exit 0
     fi
 
-    local batches=$(phase_extraction)
+    local batches
+    batches=$(phase_extraction)
 
     log "=========================================="
     log "PREPARATION COMPLETE — $batches batches ready for dispatch"

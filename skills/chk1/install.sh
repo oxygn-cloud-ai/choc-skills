@@ -27,11 +27,14 @@ SKILL_TARGET="${HOME}/.claude/skills/${SKILL_NAME}"
 COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
-FORCE=false
 
+# --force is accepted for command-line symmetry with the root install.sh, but
+# this per-skill installer has no interactive prompts — cp always overwrites —
+# so the flag is a no-op. Kept in the arg parser so wrapper scripts that pass
+# --force continue to work.
 for arg in "$@"; do
   case "$arg" in
-    -f|--force) FORCE=true ;;
+    -f|--force) : ;;
   esac
 done
 
@@ -98,13 +101,11 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     err "Sub-commands not found"; issues=$((issues + 1))
   fi
 
-  for tool in git; do
-    if command -v "$tool" >/dev/null 2>&1; then
-      ok "${tool}: $(which "$tool")"
-    else
-      err "${tool}: not found"; issues=$((issues + 1))
-    fi
-  done
+  if command -v git >/dev/null 2>&1; then
+    ok "git: $(command -v git)"
+  else
+    err "git: not found"; issues=$((issues + 1))
+  fi
 
   echo ""
   if [ "$issues" -eq 0 ]; then

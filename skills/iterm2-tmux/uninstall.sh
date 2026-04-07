@@ -14,11 +14,12 @@ if [ -f "$CONFIG_FILE" ]; then
 fi
 
 # --- Colors ---
+# Note: no RED/err() — this script only emits ok/warn/info.
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
-  GREEN='\033[0;32m'; YELLOW='\033[0;33m'; RED='\033[0;31m'
+  GREEN='\033[0;32m'; YELLOW='\033[0;33m'
   CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 else
-  GREEN=''; YELLOW=''; RED=''; CYAN=''; BOLD=''; RESET=''
+  GREEN=''; YELLOW=''; CYAN=''; BOLD=''; RESET=''
 fi
 
 ok()   { printf "${GREEN}  ok${RESET}  %s\n" "$*"; }
@@ -63,6 +64,6 @@ if [ -d "${HOME}/.config/iterm2-tmux" ]; then
 fi
 
 echo ""
-info "~/.tmux.conf and iTerm2 preferences were NOT modified."
+info "Your ~/.tmux.conf and iTerm2 preferences were NOT modified."
 info "Remove the iterm2-tmux settings from ~/.tmux.conf manually if desired."
 echo ""
