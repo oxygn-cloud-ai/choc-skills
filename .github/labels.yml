@@ -1,72 +1,160 @@
 # Canonical label definitions for oxygn-cloud-ai/claude-skills.
-# Apply via: gh label create "<name>" --color "<color>" --description "<desc>" --force
-# See GITHUB_CONFIG_PLAN.md Manual Steps section A for the full command list.
+#
+# Format: top-level YAML array, consumed by EndBug/label-sync via
+# .github/workflows/labels.yml. Any change pushed to main triggers a sync.
+#
+# Each entry: name, color (hex, no #), optional description.
+# See https://github.com/EndBug/label-sync#config-files for aliases.
 
-labels:
-  - name: bug
-    color: "d73a4a"
-    description: Something is broken
+# --- Priority ---
+- name: P1-blocking
+  color: "b60205"
+  description: "Blocks release: RCE, auth bypass, data exposure"
 
-  - name: enhancement
-    color: "a2eeef"
-    description: New feature or improvement
+- name: P2-important
+  color: "d93f0b"
+  description: "Wrong data, state leaks, missing validation"
 
-  - name: security
-    color: "e4e669"
-    description: Security concern
+- name: P3-minor
+  color: "fbca04"
+  description: "Display formatting, polish, rare edge cases"
 
-  - name: documentation
-    color: "0075ca"
-    description: Documentation changes
+- name: P4-infra
+  color: "0e8a16"
+  description: "Performance, code dedup, test gaps, docs"
 
-  - name: question
-    color: "d876e3"
-    description: Further information requested
+# --- Category ---
+- name: bug
+  color: "d73a4a"
+  description: "Something is broken"
 
-  - name: duplicate
-    color: "cfd3d7"
-    description: Already exists
+- name: enhancement
+  color: "a2eeef"
+  description: "New feature or improvement"
 
-  - name: wontfix
-    color: "ffffff"
-    description: Will not be worked on
+- name: security
+  color: "e4e669"
+  description: "Security concern"
 
-  - name: "skill: chk1"
-    color: "1d76db"
-    description: "chk1 implementation audit"
+- name: performance
+  color: "0e8a16"
+  description: "Performance review finding"
 
-  - name: "skill: chk2"
-    color: "1d76db"
-    description: "chk2 web security audit"
+- name: code-quality
+  color: "1d76db"
+  description: "Code audit finding"
 
-  - name: "skill: rr"
-    color: "1d76db"
-    description: "rr risk register"
+- name: documentation
+  color: "0075ca"
+  description: "Documentation changes"
 
-  - name: "tool: iterm2-tmux"
-    color: "5319e7"
-    description: "iterm2-tmux standalone tool"
+- name: tests
+  color: "5319e7"
+  description: "Test suite"
 
-  - name: installer
-    color: "0e8a16"
-    description: "install.sh / install process"
+- name: ci
+  color: "bfd4f2"
+  description: "CI/CD workflows"
 
-  - name: ci
-    color: "bfd4f2"
-    description: "CI/CD workflows"
+- name: dependencies
+  color: "0366d6"
+  description: "Dependency version updates"
 
-  - name: dependencies
-    color: "0366d6"
-    description: "Dependency version updates"
+- name: breaking-change
+  color: "b60205"
+  description: "Breaking installer or skill API change"
 
-  - name: breaking-change
-    color: "b60205"
-    description: "Breaking installer or skill API change"
+# --- Scope: skills & tools ---
+- name: "skill: chk1"
+  color: "1d76db"
+  description: "chk1 implementation audit"
 
-  - name: needs-triage
-    color: "e4e669"
-    description: "Needs review and categorization"
+- name: "skill: chk2"
+  color: "1d76db"
+  description: "chk2 web security audit"
 
-  - name: "good first issue"
-    color: "7057ff"
-    description: "Good for newcomers"
+- name: "skill: rr"
+  color: "1d76db"
+  description: "rr risk register"
+
+- name: "tool: iterm2-tmux"
+  color: "5319e7"
+  description: "iterm2-tmux standalone tool"
+
+- name: installer
+  color: "0e8a16"
+  description: "install.sh / install process"
+
+# --- chk2 test categories (for /chk2 github issue labelling) ---
+- name: "category:headers"
+  color: "c2e0c6"
+  description: "chk2 — HTTP security headers"
+
+- name: "category:tls"
+  color: "c2e0c6"
+  description: "chk2 — TLS/SSL configuration"
+
+- name: "category:dns"
+  color: "c2e0c6"
+  description: "chk2 — DNS, DNSSEC, SPF, DMARC"
+
+- name: "category:cors"
+  color: "c2e0c6"
+  description: "chk2 — CORS policy"
+
+- name: "category:api"
+  color: "c2e0c6"
+  description: "chk2 — API injection, fuzzing"
+
+- name: "category:ws"
+  color: "c2e0c6"
+  description: "chk2 — WebSocket security"
+
+- name: "category:waf"
+  color: "c2e0c6"
+  description: "chk2 — WAF rules, rate limiting"
+
+- name: "category:infra"
+  color: "c2e0c6"
+  description: "chk2 — Cloudflare/infrastructure config"
+
+- name: "category:brute"
+  color: "c2e0c6"
+  description: "chk2 — Brute force, session enumeration"
+
+- name: "category:scale"
+  color: "c2e0c6"
+  description: "chk2 — Scaling, payload limits, ReDoS"
+
+- name: "category:disclosure"
+  color: "c2e0c6"
+  description: "chk2 — Information disclosure"
+
+- name: "category:auth"
+  color: "c2e0c6"
+  description: "chk2 — Auth, session, IDOR, privilege escalation"
+
+- name: "category:jwt"
+  color: "c2e0c6"
+  description: "chk2 — JWT/token security"
+
+# --- Triage / workflow ---
+- name: needs-triage
+  color: "e4e669"
+  description: "Needs review and categorization"
+
+- name: question
+  color: "d876e3"
+  description: "Further information requested"
+
+- name: duplicate
+  color: "cfd3d7"
+  description: "Already exists"
+
+- name: wontfix
+  color: "ffffff"
+  description: "Will not be worked on"
+
+- name: "good first issue"
+  color: "7057ff"
+  description: "Good for newcomers"
