@@ -1,11 +1,11 @@
 ---
 name: chk1
-version: 2.1.0
+version: 2.2.0
 description: Adversarial Implementation Audit Mandate. Use when auditing recently implemented changes for bugs, risks, omissions, deviations, and unintended modifications. Fault-finding audit, not validation.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(git *), Write, Edit, AskUserQuestion
-argument-hint: [all | quick | security | scope | architecture | fix | help | doctor | version]
+allowed-tools: Read, Grep, Glob, Bash(git *), Bash(gh *), Write, Edit, AskUserQuestion
+argument-hint: [all | quick | security | scope | architecture | fix | github | help | doctor | version]
 ---
 
 # Adversarial Implementation Audit Mandate
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk1 v2.1.0 — Adversarial Implementation Audit
+chk1 v2.2.0 — Adversarial Implementation Audit
 
 USAGE
   /chk1                     Full audit (auto-detects recent changes)
@@ -29,6 +29,7 @@ USAGE
   /chk1 scope               Scope compliance + omissions + unintended changes
   /chk1 architecture        Pattern, boundary, coupling, consistency checks
   /chk1 fix                 Deep resolution for issues found
+  /chk1 github              Log audit findings as GitHub Issues with P1-P4 priority
   /chk1 <commit>..<commit>  Full audit on a specific commit range
   /chk1 <branch>            Full audit on branch changes vs base
   /chk1 help                Display this usage guide
@@ -42,6 +43,7 @@ MODES
   scope          Sections 4-5, 7-8: compliance, unintended, omissions
   architecture   Section 6 expanded: patterns, boundaries, coupling
   fix            Guided remediation for all findings
+  github         Log all findings to GitHub Issues with priority labels
 
 AUDIT SECTIONS (full mode)
   1. Functional Correctness Verification
@@ -103,7 +105,7 @@ If any check is FAIL, advise the user on how to fix it. End of doctor output. Do
 If $ARGUMENTS equals "version", "--version", or "-v", output:
 
 ```
-chk1 v2.1.0
+chk1 v2.2.0
 ```
 
 End of version output. Do not continue.
@@ -122,6 +124,7 @@ If $ARGUMENTS matches a mode keyword, route to the corresponding sub-command:
 | `scope` | Run `/chk1:scope` — scope compliance + omissions |
 | `architecture` | Run `/chk1:architecture` — pattern + boundary audit |
 | `fix` | Run `/chk1:fix` — remediation for previous findings |
+| `github` | Run `/chk1:github` — log findings to GitHub Issues |
 
 If $ARGUMENTS doesn't match a mode keyword, treat it as a scope specifier (commit range, branch, SHA) and run the full audit on that scope.
 

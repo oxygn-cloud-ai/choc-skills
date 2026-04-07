@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **chk1 v2.2.0** — New `/chk1 github` subcommand that logs audit findings as GitHub Issues with P1-P4 priority labels, duplicate detection (comments instead of new issues), milestone assignment based on priority, and automatic label creation
+
 ## [1.3.0] - 2026-04-07
 
 ### Added
