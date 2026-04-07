@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **chk1 v2.2.0** — New `/chk1 github` subcommand that logs audit findings as GitHub Issues with P1-P4 priority labels, duplicate detection (comments instead of new issues), milestone assignment based on priority, and automatic label creation
+- **chk1 v2.3.0** — New `/chk1 github` subcommand logs audit findings as GitHub Issues with P1-P4 priority labels, duplicate detection, milestone assignment, and automatic label creation. New `/chk1 update` subcommand pulls latest chk1 from the GitHub repo (uses `.source-repo` marker if present, falls back to curl).
+- **chk2 v2.1.0** — New `/chk2 github` subcommand logs SECURITY_CHECK.md FAIL/WARN findings as GitHub Issues with P1-P4 priority labels, category labels (`category:tls`, `category:headers`, etc.), duplicate detection, and milestone assignment. New `/chk2 update` command file (extracted from inline SKILL.md block) — uses `.source-repo` marker if present, falls back to curl.
+
+### Changed
+- **chk2 SKILL.md** — Replaced inline `## Update Subcommand` block with routing entries to `commands/update.md` and `commands/github.md`. Eliminates logic duplication.
 
 ## [1.3.0] - 2026-04-07
 

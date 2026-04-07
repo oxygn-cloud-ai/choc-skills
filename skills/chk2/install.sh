@@ -193,6 +193,8 @@ Route to the appropriate sub-skill based on the argument:
 | `disclosure` | Run `/chk2:disclosure` |
 | `quick` | Run `/chk2:quick` |
 | `fix` | Run `/chk2:fix` |
+| `github` | Run `/chk2:github` |
+| `update` | Run `/chk2:update` |
 | `help` | Run `/chk2 help` (the main skill) |
 | `doctor` | Run `/chk2 doctor` (the main skill) |
 | `version` | Run `/chk2 version` (the main skill) |

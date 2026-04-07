@@ -1,11 +1,11 @@
 ---
 name: chk2
-version: 2.0.0
+version: 2.1.0
 description: Adversarial security audit for web services. 209 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash(*), Write, Agent, AskUserQuestion
-argument-hint: [all | quick | headers | tls | dns | cors | api | ws | waf | infra | brute | scale | disclosure | cookies | cache | smuggling | auth | transport | redirect | fingerprint | timing | compression | jwt | graphql | sse | ipv6 | reporting | hardening | negotiation | proxy | business | backend | fix | update | help | doctor | version]
+argument-hint: [all | quick | headers | tls | dns | cors | api | ws | waf | infra | brute | scale | disclosure | cookies | cache | smuggling | auth | transport | redirect | fingerprint | timing | compression | jwt | graphql | sse | ipv6 | reporting | hardening | negotiation | proxy | business | backend | fix | github | update | help | doctor | version]
 ---
 
 # chk2 — Adversarial Security Audit
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk2 v2.0.0 — Adversarial Security Audit
+chk2 v2.1.0 — Adversarial Security Audit
 
 USAGE
   /chk2                Run all test categories (~209 checks)
@@ -27,6 +27,7 @@ USAGE
   /chk2 quick          Fast passive-only subset (headers+tls+dns+cors)
   /chk2 <category>     Run a specific test category
   /chk2 fix            Deep resolution helper for failed checks
+  /chk2 github         Log audit findings as GitHub Issues with P1-P4 priority
   /chk2 update         Update chk2 to the latest version
   /chk2 help           Display this usage guide
   /chk2 doctor         Check environment health
@@ -104,8 +105,8 @@ chk2 doctor — Environment Health Check
   [PASS] python3: /usr/bin/python3
   [PASS] websockets: installed
   [PASS] target reachable: https://myzr.io/ (200)
-  [PASS] sub-commands: 33 files in ~/.claude/commands/chk2/
-  [PASS] version: 2.0.0
+  [PASS] sub-commands: 35 files in ~/.claude/commands/chk2/
+  [PASS] version: 2.1.0
 
   Result: N passed, N warnings, N failed
 ```
@@ -117,7 +118,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-chk2 v2.0.0
+chk2 v2.1.0
 ```
 
 End of version output. Do not continue.
@@ -180,6 +181,8 @@ Parse $ARGUMENTS and route:
 | `ipv6` | Run IPv6 Security category |
 | `reporting` | Run Reporting & Compliance category |
 | `fix` | Run Fix helper (reads existing SECURITY_CHECK.md) |
+| `github` | Run `/chk2:github` — log findings to GitHub Issues |
+| `update` | Run `/chk2:update` — update chk2 to the latest version |
 
 If the sub-command `.md` files exist in `~/.claude/commands/chk2/`, invoke them via the Skill tool. Otherwise, execute the tests inline using the definitions below.
 
@@ -341,34 +344,8 @@ Test security reporting: Report-To/Reporting-Endpoints header, NEL header, secur
 ### Fix
 Read existing SECURITY_CHECK.md. For every FAIL and WARN, provide deep resolution: exact Cloudflare dashboard paths, copy-pasteable server code, DNS records, and verification commands. Group by effort level (instant / quick / deeper).
 
----
+### Github
+Read existing SECURITY_CHECK.md and create a GitHub Issue for every FAIL and WARN finding, with P1-P4 priority labels and category labels. Skips findings that already have an open issue (comments instead). See `~/.claude/commands/chk2/github.md` for full details.
 
-## Update Subcommand
-
-If $ARGUMENTS equals "update", "--update", or "upgrade":
-
-1. Read the current version from the installed SKILL.md
-2. Attempt to download the latest version:
-   ```bash
-   REPO="https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main"
-   REMOTE_VER=$(curl -s "$REPO/skills/chk2/SKILL.md" | grep -m1 '^version:' | sed 's/^version: *//')
-   ```
-3. If the remote version matches the installed version:
-   ```
-   chk2 update — already at v2.0.0 (latest)
-   ```
-4. If a newer version is available, download all files:
-   ```bash
-   curl -sL "$REPO/skills/chk2/SKILL.md" -o ~/.claude/skills/chk2/SKILL.md
-   mkdir -p ~/.claude/commands/chk2
-   for f in all quick headers tls dns cors api ws waf infra brute scale disclosure fix cookies cache smuggling auth transport redirect fingerprint timing compression jwt graphql sse ipv6 reporting hardening negotiation proxy business backend; do
-     curl -sL "$REPO/skills/chk2/commands/${f}.md" -o ~/.claude/commands/chk2/${f}.md
-   done
-   ```
-5. Report the update:
-   ```
-   chk2 update — Updated from vX.Y.Z to vA.B.C (33 sub-commands installed)
-   Restart Claude Code to pick up changes.
-   ```
-
-End of update output. Do not continue.
+### Update
+Update chk2 to the latest version from the GitHub repo. Uses `~/.claude/skills/chk2/.source-repo` if present, otherwise falls back to a curl-based update. See `~/.claude/commands/chk2/update.md` for full details.
