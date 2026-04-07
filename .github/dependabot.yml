@@ -8,10 +8,19 @@ updates:
       time: "09:00"
       timezone: "Asia/Singapore"
     open-pull-requests-limit: 5
-    labels: ["dependencies"]
+    labels: ["dependencies", "ci"]
     commit-message:
       prefix: "chore"
       include: "scope"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+    # Group non-major updates into a single PR to reduce noise.
+    # Major version bumps still get individual PRs so we can read the
+    # changelog and decide per-action.
+    groups:
+      actions-minor-patch:
+        update-types: ["minor", "patch"]
+    # No blanket ignore on major bumps — dependabot surfaces them as PRs
+    # for manual review. Nothing is auto-merged: every major bump PR is
+    # reviewed against the action's changelog before merging. This is
+    # safer than ignoring majors entirely because security-relevant
+    # actions (actions/checkout, softprops/action-gh-release) otherwise
+    # have no visibility into upstream releases.
