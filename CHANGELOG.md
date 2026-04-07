@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **chk1 v2.3.0** — New `/chk1 github` subcommand logs audit findings as GitHub Issues with P1-P4 priority labels, duplicate detection, milestone assignment, and automatic label creation. New `/chk1 update` subcommand pulls latest chk1 from the GitHub repo (uses `.source-repo` marker if present, falls back to curl).
+- **chk2 v2.1.0** — New `/chk2 github` subcommand logs SECURITY_CHECK.md FAIL/WARN findings as GitHub Issues with P1-P4 priority labels, category labels (`category:tls`, `category:headers`, etc.), duplicate detection, and milestone assignment. New `/chk2 update` command file (extracted from inline SKILL.md block) — uses `.source-repo` marker if present, falls back to curl.
+
+### Changed
+- **chk2 SKILL.md** — Replaced inline `## Update Subcommand` block with routing entries to `commands/update.md` and `commands/github.md`. Eliminates logic duplication.
+
+## [1.3.0] - 2026-04-07
+
+### Added
+- **BATS test suite** — 21 tests covering install.sh and generate-checksums.sh (`tests/install.bats`, `tests/generate-checksums.bats`)
+- **BATS CI job** — Runs BATS tests on macOS in GitHub Actions
+- **macOS CI matrix** — Installer smoke test now runs on both Ubuntu and macOS
+- **CLAUDE.md** — Project documentation for Claude Code (conventions, testing, CI, adding skills)
+- **Issue templates** — Bug report, feature request, and security concern forms
+- **PR template** — Checklist for skills, installer, and security changes
+- **dependabot.yml** — Weekly GitHub Actions dependency updates (major bumps ignored)
+- **labels.yml** — Canonical label definitions (18 labels)
+
+### Fixed
+- **validate-skills.sh** — Now accepts routing-style skills with separate command files (fixes `rr` validation)
+- **install.sh** — Fixed `set -e` exit code bug when `[ "$failed" -gt 0 ] &&` short-circuits on zero failures
+
 ## [1.2.0] - 2026-04-01
 
 ### Added

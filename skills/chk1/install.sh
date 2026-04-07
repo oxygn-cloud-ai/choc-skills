@@ -142,6 +142,8 @@ Route to the appropriate sub-skill based on the argument:
 | `scope` | Run `/chk1:scope` |
 | `architecture` | Run `/chk1:architecture` |
 | `fix` | Run `/chk1:fix` |
+| `github` | Run `/chk1:github` |
+| `update` | Run `/chk1:update` |
 | `help` | Run `/chk1 help` (the main skill) |
 | `doctor` | Run `/chk1 doctor` (the main skill) |
 | `version` | Run `/chk1 version` (the main skill) |
