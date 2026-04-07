@@ -119,7 +119,7 @@ check_health() {
       issues=$((issues + 1))
     fi
   else
-    warn "~/.tmux.conf does not exist"
+    warn "File ~/.tmux.conf does not exist"
     issues=$((issues + 1))
   fi
 

@@ -57,7 +57,7 @@ if [[ ! -x "$ATTACH_SCRIPT" ]]; then
 fi
 
 # Wait for external volume if needed (up to 10s)
-for i in {1..10}; do
+for _ in {1..10}; do
   [[ -d "$REPOS_DIR" ]] && break
   sleep 1
 done

@@ -94,10 +94,12 @@ phase_collection() {
     for result_file in "$WORK_DIR/results"/result_*.json; do
         [ -f "$result_file" ] || continue
 
-        local batch_id=$(basename "$result_file" | sed 's/result_//;s/\.json//')
+        local batch_id
+        batch_id=$(basename "$result_file" | sed 's/result_//;s/\.json//')
 
         # Result files are raw JSON (no Anthropic response wrapper)
-        local content=$(cat "$result_file" 2>/dev/null)
+        local content
+        content=$(cat "$result_file" 2>/dev/null)
 
         if [ -z "$content" ] || ! echo "$content" | jq -e '.assessments' >/dev/null 2>&1; then
             log "Batch $batch_id: invalid response"
@@ -107,11 +109,13 @@ phase_collection() {
         echo "$content" > "$WORK_DIR/assessments/batch_${batch_id}.json"
 
         # Extract individual assessments from batch result
-        local count=$(echo "$content" | jq '.assessments | length')
+        local count
+        count=$(echo "$content" | jq '.assessments | length')
         for ((i=0; i<count; i++)); do
-            local assessment=$(echo "$content" | jq ".assessments[$i]")
-            local risk_key=$(echo "$assessment" | jq -r '.risk_key')
-            local status=$(echo "$assessment" | jq -r '.status')
+            local assessment risk_key status
+            assessment=$(echo "$content" | jq ".assessments[$i]")
+            risk_key=$(echo "$assessment" | jq -r '.risk_key')
+            status=$(echo "$assessment" | jq -r '.status')
 
             total=$((total + 1))
 
@@ -133,8 +137,9 @@ phase_collection() {
 phase_publication() {
     log "PHASE 6: PUBLICATION"
 
-    local risk_keys=$(ls "$WORK_DIR/individual" | sed 's/\.json//')
-    local total=$(echo "$risk_keys" | wc -w | tr -d ' ')
+    local risk_keys total
+    risk_keys=$(ls "$WORK_DIR/individual" | sed 's/\.json//')
+    total=$(echo "$risk_keys" | wc -w | tr -d ' ')
 
     log "Publishing $total reviews to Jira..."
 
@@ -144,8 +149,9 @@ phase_publication() {
     # Merge per-process logs into main log
     cat "$WORK_DIR/logs"/publish_*.log >> "$LOG_FILE" 2>/dev/null
 
-    local succeeded=$(ls "$WORK_DIR/jira-results" 2>/dev/null | wc -l | tr -d ' ')
-    local failed=$((total - succeeded))
+    local succeeded failed
+    succeeded=$(ls "$WORK_DIR/jira-results" 2>/dev/null | wc -l | tr -d ' ')
+    failed=$((total - succeeded))
 
     log "Publication complete: $succeeded succeeded, $failed failed"
     echo "$succeeded"
@@ -158,11 +164,11 @@ phase_publication() {
 phase_completion() {
     log "PHASE 7: COMPLETION"
 
-    local total_risks=$(jq '.total' "$WORK_DIR/discovery.json")
-    local filtered=$(jq '.to_process // .total' "$WORK_DIR/filter-result.json")
-    local assessed=$(ls "$WORK_DIR/individual" 2>/dev/null | wc -l | tr -d ' ')
-    local published=$(ls "$WORK_DIR/jira-results" 2>/dev/null | wc -l | tr -d ' ')
-    local failed=$(ls "$WORK_DIR/jira-errors" 2>/dev/null | wc -l | tr -d ' ')
+    local total_risks filtered published failed
+    total_risks=$(jq '.total' "$WORK_DIR/discovery.json")
+    filtered=$(jq '.to_process // .total' "$WORK_DIR/filter-result.json")
+    published=$(ls "$WORK_DIR/jira-results" 2>/dev/null | wc -l | tr -d ' ')
+    failed=$(ls "$WORK_DIR/jira-errors" 2>/dev/null | wc -l | tr -d ' ')
 
     # Pre-compute failed risks list
     local failed_list=""
@@ -219,9 +225,11 @@ main() {
     JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
     export WORK_DIR JIRA_BASE_URL JIRA_AUTH PROJECT_KEY RR_QUARTER_OVERRIDE="$QUARTER_OVERRIDE"
 
-    local collected=$(phase_collection)
-
-    local published=$(phase_publication)
+    # phase_collection and phase_publication echo counts to stdout which we
+    # don't consume here — phase_completion re-reads the authoritative counts
+    # from $WORK_DIR. Redirect to /dev/null to keep stdout clean.
+    phase_collection >/dev/null
+    phase_publication >/dev/null
 
     phase_completion
 
