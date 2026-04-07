@@ -1,10 +1,25 @@
 #!/usr/bin/env bats
 
-# Tests for scripts/generate-checksums.sh
+# Tests for scripts/generate-checksums.sh.
+#
+# PARALLEL-UNSAFE: These tests modify the real CHECKSUMS.sha256 in the repo
+# root and rely on serial execution for the snapshot/restore pattern in
+# setup/teardown. Do not run with `bats --jobs N`.
 
 REPO_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 SCRIPT="${REPO_DIR}/scripts/generate-checksums.sh"
 CHECKSUMS_FILE="${REPO_DIR}/CHECKSUMS.sha256"
+
+# Discover all installable skills (same filter the script uses).
+discover_skills() {
+  local dir name
+  for dir in "${REPO_DIR}"/skills/*/; do
+    name="$(basename "$dir")"
+    [[ "$name" == _* ]] && continue
+    [ -f "${dir}/SKILL.md" ] || continue
+    printf '%s\n' "$name"
+  done
+}
 
 setup() {
   # Snapshot the original file content (not a .bak file that could be left behind)
@@ -13,6 +28,11 @@ setup() {
   else
     ORIGINAL_CHECKSUMS=""
   fi
+
+  SKILLS=()
+  while IFS= read -r name; do
+    SKILLS+=("$name")
+  done < <(discover_skills)
 }
 
 teardown() {
@@ -34,11 +54,15 @@ teardown() {
   [ -f "$CHECKSUMS_FILE" ]
 }
 
-@test "output includes all three skill paths" {
+@test "output includes every skill path" {
   run bash "$SCRIPT"
-  [[ "$output" == *"skills/chk1/SKILL.md"* ]]
-  [[ "$output" == *"skills/chk2/SKILL.md"* ]]
-  [[ "$output" == *"skills/rr/SKILL.md"* ]]
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    [[ "$output" == *"skills/${skill}/SKILL.md"* ]] || {
+      echo "Missing skills/${skill}/SKILL.md in checksum output" >&2
+      return 1
+    }
+  done
 }
 
 @test "checksums verify correctly" {
@@ -53,9 +77,12 @@ teardown() {
   [ -s "$CHECKSUMS_FILE" ]
 }
 
-@test "has at least 3 lines" {
+@test "has one line per skill" {
   bash "$SCRIPT"
   local lines
   lines=$(wc -l < "$CHECKSUMS_FILE" | tr -d ' ')
-  [ "$lines" -ge 3 ]
+  [ "$lines" -eq "${#SKILLS[@]}" ] || {
+    echo "Expected ${#SKILLS[@]} checksum lines, got $lines" >&2
+    return 1
+  }
 }
