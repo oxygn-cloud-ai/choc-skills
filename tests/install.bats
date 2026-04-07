@@ -1,14 +1,43 @@
 #!/usr/bin/env bats
 
 # Tests for install.sh — the root claude-skills installer.
-# Each test uses a temporary HOME to avoid touching the real environment.
+#
+# Each test uses a temporary HOME so it never touches the real environment.
+#
+# PARALLEL-UNSAFE: This test suite is NOT safe for `bats --jobs N` because
+# setup() reassigns the global HOME env var. Under parallel execution,
+# multiple tests would race on the same HOME and clobber each other. Run
+# serially (the BATS default).
+#
+# Skill names are discovered dynamically from skills/ rather than hardcoded,
+# so adding or renaming a skill does not require updating these tests. The
+# only hardcoded name is in `installs a specific skill` where a concrete
+# target is needed — it uses the first discovered skill.
 
 REPO_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 INSTALLER="${REPO_DIR}/install.sh"
 
+# Discover all installable skills (same filter the installer uses).
+# This runs fresh for each test since BATS re-evaluates the file per test.
+discover_skills() {
+  local dir name
+  for dir in "${REPO_DIR}"/skills/*/; do
+    name="$(basename "$dir")"
+    [[ "$name" == _* ]] && continue
+    [ -f "${dir}/SKILL.md" ] || continue
+    printf '%s\n' "$name"
+  done
+}
+
 setup() {
   export HOME="$(mktemp -d)"
   mkdir -p "${HOME}/.claude"
+
+  # Populate SKILLS array once per test.
+  SKILLS=()
+  while IFS= read -r name; do
+    SKILLS+=("$name")
+  done < <(discover_skills)
 }
 
 teardown() {
@@ -35,9 +64,14 @@ teardown() {
   run bash "$INSTALLER" --list
   [ "$status" -eq 0 ]
   [[ "$output" == *"Available skills"* ]]
-  [[ "$output" == *"chk1"* ]]
-  [[ "$output" == *"chk2"* ]]
-  [[ "$output" == *"rr"* ]]
+  # Every skill discovered on disk must appear in --list output
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    [[ "$output" == *"$skill"* ]] || {
+      echo "Skill '$skill' missing from --list output" >&2
+      return 1
+    }
+  done
 }
 
 # --- Install ---
@@ -45,28 +79,43 @@ teardown() {
 @test "--force installs all skills" {
   run bash "$INSTALLER" --force
   [ "$status" -eq 0 ]
-  [ -f "${HOME}/.claude/skills/chk1/SKILL.md" ]
-  [ -f "${HOME}/.claude/skills/chk2/SKILL.md" ]
-  [ -f "${HOME}/.claude/skills/rr/SKILL.md" ]
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    [ -f "${HOME}/.claude/skills/${skill}/SKILL.md" ] || {
+      echo "Expected ${HOME}/.claude/skills/${skill}/SKILL.md after --force" >&2
+      return 1
+    }
+  done
 }
 
 @test "installs a specific skill" {
-  run bash "$INSTALLER" --force chk1
+  # Use the first discovered skill as the target; assert the other skills
+  # are NOT installed.
+  local target="${SKILLS[0]}"
+  run bash "$INSTALLER" --force "$target"
   [ "$status" -eq 0 ]
-  [ -f "${HOME}/.claude/skills/chk1/SKILL.md" ]
-  [ ! -f "${HOME}/.claude/skills/chk2/SKILL.md" ]
+  [ -f "${HOME}/.claude/skills/${target}/SKILL.md" ]
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    [ "$skill" = "$target" ] && continue
+    [ ! -f "${HOME}/.claude/skills/${skill}/SKILL.md" ] || {
+      echo "Unexpected install of '$skill' when only '$target' was requested" >&2
+      return 1
+    }
+  done
 }
 
 @test "--force overwrites tampered install" {
+  local target="${SKILLS[0]}"
   # Install first
-  bash "$INSTALLER" --force chk1
+  bash "$INSTALLER" --force "$target"
   # Tamper
-  echo "tampered" > "${HOME}/.claude/skills/chk1/SKILL.md"
+  echo "tampered" > "${HOME}/.claude/skills/${target}/SKILL.md"
   # Reinstall
-  run bash "$INSTALLER" --force chk1
+  run bash "$INSTALLER" --force "$target"
   [ "$status" -eq 0 ]
   # Verify it matches the source
-  cmp -s "${REPO_DIR}/skills/chk1/SKILL.md" "${HOME}/.claude/skills/chk1/SKILL.md"
+  cmp -s "${REPO_DIR}/skills/${target}/SKILL.md" "${HOME}/.claude/skills/${target}/SKILL.md"
 }
 
 # --- Health check ---
@@ -87,21 +136,37 @@ teardown() {
 
 @test "--uninstall --all --force removes all skills" {
   bash "$INSTALLER" --force
-  [ -d "${HOME}/.claude/skills/chk1" ]
+  # Sanity check: at least one skill got installed
+  [ -d "${HOME}/.claude/skills/${SKILLS[0]}" ]
   run bash "$INSTALLER" --uninstall --all --force
   [ "$status" -eq 0 ]
-  [ ! -d "${HOME}/.claude/skills/chk1" ]
-  [ ! -d "${HOME}/.claude/skills/chk2" ]
-  [ ! -d "${HOME}/.claude/skills/rr" ]
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    [ ! -d "${HOME}/.claude/skills/${skill}" ] || {
+      echo "Skill '$skill' still present after --uninstall --all --force" >&2
+      return 1
+    }
+  done
 }
 
 @test "--uninstall --force removes one skill, leaves others" {
+  # Requires at least 2 skills for the assertion to be meaningful
+  [ "${#SKILLS[@]}" -ge 2 ]
+
   bash "$INSTALLER" --force
-  run bash "$INSTALLER" --uninstall --force chk1
+  local target="${SKILLS[0]}"
+  run bash "$INSTALLER" --uninstall --force "$target"
   [ "$status" -eq 0 ]
-  [ ! -d "${HOME}/.claude/skills/chk1" ]
-  [ -f "${HOME}/.claude/skills/chk2/SKILL.md" ]
-  [ -f "${HOME}/.claude/skills/rr/SKILL.md" ]
+  [ ! -d "${HOME}/.claude/skills/${target}" ]
+  # Every OTHER skill must still be present
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    [ "$skill" = "$target" ] && continue
+    [ -f "${HOME}/.claude/skills/${skill}/SKILL.md" ] || {
+      echo "Skill '$skill' missing after uninstalling only '$target'" >&2
+      return 1
+    }
+  done
 }
 
 # --- Input validation ---
@@ -124,7 +189,14 @@ teardown() {
   run bash "$INSTALLER" --dry-run
   [ "$status" -eq 0 ]
   [[ "$output" == *"dry-run"* ]]
-  [ ! -d "${HOME}/.claude/skills/chk1" ]
+  # Verify nothing was actually installed
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    [ ! -d "${HOME}/.claude/skills/${skill}" ] || {
+      echo "--dry-run created ${HOME}/.claude/skills/${skill}" >&2
+      return 1
+    }
+  done
 }
 
 # --- Changelog ---
@@ -138,9 +210,10 @@ teardown() {
 # --- Quiet mode ---
 
 @test "--quiet --force suppresses non-error output" {
-  run bash "$INSTALLER" --quiet --force chk1
+  local target="${SKILLS[0]}"
+  run bash "$INSTALLER" --quiet --force "$target"
   [ "$status" -eq 0 ]
-  [ -f "${HOME}/.claude/skills/chk1/SKILL.md" ]
+  [ -f "${HOME}/.claude/skills/${target}/SKILL.md" ]
   # Quiet mode should produce no normal output lines
   [ -z "$output" ]
 }
