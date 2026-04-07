@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="1.2.0"
+VERSION="1.3.0"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -393,7 +393,9 @@ case "$ACTION" in
       done
       echo ""
       ok "${count} skill(s) installed"
-      [ "$failed" -gt 0 ] && warn "${failed} skill(s) failed"
+      if [ "$failed" -gt 0 ]; then
+        warn "${failed} skill(s) failed"
+      fi
     else
       for name in "${TARGETS[@]}"; do
         install_skill "$name"

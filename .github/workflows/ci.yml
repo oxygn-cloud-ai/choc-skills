@@ -32,8 +32,11 @@ jobs:
         run: ./scripts/validate-skills.sh
 
   installer-smoke-test:
-    name: Installer Smoke Test
-    runs-on: ubuntu-latest
+    name: Installer Smoke Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: List available skills
@@ -113,3 +116,15 @@ jobs:
             exit 1
           fi
           echo "OK: All .sh files are executable"
+
+  bats-tests:
+    name: BATS Unit Tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Install BATS
+        run: brew install bats-core
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh install.sh
+      - name: Run BATS tests
+        run: bats tests/

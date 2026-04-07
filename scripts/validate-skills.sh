@@ -87,11 +87,14 @@ for dir in "${SKILLS_DIR}"/*/; do
   fi
 
   # --- Check: required subcommands ---
+  # Skills can define subcommands either inline (### help) or via command files (commands/help.md)
   for subcmd in help doctor version; do
-    if grep -q "### ${subcmd}" "$skill_file"; then
-      pass "Has '${subcmd}' subcommand section"
+    if grep -q "^### ${subcmd}$" "$skill_file"; then
+      pass "Has '${subcmd}' subcommand (inline section)"
+    elif [ -f "${dir}/commands/${subcmd}.md" ]; then
+      pass "Has '${subcmd}' subcommand (command file)"
     else
-      fail "Missing '### ${subcmd}' subcommand section"
+      fail "Missing '${subcmd}' subcommand (need inline ### ${subcmd} section or commands/${subcmd}.md)"
       skill_errors=$((skill_errors + 1))
     fi
   done

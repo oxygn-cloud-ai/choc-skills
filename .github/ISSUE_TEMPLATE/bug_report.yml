@@ -1,0 +1,68 @@
+name: Bug Report
+description: Report something that isn't working correctly
+labels: ["bug", "needs-triage"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      options:
+        - install.sh (root installer)
+        - chk1 (implementation audit)
+        - chk2 (web security audit)
+        - rr (risk register)
+        - iterm2-tmux (standalone tool)
+        - scripts (validate-skills, generate-checksums)
+        - CI / GitHub Actions
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: Tell us what you see...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this?
+      placeholder: |
+        1. Run `./install.sh --force`
+        2. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Your system details.
+      placeholder: |
+        - OS: macOS 15.3 / Ubuntu 24.04
+        - bash version: 5.2.37
+        - Claude Code version: 1.x.x
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / error output
+      description: Paste any relevant logs or error messages.
+      render: shell
+    validations:
+      required: false

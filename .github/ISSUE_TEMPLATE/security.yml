@@ -1,0 +1,47 @@
+name: Security Concern
+description: Report a non-critical security concern (for vulnerabilities, use private reporting)
+labels: ["security", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Important
+
+        **If you have found a security vulnerability, do NOT use this form.**
+
+        Report vulnerabilities privately via:
+        - Email: security@oxygn.cloud
+        - [GitHub Security Advisories](https://github.com/oxygn-cloud-ai/claude-skills/security/advisories/new)
+
+        See [SECURITY.md](https://github.com/oxygn-cloud-ai/claude-skills/blob/main/SECURITY.md) for full details.
+
+        This form is for **non-critical security concerns** only (e.g., a skill requesting more tools than necessary, documentation that could mislead users about security boundaries).
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Overly broad allowed-tools in a skill
+        - Sensitive file access pattern
+        - Documentation misleads users about security
+        - CI/CD supply chain concern
+        - Other non-critical concern
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the security concern.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-fix
+    attributes:
+      label: Suggested fix
+      description: How would you address this concern?
+    validations:
+      required: false

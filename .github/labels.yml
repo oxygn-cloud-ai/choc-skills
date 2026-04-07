@@ -1,0 +1,72 @@
+# Canonical label definitions for oxygn-cloud-ai/claude-skills.
+# Apply via: gh label create "<name>" --color "<color>" --description "<desc>" --force
+# See GITHUB_CONFIG_PLAN.md Manual Steps section A for the full command list.
+
+labels:
+  - name: bug
+    color: "d73a4a"
+    description: Something is broken
+
+  - name: enhancement
+    color: "a2eeef"
+    description: New feature or improvement
+
+  - name: security
+    color: "e4e669"
+    description: Security concern
+
+  - name: documentation
+    color: "0075ca"
+    description: Documentation changes
+
+  - name: question
+    color: "d876e3"
+    description: Further information requested
+
+  - name: duplicate
+    color: "cfd3d7"
+    description: Already exists
+
+  - name: wontfix
+    color: "ffffff"
+    description: Will not be worked on
+
+  - name: "skill: chk1"
+    color: "1d76db"
+    description: "chk1 implementation audit"
+
+  - name: "skill: chk2"
+    color: "1d76db"
+    description: "chk2 web security audit"
+
+  - name: "skill: rr"
+    color: "1d76db"
+    description: "rr risk register"
+
+  - name: "tool: iterm2-tmux"
+    color: "5319e7"
+    description: "iterm2-tmux standalone tool"
+
+  - name: installer
+    color: "0e8a16"
+    description: "install.sh / install process"
+
+  - name: ci
+    color: "bfd4f2"
+    description: "CI/CD workflows"
+
+  - name: dependencies
+    color: "0366d6"
+    description: "Dependency version updates"
+
+  - name: breaking-change
+    color: "b60205"
+    description: "Breaking installer or skill API change"
+
+  - name: needs-triage
+    color: "e4e669"
+    description: "Needs review and categorization"
+
+  - name: "good first issue"
+    color: "7057ff"
+    description: "Good for newcomers"
