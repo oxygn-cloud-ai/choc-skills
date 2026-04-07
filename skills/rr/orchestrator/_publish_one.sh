@@ -110,18 +110,24 @@ fi
 rendered_md=$(jq -r '
     .assessment as $a |
     $a.sections as $s |
+    # Handle missing header section — fall back to metadata
+    ($s.header // {}) as $h |
+    # Handle controls key alias (controls vs existing_controls)
+    ($s.existing_controls // $s.controls // null) as $ctrls |
 
-    "## Risk Assessment: \($s.header.risk_id) — \($s.header.risk_name)\n" +
-    "\n**Risk Statement:** \($s.header.risk_statement // "N/A")\n" +
-    "\n**Risk Category:** \($s.header.risk_category_name // $s.header.risk_category // "N/A")\n" +
+    "## Risk Assessment: \($h.risk_id // $a.metadata.ticket_key // $a.metadata.risk_key // .risk_key // "N/A") — \($h.risk_name // $a.metadata.risk_name // .risk_key // "N/A")\n" +
+    "\n**Risk Statement:** \($h.risk_statement // "N/A")\n" +
+    "\n**Risk Category:** \($h.risk_category_name // $h.risk_category // "N/A")\n" +
     "\n**Assessment Date:** \($a.metadata.assessment_date // "N/A")\n" +
     "\n---\n" +
 
     "\n### Context\n\n" +
-    "\($s.context.narrative // "N/A")\n\n" +
+    (if ($s.context | type) == "string" then $s.context
+     else "\($s.context.narrative // "N/A")\n\n" +
     "**Business Relevance:**\n" +
     ([$s.context.business_relevance[]? // empty] | map("- " + .) | join("\n")) +
-    "\n\n**Materiality:** \($s.context.materiality_rationale // "N/A")\n" +
+    "\n\n**Materiality:** \($s.context.materiality_rationale // "N/A")"
+     end) + "\n" +
     "\n---\n" +
 
     "\n### Applicable Regulatory Framework\n\n" +
@@ -139,13 +145,17 @@ rendered_md=$(jq -r '
     "\n---\n" +
 
     "\n### Existing Controls\n\n" +
-    ([$s.existing_controls[]? // empty] | map(
-        "**\(.id // "C?"): \(.description // "N/A")**\n" +
-        "- Type: \(.control_type // "N/A")\n" +
-        "- Effectiveness: \(.effectiveness // "N/A")\n" +
-        (if .effectiveness_rationale then "- \(.effectiveness_rationale)\n" else "" end) +
-        (if .gaps and (.gaps | length) > 0 then "- Gaps: " + (.gaps | join(", ")) + "\n" else "" end)
-    ) | join("\n")) +
+    (if ($ctrls | type) == "array" then
+        ([$ctrls[]? // empty] | map(
+            "**\(.id // "C?"): \(.description // "N/A")**\n" +
+            "- Type: \(.control_type // "N/A")\n" +
+            "- Effectiveness: \(.effectiveness // "N/A")\n" +
+            (if .effectiveness_rationale then "- \(.effectiveness_rationale)\n" else "" end) +
+            (if .gaps and (.gaps | length) > 0 then "- Gaps: " + (.gaps | join(", ")) + "\n" else "" end)
+        ) | join("\n"))
+     elif ($ctrls | type) == "string" then $ctrls
+     else "No controls documented."
+     end) +
     "\n\n---\n" +
 
     "\n### Residual Risk Assessment\n\n" +
@@ -167,12 +177,16 @@ rendered_md=$(jq -r '
     "\n\n---\n" +
 
     "\n### Evidences\n\n" +
-    "**Sources Used:**\n" +
-    ([$s.evidences.sources_used[]? // empty] | map("- \(.description // "N/A")") | join("\n")) +
-    "\n\n**Sources Unavailable:**\n" +
-    ([$s.evidences.sources_unavailable[]? // empty] | map("- " + .) | join("\n")) +
-    "\n\n**Caveats:**\n" +
-    ([$s.evidences.caveats[]? // empty] | map("- " + .) | join("\n"))
+    (if ($s.evidences | type) == "string" then $s.evidences
+     elif ($s.evidences | type) == "object" then
+        "**Sources Used:**\n" +
+        ([$s.evidences.sources_used[]? // empty] | map(if type == "string" then "- " + . else "- \(.description // "N/A")" end) | join("\n")) +
+        "\n\n**Sources Unavailable:**\n" +
+        ([$s.evidences.sources_unavailable[]? // empty] | map("- " + .) | join("\n")) +
+        "\n\n**Caveats:**\n" +
+        ([$s.evidences.caveats[]? // empty] | map("- " + .) | join("\n"))
+     else "No evidences documented."
+     end)
 ' "$assessment_file" 2>/dev/null)
 
 if [ -z "$rendered_md" ]; then
