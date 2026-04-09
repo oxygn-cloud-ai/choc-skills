@@ -215,7 +215,11 @@ for file in "${COMMANDS_SOURCE}"/*.md; do
 done
 ok "Sub-commands: ${count} files -> ${COMMANDS_TARGET}/"
 
-# 4. Verify
+# 4. Record source repo path (for /chk2 update)
+echo "$SCRIPT_DIR" > "${SKILL_TARGET}/.source-repo"
+ok "Source repo marker -> ${SKILL_TARGET}/.source-repo"
+
+# 5. Verify
 ver=$(grep -m1 '^version:' "${SKILL_TARGET}/SKILL.md" 2>/dev/null | sed 's/^version: *//' || true)
 echo ""
 ok "chk2 v${ver} installed successfully"

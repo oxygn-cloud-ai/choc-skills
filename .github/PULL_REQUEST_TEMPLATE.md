@@ -16,6 +16,7 @@
 - [ ] ShellCheck passes
 - [ ] `./scripts/validate-skills.sh` passes (0 errors)
 - [ ] CI is green
+- [ ] If skill changed: updated `skills/<name>/CHANGELOG.md`
 
 ## If SKILL.md modified
 

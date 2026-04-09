@@ -2,24 +2,9 @@
 
 ## What This Repo Is
 
-A shell-only skills repository for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Contains 3 installable skills and 1 standalone tool. Runs on macOS, Linux, and WSL.
+A monorepo for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills and standalone tools. Each skill is independently versioned and released. Runs on macOS, Linux, and WSL.
 
-## Directory Structure
-
-```
-claude-skills/
-  install.sh           Root installer (skills only)
-  scripts/
-    validate-skills.sh Validates all skill definitions
-    generate-checksums.sh  Generates CHECKSUMS.sha256
-  tests/               BATS test suite
-  skills/
-    chk1/              Adversarial implementation audit
-    chk2/              Web service security audit
-    rr/                Risk register assessment
-    iterm2-tmux/       Standalone tool (own installer, no SKILL.md)
-  _template/           Skeleton for new skills
-```
+Skills are discovered dynamically via `skills/*/SKILL.md` — adding a new skill directory is automatically picked up by the installer, CI, tests, and validation.
 
 ## Skill Conventions
 
@@ -35,6 +20,8 @@ Every skill must provide `help`, `doctor`, and `version` subcommands, either:
 - Inline in SKILL.md as `### help`, `### doctor`, `### version` sections, OR
 - As separate command files in `commands/help.md`, `commands/doctor.md`, `commands/version.md`
 
+Every skill must have its own `CHANGELOG.md` in its directory.
+
 ## Validation
 
 ```bash
@@ -44,7 +31,7 @@ Every skill must provide `help`, `doctor`, and `version` subcommands, either:
 ## Testing
 
 ```bash
-brew install bats-core
+brew install bats-core          # or: sudo apt-get install -y bats
 bats tests/                     # Must pass with 0 failures
 ```
 
@@ -52,12 +39,17 @@ bats tests/                     # Must pass with 0 failures
 
 ```bash
 ./install.sh --list             # List available skills
-./install.sh --force            # Install all skills
+./install.sh --force            # Install all skills (SKILL.md only)
 ./install.sh --force chk1       # Install one skill
 ./install.sh --check            # Verify installation health
 ./install.sh --dry-run          # Preview actions
 ./install.sh --uninstall chk1   # Remove one skill
 ./install.sh --uninstall --all  # Remove all skills
+```
+
+For skills with sub-commands (chk1, chk2, rr), use the per-skill installer for full setup:
+```bash
+cd skills/chk1 && ./install.sh --force
 ```
 
 ## CI Jobs
@@ -69,7 +61,7 @@ bats tests/                     # Must pass with 0 failures
 | Installer Smoke Test | ubuntu + macos matrix | --list, --force, --check, verify files, --uninstall |
 | Verify Checksums | ubuntu-latest | CHECKSUMS.sha256 matches regenerated output |
 | File Permissions | ubuntu-latest | All .sh files are executable |
-| BATS Unit Tests | macos-latest | Full BATS test suite |
+| BATS Unit Tests | ubuntu-latest | Full BATS test suite |
 
 ## How to Add a New Skill
 
@@ -80,11 +72,12 @@ bats tests/                     # Must pass with 0 failures
 5. Set `disable-model-invocation: true`
 6. Minimize `allowed-tools`
 7. Write `skills/my-skill/README.md`
-8. Add to README.md skills table
-9. Run `./scripts/validate-skills.sh` — must be 0 errors
-10. Run `./scripts/generate-checksums.sh` — regenerate checksums
-11. Run `bats tests/` — must pass
-12. Update CHANGELOG.md
+8. Create `skills/my-skill/CHANGELOG.md`
+9. Add skill to root `README.md` skills table
+10. Run `./scripts/validate-skills.sh` — must be 0 errors
+11. Run `./scripts/generate-checksums.sh` — regenerate checksums
+12. Run `bats tests/` — must pass
+13. Submit a PR
 
 ## Checksums
 
@@ -104,14 +97,26 @@ Run this after any SKILL.md change. CI verifies the committed file matches.
 
 ## Version Locations
 
-When bumping version, update ALL of these:
-- `install.sh` line 4: `VERSION="X.Y.Z"`
-- Each `skills/*/SKILL.md` frontmatter: `version: X.Y.Z` (skill-specific versions)
-- `CHANGELOG.md`: add version section
+Each skill has its own version in its `SKILL.md` frontmatter and its own `CHANGELOG.md`:
+- `skills/chk1/SKILL.md` → `version: 2.3.0`
+- `skills/chk2/SKILL.md` → `version: 2.1.0`
+- `skills/rr/SKILL.md` → `version: 4.0.0`
+
+The root `install.sh` has a separate installer version (`VERSION="1.3.0"`) independent of skill versions.
 
 ## Release Process
 
-1. Bump version in all locations above
-2. Update CHANGELOG.md with release date
-3. Create and push a tag: `git tag vX.Y.Z && git push --tags`
-4. `release.yml` triggers automatically — validates, installs, checksums, creates GitHub Release
+Skills are released independently via namespaced tags:
+
+```bash
+# Release chk1 v2.3.1
+git tag chk1/v2.3.1
+git push --tags
+```
+
+This triggers `.github/workflows/release-skill.yml` which:
+1. Validates the skill
+2. Extracts the changelog from `skills/<name>/CHANGELOG.md`
+3. Creates a GitHub Release named `<skill> v<version>`
+
+The monorepo-wide `release.yml` (triggered by plain `v*` tags) is kept for milestone releases spanning all skills.
