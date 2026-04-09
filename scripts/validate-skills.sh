@@ -101,6 +101,28 @@ for dir in "${SKILLS_DIR}"/*/; do
     fi
   done
 
+  # --- Check: routing table matches commands/ directory ---
+  if [ -d "${dir}/commands" ]; then
+    skill_md_content=$(cat "$skill_file")
+    cmd_warnings=0
+    for cmd_file in "${dir}/commands"/*.md; do
+      [ -f "$cmd_file" ] || continue
+      cmd_name=$(basename "$cmd_file" .md)
+      # Skip standard subcommands that may be defined inline rather than routed
+      case "$cmd_name" in help|doctor|version) continue ;; esac
+      if echo "$skill_md_content" | grep -qi "${cmd_name}"; then
+        : # found a reference
+      else
+        warn "${name}: command file '${cmd_name}.md' has no routing entry in SKILL.md"
+        cmd_warnings=$((cmd_warnings + 1))
+        warnings=$((warnings + 1))
+      fi
+    done
+    if [ "$cmd_warnings" -eq 0 ]; then
+      pass "All command files have routing entries in SKILL.md"
+    fi
+  fi
+
   # --- Check: install.sh is executable (if present) ---
   if [ -f "${dir}/install.sh" ]; then
     if [ -x "${dir}/install.sh" ]; then

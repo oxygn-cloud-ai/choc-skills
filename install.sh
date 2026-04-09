@@ -69,10 +69,12 @@ ${BOLD}EXAMPLES${RESET}
   ./install.sh --uninstall chk1   Remove chk1
   ./install.sh --check            Verify all installations are healthy
 
-${BOLD}MANUAL INSTALL${RESET} (no clone needed)
+${BOLD}MANUAL INSTALL${RESET} (no clone needed — SKILL.md only, no sub-commands or routers)
   mkdir -p ~/.claude/skills/chk1
   curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/choc-skills/main/skills/chk1/SKILL.md \\
     -o ~/.claude/skills/chk1/SKILL.md
+  # Note: Skills with sub-commands (chk1, chk2, rr) need the per-skill installer
+  # for full functionality. Clone the repo and run: cd skills/<name> && ./install.sh
 EOF
 }
 

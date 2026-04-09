@@ -55,9 +55,9 @@ ${BOLD}USAGE${RESET}
 ${BOLD}INSTALLS TO${RESET}
   ~/.claude/skills/rr/SKILL.md             Main skill file
   ~/.claude/skills/rr/.source-repo         Repo path marker (for /rr update)
-  ~/.claude/skills/rr/orchestrator/        Batch orchestrator scripts (8 files)
+  ~/.claude/skills/rr/orchestrator/        Batch orchestrator scripts (9 files)
   ~/.claude/skills/rr/references/          Schemas, workflow, context (16+ files)
-  ~/.claude/commands/rr/*.md               Sub-command files (4 files)
+  ~/.claude/commands/rr/*.md               Sub-command files (11 files)
   ~/.claude/commands/rr.md                 Router file
 EOF
   exit 0
@@ -118,10 +118,10 @@ if [ "${1:-}" = "--check" ]; then
   # Sub-commands
   if [ -d "$COMMANDS_TARGET" ]; then
     count=$(find "$COMMANDS_TARGET" -name "*.md" | wc -l | tr -d ' ')
-    if [ "$count" -ge 10 ]; then
+    if [ "$count" -ge 11 ]; then
       ok "Sub-commands: ${count} files in ${COMMANDS_TARGET}"
     else
-      warn "Sub-commands: only ${count}/10 files in ${COMMANDS_TARGET}"
+      warn "Sub-commands: only ${count}/11 files in ${COMMANDS_TARGET}"
       issues=$((issues + 1))
     fi
   else
@@ -132,10 +132,10 @@ if [ "${1:-}" = "--check" ]; then
   # Orchestrator
   if [ -d "${SKILL_TARGET}/orchestrator" ]; then
     count=$(find "${SKILL_TARGET}/orchestrator" -type f | wc -l | tr -d ' ')
-    if [ "$count" -ge 7 ]; then
+    if [ "$count" -ge 9 ]; then
       ok "Orchestrator: ${count} files in ${SKILL_TARGET}/orchestrator"
     else
-      warn "Orchestrator: only ${count}/7 files in ${SKILL_TARGET}/orchestrator"
+      warn "Orchestrator: only ${count}/9 files in ${SKILL_TARGET}/orchestrator"
       issues=$((issues + 1))
     fi
     if [ -f "${SKILL_TARGET}/orchestrator/sub-agent-prompt.md" ]; then
@@ -255,6 +255,7 @@ Route to the appropriate sub-skill based on the argument:
 | Matches `RR-\d+` (case-insensitive) | Run `/rr:review` with the key |
 | `all` (with optional flags) | Run `/rr:all` |
 | `status` | Run `/rr:status` |
+| `board` | Run `/rr:board` |
 | `fix` | Run `/rr:fix` |
 | `help` | Run `/rr help` (the main skill) |
 | `doctor` | Run `/rr doctor` (the main skill) |
@@ -267,7 +268,10 @@ Invoke the matching skill using the Skill tool.
 ROUTER
 ok "Router -> ~/.claude/commands/rr.md"
 
-# 4. Install sub-commands
+# 4. Install sub-commands (clean stale files from previous version)
+if [ -d "$COMMANDS_TARGET" ]; then
+  rm -rf "$COMMANDS_TARGET"
+fi
 mkdir -p "$COMMANDS_TARGET"
 count=0
 for file in "${COMMANDS_SOURCE}"/*.md; do

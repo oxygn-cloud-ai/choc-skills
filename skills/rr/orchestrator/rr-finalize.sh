@@ -14,7 +14,7 @@
 #   RR_WORK_DIR          — Working directory (default: $HOME/rr-work)
 #   SLACK_WEBHOOK_URL    — Slack incoming webhook (optional)
 
-set -uo pipefail
+set -euo pipefail
 
 #=============================================================================
 # CONFIGURATION
@@ -139,10 +139,15 @@ phase_publication() {
     log "PHASE 6: PUBLICATION"
 
     local risk_keys total
-    risk_keys=$(ls "$WORK_DIR/individual" | sed 's/\.json//')
+    risk_keys=$(ls "$WORK_DIR/individual" 2>/dev/null | sed 's/\.json//')
     total=$(echo "$risk_keys" | wc -w | tr -d ' ')
 
     log "Publishing $total reviews to Jira..."
+
+    # Create lock directory for per-risk idempotency
+    LOCK_DIR="$WORK_DIR/locks"
+    mkdir -p "$LOCK_DIR"
+    export LOCK_DIR
 
     # Dispatch in parallel using standalone wrapper script
     echo "$risk_keys" | xargs -P "$MAX_PARALLEL_JIRA" -I {} "$SCRIPT_DIR/_publish_one.sh" {}
@@ -239,9 +244,12 @@ main() {
     log "=========================================="
 
     check_env
-    # Compute and export JIRA_AUTH for _publish_one.sh
-    JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
-    export WORK_DIR JIRA_BASE_URL JIRA_AUTH PROJECT_KEY RR_QUARTER_OVERRIDE="$QUARTER_OVERRIDE"
+    # Write JIRA_AUTH to a temp file (not env) for child processes
+    AUTH_FILE=$(mktemp)
+    chmod 600 "$AUTH_FILE"
+    echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n' > "$AUTH_FILE"
+    trap 'rm -f "$AUTH_FILE"' EXIT
+    export WORK_DIR JIRA_BASE_URL AUTH_FILE PROJECT_KEY RR_QUARTER_OVERRIDE="$QUARTER_OVERRIDE"
 
     # phase_collection and phase_publication echo counts to stdout which we
     # don't consume here — phase_completion re-reads the authoritative counts

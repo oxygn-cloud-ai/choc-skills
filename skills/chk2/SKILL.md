@@ -1,10 +1,10 @@
 ---
 name: chk2
 version: 2.1.0
-description: Adversarial security audit for web services. 209 checks across 30 categories. Outputs SECURITY_CHECK.md.
+description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(*), Write, Agent, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(dig *), Bash(openssl *), Bash(python3 *), Bash(jq *), Bash(nmap *), Bash(git *), Bash(host *), Bash(shasum *), Bash(echo *), Bash(cat *), Bash(base64 *), Bash(date *), Bash(ls *), Bash(grep *), Bash(sed *), Bash(awk *), Bash(head *), Bash(tail *), Bash(rm *), Write, Agent, AskUserQuestion
 argument-hint: [all | quick | headers | tls | dns | cors | api | ws | waf | infra | brute | scale | disclosure | cookies | cache | smuggling | auth | transport | redirect | fingerprint | timing | compression | jwt | graphql | sse | ipv6 | reporting | hardening | negotiation | proxy | business | backend | fix | github | update | help | doctor | version]
 ---
 
@@ -22,7 +22,7 @@ If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guid
 chk2 v2.1.0 — Adversarial Security Audit
 
 USAGE
-  /chk2                Run all test categories (~209 checks)
+  /chk2                Run all test categories (~211 checks)
   /chk2 all            Same as above
   /chk2 quick          Fast passive-only subset (headers+tls+dns+cors)
   /chk2 <category>     Run a specific test category
@@ -33,7 +33,7 @@ USAGE
   /chk2 doctor         Check environment health
   /chk2 version        Show installed version
 
-CATEGORIES — Core (109 checks)
+CATEGORIES — Core (131 checks)
   headers      HTTP security headers (14 checks)
   tls          TLS/SSL, ciphers, certs, renegotiation, H3 (12 checks)
   dns          DNS, DNSSEC, SPF, DMARC, subdomain takeover (15 checks)
@@ -46,7 +46,7 @@ CATEGORIES — Core (109 checks)
   scale        Connection limits, payload sizes, Slowloris, ReDoS (10 checks)
   disclosure   Information leakage, error handling (10 checks)
 
-CATEGORIES — Extended (100 checks)
+CATEGORIES — Extended (80 checks)
   cookies      Cookie security: HttpOnly, Secure, SameSite (5 checks)
   cache        Cache security and deception (5 checks)
   smuggling    HTTP request smuggling (4 checks)
@@ -254,23 +254,23 @@ If sub-command files are not installed, use these inline definitions. Each categ
 ### Headers (14 checks)
 Test HTTP security headers via `curl -sI`. Check HSTS, CSP, X-Frame-Options, CORS, referrer policy, etc.
 
-### TLS (9 checks)
-Test TLS versions via `openssl s_client`. Check SSLv3/TLS1.0/1.1 disabled, TLS1.2/1.3 enabled, cipher strength, OCSP.
+### TLS (12 checks)
+Test TLS versions via `openssl s_client`. Check SSLv3/TLS1.0/1.1 disabled, TLS1.2/1.3 enabled, cipher strength, OCSP, renegotiation, client certs, HTTP/3.
 
-### DNS (10 checks)
-Test DNS records via `dig`. Check DNSSEC, SPF, DMARC, NS, CAA.
+### DNS (15 checks)
+Test DNS records via `dig`. Check DNSSEC, SPF, DMARC, NS, CAA, subdomain takeover, zone transfer, MX, DANE.
 
 ### CORS (8 checks)
 Test CORS headers and WebSocket origin validation. Check wildcard, preflight, evil origin on WS.
 
-### API (12 checks)
-Fuzz API with type confusion, NoSQL injection, prototype pollution, command injection, template injection, unknown actions, malformed payloads.
+### API (17 checks)
+Fuzz API with type confusion, NoSQL injection, prototype pollution, command injection, template injection, unknown actions, malformed payloads, parameter pollution, XXE, path traversal.
 
-### WebSocket (10 checks)
-Test WS origin validation, connection limits, message flood, invalid types, binary frames, oversized messages.
+### WebSocket (13 checks)
+Test WS origin validation, connection limits, message flood, invalid types, binary frames, oversized messages, subprotocol enforcement, cross-protocol attacks.
 
-### WAF (10 checks)
-Test scanner UA blocking, rate limiting threshold, HTTP method restrictions.
+### WAF (12 checks)
+Test scanner UA blocking, rate limiting threshold, HTTP method restrictions, SSRF prevention, bot management, payload inspection.
 
 ### Infrastructure (12 checks)
 Check CF trace, error page origin leak, source file exposure, sensitive paths, path traversal, host header injection, direct IP bypass.
@@ -278,8 +278,8 @@ Check CF trace, error page origin leak, source file exposure, sensitive paths, p
 ### Brute Force (8 checks)
 Test session ID and pair code entropy, weak ID rejection, enumeration resistance.
 
-### Scaling (6 checks)
-Test large payloads, deep nesting, concurrent sessions, WS connection limits, WS message rate.
+### Scaling (10 checks)
+Test large payloads, deep nesting, concurrent sessions, WS connection limits, WS message rate, Slowloris, ReDoS, connection exhaustion.
 
 ### Disclosure (10 checks)
 Test error page content, stack traces, health endpoint info, game data authentication, version headers, method handling.

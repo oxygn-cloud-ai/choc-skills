@@ -26,6 +26,11 @@ Run these checks and report results. Do not proceed to any other action after.
    - `ls ~/.claude/skills/rr/orchestrator/rr-finalize.sh`
    - `ls ~/.claude/skills/rr/orchestrator/sub-agent-prompt.md`
    - `ls ~/.claude/skills/rr/orchestrator/monitor.py`
+   - `ls ~/.claude/skills/rr/orchestrator/_publish_one.sh`
+   - `ls ~/.claude/skills/rr/orchestrator/_update_cpt.sh`
+   - `ls ~/.claude/skills/rr/orchestrator/rr-board-aggregate.py`
+   - `ls ~/.claude/skills/rr/orchestrator/monitor_server.py`
+   - `ls ~/.claude/skills/rr/orchestrator/monitor_dashboard.html`
 8. Check sub-command files exist:
    - `ls ~/.claude/commands/rr/*.md`
 9. Try Atlassian MCP connectivity: attempt `mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql` with JQL `project = RR AND issuetype = Risk` limit 1
@@ -48,7 +53,7 @@ rr doctor — Environment Health Check
   [PASS] JIRA_EMAIL: set
   [WARN] JIRA_API_KEY: not set
   [PASS] reference files: 9 files found
-  [PASS] orchestrator: 4 files found
+  [PASS] orchestrator: 9 files found
   [PASS] sub-commands: N files in ~/.claude/commands/rr/
   [PASS] Atlassian MCP: connected (1 result)
   [PASS] CPT-1: accessible

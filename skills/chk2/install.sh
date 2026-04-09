@@ -50,7 +50,7 @@ ${BOLD}USAGE${RESET}
 
 ${BOLD}INSTALLS TO${RESET}
   ~/.claude/skills/chk2/SKILL.md        Main skill file
-  ~/.claude/commands/chk2/*.md           Sub-command files (33 files)
+  ~/.claude/commands/chk2/*.md           Sub-command files (35 files)
 EOF
   exit 0
 fi
@@ -108,10 +108,10 @@ if [ "${1:-}" = "--check" ]; then
 
   if [ -d "$COMMANDS_TARGET" ]; then
     count=$(find "$COMMANDS_TARGET" -name "*.md" | wc -l | tr -d ' ')
-    if [ "$count" -ge 33 ]; then
+    if [ "$count" -ge 35 ]; then
       ok "Sub-commands: ${count} files in ${COMMANDS_TARGET}"
     else
-      warn "Sub-commands: only ${count}/33 files in ${COMMANDS_TARGET}"
+      warn "Sub-commands: only ${count}/35 files in ${COMMANDS_TARGET}"
       issues=$((issues + 1))
     fi
   else
@@ -204,7 +204,10 @@ Invoke the matching skill using the Skill tool.
 ROUTER
 ok "Router -> ~/.claude/commands/chk2.md"
 
-# 3. Install sub-commands
+# 3. Install sub-commands (clean stale files from previous version)
+if [ -d "$COMMANDS_TARGET" ]; then
+  rm -rf "$COMMANDS_TARGET"
+fi
 mkdir -p "$COMMANDS_TARGET"
 count=0
 for file in "${COMMANDS_SOURCE}"/*.md; do

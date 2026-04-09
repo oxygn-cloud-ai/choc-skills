@@ -4,7 +4,7 @@ version: 1.0.0
 description: Brief description of what this skill does.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(*)
+allowed-tools: Read, Grep, Glob, Bash(git *)  # Restrict Bash — add only the commands your skill needs
 argument-hint: [optional arguments | help | doctor | version]
 ---
 

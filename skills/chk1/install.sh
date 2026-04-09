@@ -156,6 +156,10 @@ ok "Router -> ~/.claude/commands/chk1.md"
 
 # 3. Install sub-commands (if directory exists)
 if [ -d "$COMMANDS_SOURCE" ]; then
+  # Clean stale command files from previous version
+  if [ -d "$COMMANDS_TARGET" ]; then
+    rm -rf "$COMMANDS_TARGET"
+  fi
   mkdir -p "$COMMANDS_TARGET"
   count=0
   for file in "${COMMANDS_SOURCE}"/*.md; do

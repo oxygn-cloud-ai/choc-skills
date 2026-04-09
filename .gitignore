@@ -2,3 +2,9 @@
 *.jsonl
 *.log
 .session-backgrounds/
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+__pycache__/
