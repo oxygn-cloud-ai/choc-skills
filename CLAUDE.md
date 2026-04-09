@@ -98,11 +98,11 @@ Run this after any SKILL.md change. CI verifies the committed file matches.
 ## Version Locations
 
 Each skill has its own version in its `SKILL.md` frontmatter and its own `CHANGELOG.md`:
-- `skills/chk1/SKILL.md` → `version: 2.3.0`
-- `skills/chk2/SKILL.md` → `version: 2.1.0`
-- `skills/rr/SKILL.md` → `version: 5.0.0`
+- `skills/chk1/SKILL.md` → `version: 2.4.0`
+- `skills/chk2/SKILL.md` → `version: 2.2.0`
+- `skills/rr/SKILL.md` → `version: 5.1.0`
 
-The root `install.sh` has a separate installer version (`VERSION="1.3.0"`) independent of skill versions.
+The root `install.sh` has a separate installer version (`VERSION="2.0.0"`) independent of skill versions.
 
 ## Release Process
 
