@@ -1,0 +1,70 @@
+name: Release Skill
+
+on:
+  push:
+    tags:
+      - '*/v*'  # matches chk1/v2.3.1, rr/v4.0.1, iterm2-tmux/v1.1.0, etc.
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Per-Skill Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Parse skill and version from tag
+        id: parse
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          SKILL="${TAG%%/v*}"
+          VERSION="${TAG#*/v}"
+          echo "skill=${SKILL}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Releasing: ${SKILL} v${VERSION}"
+
+      - name: Validate skill exists
+        env:
+          SKILL: ${{ steps.parse.outputs.skill }}
+        run: |
+          if [ ! -d "skills/${SKILL}" ]; then
+            echo "Error: skills/${SKILL} directory not found"
+            exit 1
+          fi
+
+      - name: Validate all skill definitions
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/validate-skills.sh
+
+      - name: Extract per-skill changelog
+        env:
+          SKILL: ${{ steps.parse.outputs.skill }}
+          VERSION: ${{ steps.parse.outputs.version }}
+        run: |
+          CHANGELOG="skills/${SKILL}/CHANGELOG.md"
+          if [ -f "$CHANGELOG" ]; then
+            awk -v ver="$VERSION" '
+              /^## \[/ { if (found) exit; if (index($0, "[" ver "]")) found=1 }
+              found { print }
+            ' "$CHANGELOG" > /tmp/release-notes.md
+          fi
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "${SKILL} v${VERSION}" > /tmp/release-notes.md
+          fi
+
+      - name: Generate checksums
+        run: |
+          chmod +x scripts/generate-checksums.sh
+          ./scripts/generate-checksums.sh
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
+        with:
+          name: "${{ steps.parse.outputs.skill }} v${{ steps.parse.outputs.version }}"
+          body_path: /tmp/release-notes.md
+          files: CHECKSUMS.sha256
+          generate_release_notes: false
