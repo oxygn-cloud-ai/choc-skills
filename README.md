@@ -25,9 +25,9 @@ Install a skill. Type a slash command. Get superpowers.
 
 | Skill | Version | Command | Description | Docs |
 |-------|---------|---------|-------------|------|
-| **chk1** | v2.3.0 | `/chk1` | Adversarial implementation audit — fault-finding, risk-exposing review of code changes | [README](skills/chk1/README.md) |
-| **chk2** | v2.1.0 | `/chk2` | Adversarial security audit for web services — 211 checks across 30 categories | [README](skills/chk2/README.md) |
-| **rr** | v5.0.0 | `/rr` | Risk register assessment — interactive 6-step workflow or autonomous batch mode | [README](skills/rr/README.md) |
+| **chk1** | v2.4.0 | `/chk1` | Adversarial implementation audit — fault-finding, risk-exposing review of code changes | [README](skills/chk1/README.md) |
+| **chk2** | v2.2.0 | `/chk2` | Adversarial security audit for web services — 211 checks across 30 categories | [README](skills/chk2/README.md) |
+| **rr** | v5.1.0 | `/rr` | Risk register assessment — interactive 6-step workflow or autonomous batch mode | [README](skills/rr/README.md) |
 
 ## Standalone Tools
 

@@ -2,6 +2,32 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.1.0] - 2026-04-09
+
+### Changed
+- **Security**: Restricted `Bash(*)` to 28 explicit command patterns
+- **Security**: JIRA_AUTH no longer exported in environment — uses temp file with chmod 600
+- **Security**: monitor_server.py bound to 127.0.0.1 (was 0.0.0.0), CORS restricted to localhost
+- **Security**: board.md reads auth from `.jira-auth` file instead of `source ~/.zshenv`
+- **Performance**: Replaced O(n²) jq-in-loop in phase_filter and phase_extraction with temp file + `jq -s`
+- **Reliability**: Per-risk lockfile prevents duplicate Jira tickets during parallel publishing
+- Credential validation now runs before work directory cleanup
+- `--reset` validates directory contains batch.log before deleting
+- CATEGORY_FILTER validated against known enum values
+- RR_WORK_DIR validated to be under $HOME or /tmp
+- `set -euo pipefail` in all orchestrator scripts (was `set -uo pipefail`)
+- Added `board` route to SKILL.md routing table and install.sh router
+
+### Fixed
+- `eval curl` for attachments replaced with array-based approach
+- monitor.py batch risk_count now handles dict format correctly
+- `ls` without `2>/dev/null` in phase_publication
+- Empty-risks guard added to phase_extraction
+- Regulatory framework numbering uses correct array index
+- Doctor checks all 9 orchestrator files (was 4)
+- Help text file counts aligned with actual directory contents
+- `_update_cpt.sh` now uses `set -uo pipefail`
+
 ## [5.0.0] - 2026-04-07
 
 ### Added
