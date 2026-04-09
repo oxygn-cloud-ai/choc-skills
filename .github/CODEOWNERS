@@ -1,0 +1,14 @@
+# Default owner for everything
+* @jpshanahan
+
+# Per-skill ownership (expand when contributors join)
+skills/chk1/ @jpshanahan
+skills/chk2/ @jpshanahan
+skills/rr/ @jpshanahan
+skills/iterm2-tmux/ @jpshanahan
+
+# Shared infrastructure (stricter review)
+install.sh @jpshanahan
+scripts/ @jpshanahan
+tests/ @jpshanahan
+.github/ @jpshanahan

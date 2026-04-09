@@ -216,6 +216,12 @@ install_skill() {
   local ver
   ver=$(get_skill_version "${target}/SKILL.md")
   ok "Installed '${name}' v${ver} -> ${target}"
+
+  # Hint: if this skill has a per-skill installer, it provides full setup
+  # (routers, sub-commands, references) beyond just SKILL.md
+  if [ -f "${source}/install.sh" ] && [ -x "${source}/install.sh" ]; then
+    info "For full setup (sub-commands, router): bash ${source}/install.sh --force"
+  fi
 }
 
 # --- Uninstall a single skill ---

@@ -168,7 +168,11 @@ else
   warn "No commands/ directory found — sub-commands not installed"
 fi
 
-# 4. Verify
+# 4. Record source repo path (for /chk1 update)
+echo "$SCRIPT_DIR" > "${SKILL_TARGET}/.source-repo"
+ok "Source repo marker -> ${SKILL_TARGET}/.source-repo"
+
+# 5. Verify
 ver=$(grep -m1 '^version:' "${SKILL_TARGET}/SKILL.md" 2>/dev/null | sed 's/^version: *//' || true)
 echo ""
 ok "chk1 v${ver} installed successfully"
