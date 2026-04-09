@@ -37,12 +37,12 @@ INTERACTIVE=true
 # --- Pipe detection ---
 if [[ -z "${BASH_SOURCE[0]}" || "${BASH_SOURCE[0]}" == "/dev/stdin" || "${BASH_SOURCE[0]}" == "/dev/fd/"* || "${BASH_SOURCE[0]}" == "-" ]]; then
   die "Pipe install not supported. Clone the repo first:
-  git clone https://github.com/oxygn-cloud-ai/claude-skills.git && cd claude-skills && ./install.sh"
+  git clone https://github.com/oxygn-cloud-ai/choc-skills.git && cd choc-skills && ./install.sh"
 fi
 
 usage() {
   cat <<EOF
-${BOLD}claude-skills installer${RESET} v${VERSION}
+${BOLD}choc-skills installer${RESET} v${VERSION}
 
 ${BOLD}USAGE${RESET}
   ./install.sh                    Install all skills
@@ -71,7 +71,7 @@ ${BOLD}EXAMPLES${RESET}
 
 ${BOLD}MANUAL INSTALL${RESET} (no clone needed)
   mkdir -p ~/.claude/skills/chk1
-  curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/skills/chk1/SKILL.md \\
+  curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/choc-skills/main/skills/chk1/SKILL.md \\
     -o ~/.claude/skills/chk1/SKILL.md
 EOF
 }
@@ -352,7 +352,7 @@ QUIET=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --help|-h)       usage; exit 0 ;;
-    --version|-v)    echo "claude-skills installer v${VERSION}"; exit 0 ;;
+    --version|-v)    echo "choc-skills installer v${VERSION}"; exit 0 ;;
     --list|-l)       list_skills; exit 0 ;;
     --check|--doctor) check_health; exit $? ;;
     --force|-f)      FORCE=true; shift ;;

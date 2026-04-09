@@ -11,9 +11,9 @@ body:
 
         Report vulnerabilities privately via:
         - Email: security@oxygn.cloud
-        - [GitHub Security Advisories](https://github.com/oxygn-cloud-ai/claude-skills/security/advisories/new)
+        - [GitHub Security Advisories](https://github.com/oxygn-cloud-ai/choc-skills/security/advisories/new)
 
-        See [SECURITY.md](https://github.com/oxygn-cloud-ai/claude-skills/blob/main/SECURITY.md) for full details.
+        See [SECURITY.md](https://github.com/oxygn-cloud-ai/choc-skills/blob/main/SECURITY.md) for full details.
 
         This form is for **non-critical security concerns** only (e.g., a skill requesting more tools than necessary, documentation that could mislead users about security boundaries).
 

@@ -1,4 +1,4 @@
-# CLAUDE.md — claude-skills
+# CLAUDE.md — choc-skills
 
 ## What This Repo Is
 

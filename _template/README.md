@@ -19,7 +19,7 @@ A Claude Code skill that does X.
 
 ```bash
 mkdir -p ~/.claude/skills/my-skill
-curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/skills/my-skill/SKILL.md \
+curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/choc-skills/main/skills/my-skill/SKILL.md \
   -o ~/.claude/skills/my-skill/SKILL.md
 ```
 
@@ -48,7 +48,7 @@ Describe the skill's purpose and methodology.
 ## Update
 
 ```bash
-cd claude-skills && git pull && ./install.sh --force my-skill
+cd choc-skills && git pull && ./install.sh --force my-skill
 ```
 
 ## Uninstall

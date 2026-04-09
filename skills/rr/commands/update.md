@@ -15,7 +15,7 @@ Context from user: $ARGUMENTS
    ```
    rr update — source repo not configured.
    Clone the repo and run install.sh to set up the source link:
-     git clone https://github.com/oxygn-cloud-ai/claude-skills.git
-     cd claude-skills/skills/rr
+     git clone https://github.com/oxygn-cloud-ai/choc-skills.git
+     cd choc-skills/skills/rr
      bash install.sh
    ```

@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# Tests for install.sh — the root claude-skills installer.
+# Tests for install.sh — the root choc-skills installer.
 #
 # Each test uses a temporary HOME so it never touches the real environment.
 #
@@ -51,7 +51,7 @@ teardown() {
 @test "--version prints version string" {
   run bash "$INSTALLER" --version
   [ "$status" -eq 0 ]
-  [[ "$output" == *"claude-skills installer v"* ]]
+  [[ "$output" == *"choc-skills installer v"* ]]
 }
 
 @test "--help prints usage" {
