@@ -48,7 +48,8 @@ timestamp() {
 }
 
 warn() {
-    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] WARN [CPT] $*"
+    local msg
+    msg="[$(date '+%Y-%m-%d %H:%M:%S')] WARN [CPT] $*"
     echo "$msg" >&2
     [ -d "$WORK_DIR" ] && echo "$msg" >> "$LOG_FILE" 2>/dev/null
 }
