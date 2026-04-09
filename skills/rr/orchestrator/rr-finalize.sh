@@ -51,6 +51,7 @@ log() {
 die() {
     log "FATAL: $*"
     notify_slack "RR batch finalization failed: $*"
+    "$SCRIPT_DIR/_update_cpt.sh" fatal "$*" || true
     exit 1
 }
 
@@ -207,6 +208,23 @@ EOF
 
     # Slack notification
     notify_slack "RR batch review complete. Total: $total_risks risks, Processed: $filtered, Published: $published, Failed: $failed"
+
+    # Update run metadata with completion fields
+    if [ -f "$WORK_DIR/run-metadata.json" ]; then
+        jq --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+           --argjson pub "$published" --argjson fail "$failed" \
+           --arg st "$([ "$failed" -eq 0 ] && echo 'complete' || echo 'complete_with_errors')" \
+           '. + {completed_at:$ts, published:$pub, failed:$fail, status:$st}' \
+           "$WORK_DIR/run-metadata.json" > "$WORK_DIR/run-metadata.json.tmp" \
+           && mv "$WORK_DIR/run-metadata.json.tmp" "$WORK_DIR/run-metadata.json"
+    fi
+
+    # CPT update — non-blocking
+    if [ "$failed" -eq 0 ]; then
+        "$SCRIPT_DIR/_update_cpt.sh" complete "Published $published/$filtered, Failed 0" || true
+    else
+        "$SCRIPT_DIR/_update_cpt.sh" complete_with_errors "Published $published/$filtered, Failed $failed" || true
+    fi
 
     log "BATCH COMPLETE: $published/$filtered published"
 }

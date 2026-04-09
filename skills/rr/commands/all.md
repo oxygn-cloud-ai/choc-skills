@@ -123,7 +123,12 @@ For each wave of batches:
    done
    ```
 
-4. Proceed to the next wave.
+4. Update CPT with wave progress (non-blocking) via Bash:
+   ```bash
+   ~/.claude/skills/rr/orchestrator/_update_cpt.sh dispatch_progress "Wave N of M complete: X succeeded, Y failed" || true
+   ```
+
+5. Proceed to the next wave.
 
 #### Retry Failures
 
@@ -172,6 +177,14 @@ Re-run fails: /rr fix
 ## Sequential Mode (Fallback)
 
 Report to user why agent orchestrator mode is not available, then proceed sequentially.
+
+### CPT — Sequential Mode Start
+
+At the start of sequential processing, update CPT via Bash (non-blocking):
+```bash
+~/.claude/skills/rr/orchestrator/_update_cpt.sh started "Sequential mode: processing N risks" || true
+```
+Do NOT update CPT per-risk (avoids spam). Only update at completion.
 
 ### Check for Existing Progress
 
@@ -258,6 +271,13 @@ For each pending risk in the progress file:
 | `done` | Completed successfully |
 | `failed` | Error during processing |
 | `skipped` | Skipped (already reviewed this quarter, unless --force) |
+
+### CPT — Sequential Mode Complete
+
+After all risks are processed (or context limit reached), update CPT via Bash (non-blocking):
+```bash
+~/.claude/skills/rr/orchestrator/_update_cpt.sh complete "Sequential mode: N/M risks processed" || true
+```
 
 ## After
 

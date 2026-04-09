@@ -71,8 +71,12 @@ log() {
 die() {
     log "FATAL: $*"
     notify_slack "RR batch review failed: $*"
+    "$SCRIPT_DIR/_update_cpt.sh" fatal "$*" || true
     exit 1
 }
+
+# Resolve script directory for sibling script calls
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Verify required environment variables
 check_env() {
@@ -318,6 +322,18 @@ main() {
     check_env
     JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 
+    # Generate run metadata with unique run_id for CPT tracking
+    local run_id
+    run_id=$(uuidgen 2>/dev/null || echo "run-$(date +%s)")
+    jq -n \
+        --arg rid "$run_id" \
+        --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+        --arg q "$QUARTER_OVERRIDE" \
+        --argjson force "$FORCE_MODE" \
+        --arg cat "${CATEGORY_FILTER:-}" \
+        '{run_id:$rid, started_at:$ts, quarter:$q, force:$force, category_filter:$cat}' \
+        > "$WORK_DIR/run-metadata.json"
+
     notify_slack "RR batch review starting (force=$FORCE_MODE)"
 
     local total_risks
@@ -334,6 +350,14 @@ main() {
 
     local batches
     batches=$(phase_extraction)
+
+    # Update run metadata with discovery/filter/batch counts
+    jq --argjson disc "$total_risks" --argjson proc "$to_process" --argjson bat "$batches" \
+        '. + {total_discovered:$disc, total_to_process:$proc, batch_count:$bat}' \
+        "$WORK_DIR/run-metadata.json" > "$WORK_DIR/run-metadata.json.tmp" \
+        && mv "$WORK_DIR/run-metadata.json.tmp" "$WORK_DIR/run-metadata.json"
+
+    "$SCRIPT_DIR/_update_cpt.sh" prepared "$batches batches ready ($to_process risks, force=$FORCE_MODE)" || true
 
     log "=========================================="
     log "PREPARATION COMPLETE — $batches batches ready for dispatch"

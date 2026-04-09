@@ -13,6 +13,8 @@ USAGE
   /rr all --force      Batch all risks, ignore quarterly filter
   /rr all T            Batch Technology risks only
   /rr all --reset      Clear batch work directory
+  /rr board --qtr:Q1   Generate Board Risk Oversight Paper for Q1
+  /rr board --qtr:Q1 --dry-run   Generate paper without publishing
   /rr status           Check batch progress (snapshot)
   /rr monitor          Real-time batch progress monitor (live refresh)
   /rr fix              Re-run failed assessments

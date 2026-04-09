@@ -29,6 +29,12 @@ Run these checks and report results. Do not proceed to any other action after.
 8. Check sub-command files exist:
    - `ls ~/.claude/commands/rr/*.md`
 9. Try Atlassian MCP connectivity: attempt `mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql` with JQL `project = RR AND issuetype = Risk` limit 1
+10. Check CPT-1 ticket is accessible (non-blocking — WARN only if it fails):
+   ```bash
+   source ~/.zshenv 2>/dev/null; curl -s -o /dev/null -w "%{http_code}" -u "${JIRA_EMAIL}:${JIRA_API_KEY}" "https://chocfin.atlassian.net/rest/api/3/issue/CPT-1?fields=summary" --max-time 10
+   ```
+   - HTTP 200 → `[PASS] CPT-1: accessible`
+   - Other → `[WARN] CPT-1: not accessible (HTTP NNN) — CPT tracking will be skipped`
 
 ## Output Format
 
@@ -45,7 +51,8 @@ rr doctor — Environment Health Check
   [PASS] orchestrator: 4 files found
   [PASS] sub-commands: N files in ~/.claude/commands/rr/
   [PASS] Atlassian MCP: connected (1 result)
-  [PASS] version: 4.0.0
+  [PASS] CPT-1: accessible
+  [PASS] version: 5.0.0
 
   Result: N passed, N warnings, N failed
 ```
