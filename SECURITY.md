@@ -31,7 +31,7 @@ After installation, you can verify installed skills against published checksums:
 ./install.sh --check
 
 # Verify checksums (if CHECKSUMS.sha256 exists)
-cd claude-skills
+cd choc-skills
 shasum -a 256 -c CHECKSUMS.sha256
 ```
 

@@ -24,7 +24,7 @@ Context from user: $ARGUMENTS
 
    b. Fetch the remote version:
       ```bash
-      REPO="https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main"
+      REPO="https://raw.githubusercontent.com/oxygn-cloud-ai/choc-skills/main"
       REMOTE_VER=$(curl -sf "$REPO/skills/chk1/SKILL.md" | grep -m1 '^version:' | sed 's/^version: *//')
       ```
 

@@ -1,4 +1,4 @@
-# Canonical label definitions for oxygn-cloud-ai/claude-skills.
+# Canonical label definitions for oxygn-cloud-ai/choc-skills.
 #
 # Format: top-level YAML array, consumed by EndBug/label-sync via
 # .github/workflows/labels.yml. Any change pushed to main triggers a sync.

@@ -176,7 +176,7 @@ Each completed review produces 7 JSON files in `$RR_OUTPUT_DIR` (default: `~/rr-
 ## Update
 
 ```bash
-cd claude-skills && git pull && cd skills/rr && ./install.sh --force
+cd choc-skills && git pull && cd skills/rr && ./install.sh --force
 ```
 
 Or from within Claude Code:

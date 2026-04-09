@@ -40,8 +40,8 @@ Install a skill. Type a slash command. Get superpowers.
 ### All skills
 
 ```bash
-git clone https://github.com/oxygn-cloud-ai/claude-skills.git
-cd claude-skills
+git clone https://github.com/oxygn-cloud-ai/choc-skills.git
+cd choc-skills
 ./install.sh
 ```
 

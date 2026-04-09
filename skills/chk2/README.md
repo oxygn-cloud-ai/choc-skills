@@ -28,13 +28,13 @@ cd skills/chk2
 ```bash
 # Main skill
 mkdir -p ~/.claude/skills/chk2
-curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/skills/chk2/SKILL.md \
+curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/choc-skills/main/skills/chk2/SKILL.md \
   -o ~/.claude/skills/chk2/SKILL.md
 
 # Sub-commands
 mkdir -p ~/.claude/commands/chk2
 for f in all headers tls dns cors api ws waf infra brute scale disclosure quick fix; do
-  curl -sL "https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/skills/chk2/commands/${f}.md" \
+  curl -sL "https://raw.githubusercontent.com/oxygn-cloud-ai/choc-skills/main/skills/chk2/commands/${f}.md" \
     -o ~/.claude/commands/chk2/${f}.md
 done
 ```
@@ -138,7 +138,7 @@ skills/chk2/
 ## Update
 
 ```bash
-cd claude-skills && git pull && ./install.sh --force chk2
+cd choc-skills && git pull && ./install.sh --force chk2
 ```
 
 ## Uninstall

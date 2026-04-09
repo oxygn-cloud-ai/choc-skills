@@ -13,8 +13,8 @@ A Claude Code skill that performs fault-finding, risk-exposing, deviation-detect
 ### From repo root (recommended)
 
 ```bash
-git clone https://github.com/oxygn-cloud-ai/claude-skills.git
-cd claude-skills
+git clone https://github.com/oxygn-cloud-ai/choc-skills.git
+cd choc-skills
 ./install.sh chk1
 ```
 
@@ -28,7 +28,7 @@ cd claude-skills
 
 ```bash
 mkdir -p ~/.claude/skills/chk1
-curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/claude-skills/main/skills/chk1/SKILL.md \
+curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/choc-skills/main/skills/chk1/SKILL.md \
   -o ~/.claude/skills/chk1/SKILL.md
 ```
 
@@ -104,7 +104,7 @@ If the boundary is ambiguous, it defaults to the latest commit and tells you to 
 ## Update
 
 ```bash
-cd claude-skills && git pull && ./install.sh --force chk1
+cd choc-skills && git pull && ./install.sh --force chk1
 ```
 
 ## Uninstall
