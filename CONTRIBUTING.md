@@ -76,8 +76,8 @@ Keep the first line under 72 characters. Add a body for context when the change 
 
 1. Ensure `./scripts/validate-skills.sh` passes
 2. Ensure `shellcheck` passes on any `.sh` files you changed
-3. Update `CHANGELOG.md` with your changes under `## [Unreleased]`
-4. Update `README.md` if adding a new skill (add to the skills table)
+3. Update the **per-skill** `CHANGELOG.md` (e.g., `skills/chk1/CHANGELOG.md`) under `## [Unreleased]`
+4. Update root `README.md` if adding a new skill (add to the skills table)
 5. Regenerate checksums: `./scripts/generate-checksums.sh`
 6. One approval required to merge
 
@@ -128,7 +128,25 @@ All PRs run the CI pipeline automatically (`.github/workflows/ci.yml`):
 skills/my-skill/
   SKILL.md       # Required — skill definition
   README.md      # Required — user documentation
-  install.sh     # Optional — per-skill installer (delegates to root)
+  CHANGELOG.md   # Required — per-skill changelog (Keep a Changelog format)
+  install.sh     # Optional — per-skill installer for sub-commands/routers
+  commands/      # Optional — sub-command .md files
 ```
 
 Standalone tools (no SKILL.md) are ignored by the root installer and must have their own install/uninstall scripts.
+
+## Releasing a Skill
+
+Skills are released independently via namespaced tags:
+
+```bash
+# 1. Bump version in skills/my-skill/SKILL.md
+# 2. Add release entry to skills/my-skill/CHANGELOG.md
+# 3. Regenerate checksums: ./scripts/generate-checksums.sh
+# 4. Commit and push
+# 5. Tag and push:
+git tag my-skill/v1.2.0
+git push --tags
+```
+
+This triggers the per-skill release workflow which creates a GitHub Release with the skill's changelog.
