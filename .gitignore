@@ -2,3 +2,8 @@
 *.jsonl
 *.log
 .session-backgrounds/
+.env
+.env.*
+*.pem
+*.key
+credentials.json

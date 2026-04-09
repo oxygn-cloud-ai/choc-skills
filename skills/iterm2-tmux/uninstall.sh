@@ -55,7 +55,7 @@ if [ -f "${HOME}/.zshrc" ] && grep -qF "# --- iterm2-tmux auto-start" "${HOME}/.
 fi
 
 # Remove stale lockfile
-rm -rf /tmp/iterm2-tmux-autostart.lock 2>/dev/null || true
+rm -rf /tmp/.iterm2-tmux-autostart 2>/dev/null || true
 
 # Remove config
 if [ -d "${HOME}/.config/iterm2-tmux" ]; then

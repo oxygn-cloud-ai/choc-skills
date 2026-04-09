@@ -20,6 +20,9 @@ from urllib.parse import urlparse, parse_qs
 
 WORK_DIR = Path(os.environ.get("RR_WORK_DIR", Path.home() / "rr-work"))
 PORT = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else 8770
+if not (1024 <= PORT <= 65535):
+    print("Error: port must be 1024-65535")
+    sys.exit(1)
 SCRIPT_DIR = Path(__file__).parent
 
 
@@ -264,7 +267,7 @@ class MonitorHandler(http.server.SimpleHTTPRequestHandler):
             data = build_api_response()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Origin", f"http://localhost:{PORT}")
             self.end_headers()
             self.wfile.write(json.dumps(data).encode())
             return
@@ -292,7 +295,7 @@ def main():
         sys.exit(1)
 
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), MonitorHandler) as httpd:
+    with socketserver.TCPServer(("127.0.0.1", PORT), MonitorHandler) as httpd:
         print(f"RR Monitor server running at http://localhost:{PORT}")
         print(f"Monitoring: {WORK_DIR}")
         print("Press Ctrl+C to stop")

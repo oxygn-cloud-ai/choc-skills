@@ -16,18 +16,34 @@
 # Required environment variables:
 #   WORK_DIR         — Working directory
 #   JIRA_BASE_URL    — Jira instance URL
-#   JIRA_AUTH        — Base64-encoded Jira auth (email:token)
+#   AUTH_FILE        — Path to file containing Base64-encoded Jira auth
 #   PROJECT_KEY      — Jira project key (e.g. RR)
 
-set -uo pipefail
+set -euo pipefail
 
 risk_key="${1:?Usage: _publish_one.sh <risk_key>}"
 
 # Source config from env vars
 WORK_DIR="${WORK_DIR:?WORK_DIR must be set}"
 JIRA_BASE_URL="${JIRA_BASE_URL:?JIRA_BASE_URL must be set}"
-JIRA_AUTH="${JIRA_AUTH:?JIRA_AUTH must be set}"
+AUTH_FILE="${AUTH_FILE:?AUTH_FILE must be set}"
 PROJECT_KEY="${PROJECT_KEY:?PROJECT_KEY must be set}"
+
+# Read JIRA_AUTH from file (not env) for security
+if [ ! -f "$AUTH_FILE" ]; then
+    echo "${risk_key}:FAILED:AUTH_FILE_MISSING" >&2
+    exit 1
+fi
+JIRA_AUTH=$(cat "$AUTH_FILE")
+
+# Per-risk lockfile to prevent duplicate publishing
+if [ -n "${LOCK_DIR:-}" ]; then
+    if ! mkdir "$LOCK_DIR/${risk_key}.lock" 2>/dev/null; then
+        echo "${risk_key}:SKIP:ALREADY_PUBLISHING" >&2
+        exit 0
+    fi
+    trap 'rm -rf "$LOCK_DIR/${risk_key}.lock"' EXIT
+fi
 
 MAX_PUBLISH_RETRIES=3
 ASSIGNEE_ID="712020:fd08a63d-8c2c-4412-8761-834339d9475c"
@@ -132,7 +148,7 @@ rendered_md=$(jq -r '
 
     "\n### Applicable Regulatory Framework\n\n" +
     ([$s.regulatory_framework[]? // empty] | to_entries | map(
-        "\(.value | (.key + 1 | tostring) // (.key | tostring)). **\(.value.instrument_name // "Unknown")** (\(.value.version_date // "N/A"), \(.value.status // "N/A"))\n   \(.value.relevance // "N/A")"
+        "\(.key + 1 | tostring). **\(.value.instrument_name // "Unknown")** (\(.value.version_date // "N/A"), \(.value.status // "N/A"))\n   \(.value.relevance // "N/A")"
     ) | join("\n")) +
     "\n\n---\n" +
 
@@ -384,19 +400,19 @@ while [ $attempt -lt $MAX_PUBLISH_RETRIES ]; do
                 # 4. Jira ticket record (the API response we just got)
                 echo "$http_body" > "$attach_dir/${risk_key_lower}_${today}_jira_ticket.json"
 
-                # Attach all files in one curl call
-                attach_args=""
+                # Attach all files in one curl call (array-based, no eval)
+                attach_files=()
                 for f in "$attach_dir"/*.json; do
                     [ -f "$f" ] || continue
-                    attach_args="$attach_args -F file=@$f"
+                    attach_files+=(-F "file=@$f")
                 done
 
-                if [ -n "$attach_args" ]; then
-                    attach_code=$(eval curl -s -o /dev/null -w '"%{http_code}"' \
-                        -X POST '"$JIRA_BASE_URL/rest/api/3/issue/${new_key}/attachments"' \
-                        -H '"Authorization: Basic $JIRA_AUTH"' \
-                        -H '"X-Atlassian-Token: no-check"' \
-                        $attach_args \
+                if [ ${#attach_files[@]} -gt 0 ]; then
+                    attach_code=$(curl -s -o /dev/null -w "%{http_code}" \
+                        -X POST "$JIRA_BASE_URL/rest/api/3/issue/${new_key}/attachments" \
+                        -H "Authorization: Basic $JIRA_AUTH" \
+                        -H "X-Atlassian-Token: no-check" \
+                        "${attach_files[@]}" \
                         --max-time 60)
                     file_count=$(ls "$attach_dir"/*.json 2>/dev/null | wc -l | tr -d ' ')
                     if [ "$attach_code" = "200" ]; then

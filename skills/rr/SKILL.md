@@ -4,7 +4,7 @@ version: 5.0.0
 description: "Risk register assessment for Chocolate Finance. Invoke with /rr followed by a ticket key (e.g. /rr RR-220) or /rr all for batch mode."
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(*), Write, Edit, Agent, AskUserQuestion, WebSearch
+allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(jq *), Bash(git *), Bash(python3 *), Bash(bash *), Bash(shasum *), Bash(base64 *), Bash(ls *), Bash(cat *), Bash(mkdir *), Bash(rm *), Bash(cp *), Bash(chmod *), Bash(date *), Bash(xargs *), Bash(wc *), Bash(echo *), Bash(printf *), Bash(grep *), Bash(sed *), Bash(awk *), Bash(head *), Bash(tail *), Bash(tr *), Bash(sort *), Bash(tee *), Bash(flock *), Write, Edit, Agent, AskUserQuestion, WebSearch
 argument-hint: [RR-NNN | all | board | status | monitor | fix | update | help | doctor | version]
 ---
 
@@ -37,6 +37,7 @@ Parse $ARGUMENTS and route:
 | `all` (with optional flags/filters after) | Invoke `/rr:all` passing everything after `all` |
 | `status` | Invoke `/rr:status` |
 | `monitor` | Invoke `/rr:monitor` |
+| `board` | Invoke `/rr:board` — generate Board paper |
 | `fix` | Invoke `/rr:fix` |
 | `remove` | Invoke `/rr:remove` (hidden — testing only) |
 | anything else | Invoke `/rr:help` |

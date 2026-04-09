@@ -6,8 +6,14 @@ Claude Code skills are **Markdown instruction files**, not executable code. When
 
 ### What the installer does
 
-- Creates directories under `~/.claude/skills/`
-- Copies `SKILL.md` files into those directories
+- Creates directories under `~/.claude/skills/` and `~/.claude/commands/`
+- Copies `SKILL.md` files into skill directories
+- Per-skill installers (e.g., `skills/rr/install.sh`) additionally install:
+  - Router files (`~/.claude/commands/<skill>.md`) for slash-command routing
+  - Sub-command `.md` files (`~/.claude/commands/<skill>/*.md`)
+  - Orchestrator scripts (shell scripts, Python files) for skills that need them (e.g., rr)
+  - Reference files (schemas, workflow definitions, context documents)
+  - Source repo markers (`.source-repo`) for the update subcommand
 - Verifies copies match source (byte-level comparison + SHA256 checksum)
 
 ### What the installer does NOT do

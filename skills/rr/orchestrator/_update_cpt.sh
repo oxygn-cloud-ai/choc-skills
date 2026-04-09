@@ -22,7 +22,7 @@
 #   2. Delete this file
 #   That's it. No other files depend on this script.
 
-set -u
+set -uo pipefail
 
 # ─── KILL SWITCH ─────────────────────────────────────────────────────────────
 if [ "${RR_CPT_DISABLED:-false}" = "true" ]; then

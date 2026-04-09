@@ -17,13 +17,20 @@
 #
 # Output (stdout last line): number of batches created
 
-set -uo pipefail
+set -euo pipefail
 
 #=============================================================================
 # CONFIGURATION
 #=============================================================================
 
 WORK_DIR="${RR_WORK_DIR:-${HOME}/rr-work}"
+
+# Validate WORK_DIR is under $HOME or /tmp to prevent accidental operations elsewhere
+case "$WORK_DIR" in
+    "$HOME"/*|/tmp/*) ;;
+    *) echo "FATAL: RR_WORK_DIR must be under \$HOME or /tmp. Got: $WORK_DIR" >&2; exit 1 ;;
+esac
+
 LOG_FILE="$WORK_DIR/batch.log"
 
 JIRA_BASE_URL="https://chocfin.atlassian.net"
@@ -34,6 +41,14 @@ RISKS_PER_SUBAGENT=10
 FORCE_MODE=false
 CATEGORY_FILTER="${RR_CATEGORY_FILTER:-}"
 
+# Validate CATEGORY_FILTER against known enum values
+if [ -n "$CATEGORY_FILTER" ]; then
+    case "$CATEGORY_FILTER" in
+        A|B|C|D|ER|F|I|L|O|OO|P|T) ;;
+        *) echo "FATAL: Invalid CATEGORY_FILTER '$CATEGORY_FILTER'. Must be one of: A, B, C, D, ER, F, I, L, O, OO, P, T" >&2; exit 1 ;;
+    esac
+fi
+
 # Parse arguments
 # Note: --qtr:Q[1-4] is accepted by rr-finalize.sh (where the quarter override
 # affects Jira publication) but is not consumed here. Unknown args are silently
@@ -42,30 +57,43 @@ CATEGORY_FILTER="${RR_CATEGORY_FILTER:-}"
 for arg in "$@"; do
     case $arg in
         --force) FORCE_MODE=true ;;
-        --reset) rm -rf "$WORK_DIR"; echo "Work directory reset"; exit 0 ;;
+        --reset)
+            # Verify this is actually an rr-work directory before deleting
+            if [ -d "$WORK_DIR" ] && { [ -f "$WORK_DIR/batch.log" ] || [ -f "$WORK_DIR/discovery.json" ]; }; then
+                rm -rf "$WORK_DIR"
+                echo "Work directory reset"
+            elif [ -d "$WORK_DIR" ]; then
+                echo "FATAL: $WORK_DIR does not look like an rr-work directory (missing batch.log and discovery.json). Refusing to delete." >&2
+                exit 1
+            else
+                echo "Work directory does not exist, nothing to reset"
+            fi
+            exit 0
+            ;;
     esac
 done
 
 #=============================================================================
-# SETUP
+# SETUP — define functions and check env BEFORE any destructive cleanup
 #=============================================================================
 
-mkdir -p "$WORK_DIR"/{extracts,payloads,results,errors,assessments,individual,jira-payloads,jira-results,jira-errors,progress,logs}
-: > "$LOG_FILE"
-
-# Clean stale files from previous runs at startup
-rm -f "$WORK_DIR/extracts"/*.json 2>/dev/null
-rm -f "$WORK_DIR/payloads"/*.json 2>/dev/null
-rm -f "$WORK_DIR/results"/*.json 2>/dev/null
-rm -f "$WORK_DIR/errors"/*.json 2>/dev/null
-rm -f "$WORK_DIR/individual"/*.json 2>/dev/null
-rm -f "$WORK_DIR/assessments"/*.json 2>/dev/null
-rm -f "$WORK_DIR/jira-results"/*.json 2>/dev/null
-rm -f "$WORK_DIR/jira-errors"/*.json 2>/dev/null
-rm -f "$WORK_DIR/progress"/*.json 2>/dev/null
+# Resolve script directory for sibling script calls
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE" >&2
+}
+
+notify_slack() {
+    local message="$1"
+    if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+        local payload
+        payload=$(jq -n --arg msg "$message" '{text: $msg}')
+        curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            --max-time 10 >/dev/null 2>&1 || true
+    fi
 }
 
 die() {
@@ -74,9 +102,6 @@ die() {
     "$SCRIPT_DIR/_update_cpt.sh" fatal "$*" || true
     exit 1
 }
-
-# Resolve script directory for sibling script calls
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Verify required environment variables
 check_env() {
@@ -91,21 +116,22 @@ check_env() {
 
 JIRA_AUTH=""  # Computed after check_env validates credentials
 
-#=============================================================================
-# SLACK NOTIFICATION
-#=============================================================================
+# Check env BEFORE cleanup to avoid destroying state when credentials are missing
+check_env
 
-notify_slack() {
-    local message="$1"
-    if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
-        local payload
-        payload=$(jq -n --arg msg "$message" '{text: $msg}')
-        curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "$payload" \
-            --max-time 10 >/dev/null 2>&1 || true
-    fi
-}
+mkdir -p "$WORK_DIR"/{extracts,payloads,results,errors,assessments,individual,jira-payloads,jira-results,jira-errors,progress,logs}
+: > "$LOG_FILE"
+
+# Clean stale files from previous runs at startup
+rm -f "$WORK_DIR/extracts"/*.json 2>/dev/null
+rm -f "$WORK_DIR/payloads"/*.json 2>/dev/null
+rm -f "$WORK_DIR/results"/*.json 2>/dev/null
+rm -f "$WORK_DIR/errors"/*.json 2>/dev/null
+rm -f "$WORK_DIR/individual"/*.json 2>/dev/null
+rm -f "$WORK_DIR/assessments"/*.json 2>/dev/null
+rm -f "$WORK_DIR/jira-results"/*.json 2>/dev/null
+rm -f "$WORK_DIR/jira-errors"/*.json 2>/dev/null
+rm -f "$WORK_DIR/progress"/*.json 2>/dev/null
 
 #=============================================================================
 # JIRA API FUNCTIONS
@@ -238,9 +264,10 @@ phase_filter() {
     local reviewed_parents
     reviewed_parents=$(echo "$all_reviews" | jq -r '[.[].fields.parent.key // empty] | unique | .[]')
 
-    # Filter out already-reviewed risks
+    # Filter out already-reviewed risks (temp file approach to avoid O(n^2) jq)
     local reviewed_count=0
-    local to_process="[]"
+    local tmp_filter
+    tmp_filter=$(mktemp)
 
     while read -r risk; do
         local key
@@ -248,9 +275,17 @@ phase_filter() {
         if echo "$reviewed_parents" | grep -q "^${key}$"; then
             reviewed_count=$((reviewed_count + 1))
         else
-            to_process=$(echo "$to_process" | jq --argjson r "$risk" '. + [$r]')
+            echo "$risk" >> "$tmp_filter"
         fi
     done < <(jq -c '.risks[]' "$WORK_DIR/discovery.json")
+
+    local to_process
+    if [ -s "$tmp_filter" ]; then
+        to_process=$(jq -s '.' "$tmp_filter")
+    else
+        to_process="[]"
+    fi
+    rm -f "$tmp_filter"
 
     local to_process_count
     to_process_count=$(echo "$to_process" | jq 'length')
@@ -279,7 +314,15 @@ phase_extraction() {
     log "PHASE 3: EXTRACTION"
 
     local risks
-    risks=$(jq -c '.risks[]' "$WORK_DIR/filter-result.json")
+    risks=$(jq -c '.risks[]' "$WORK_DIR/filter-result.json" 2>/dev/null)
+
+    # Guard: no risks to batch
+    if [ -z "$risks" ]; then
+        log "No risks to batch"
+        echo 0
+        return
+    fi
+
     local risk_array=()
 
     while read -r risk; do
@@ -291,11 +334,17 @@ phase_extraction() {
 
     for ((i=0; i<total; i+=RISKS_PER_SUBAGENT)); do
         batch_num=$((batch_num + 1))
-        local batch_risks="[]"
 
+        # Accumulate batch risks in temp file to avoid O(n^2) jq
+        local tmp_batch
+        tmp_batch=$(mktemp)
         for ((j=i; j<i+RISKS_PER_SUBAGENT && j<total; j++)); do
-            batch_risks=$(echo "$batch_risks" | jq --argjson r "${risk_array[$j]}" '. + [$r]')
+            echo "${risk_array[$j]}" >> "$tmp_batch"
         done
+
+        local batch_risks
+        batch_risks=$(jq -s '.' "$tmp_batch")
+        rm -f "$tmp_batch"
 
         local batch_size
         batch_size=$(echo "$batch_risks" | jq 'length')
@@ -319,7 +368,7 @@ main() {
     log "Category filter: ${CATEGORY_FILTER:-none}"
     log "=========================================="
 
-    check_env
+    # check_env already called at top level before cleanup
     JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 
     # Generate run metadata with unique run_id for CPT tracking

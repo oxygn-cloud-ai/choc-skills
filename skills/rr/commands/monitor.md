@@ -24,16 +24,18 @@ Wait for them to confirm before proceeding.
 
 ## Launch Monitor
 
-Spawn the monitor in a new Terminal.app window using osascript:
+Run the monitor server in the background and open the dashboard in the user's browser:
 
 ```bash
-osascript -e 'tell app "Terminal" to do script "python3 ~/.claude/skills/rr/orchestrator/monitor.py"'
+python3 ~/.claude/skills/rr/orchestrator/monitor.py &
+echo "Monitor server running at http://localhost:8770"
+open "http://localhost:8770"
 ```
 
 Then tell the user:
 
 ```
-Monitor opened in a new terminal window.
+Monitor running in the background. Dashboard opened at http://localhost:8770
 It refreshes every 2 seconds and exits automatically when the batch completes.
 Close it with Ctrl+C when done.
 ```

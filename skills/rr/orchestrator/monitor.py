@@ -166,7 +166,7 @@ def build_batch_table():
         num = batch_file.stem.replace("batch_", "")
         try:
             batch_data = json.loads(batch_file.read_text())
-            risk_count = len(batch_data) if isinstance(batch_data, list) else "?"
+            risk_count = len(batch_data.get("risks", [])) if isinstance(batch_data, dict) else len(batch_data) if isinstance(batch_data, list) else "?"
         except Exception:
             risk_count = "?"
 

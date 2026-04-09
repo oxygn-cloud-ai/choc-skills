@@ -149,8 +149,17 @@ mcp__claude_ai_Atlassian__createJiraIssue
 After ticket creation, attach the full paper and statistics via Bash:
 
 ```bash
-source ~/.zshenv && \
-JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n') && \
+# Read JIRA_AUTH from dedicated credentials file if it exists,
+# otherwise require JIRA_EMAIL and JIRA_API_KEY env vars
+AUTH_CRED_FILE="$HOME/.claude/skills/rr/.jira-auth"
+if [ -f "$AUTH_CRED_FILE" ]; then
+  JIRA_AUTH=$(cat "$AUTH_CRED_FILE")
+elif [ -n "${JIRA_EMAIL:-}" ] && [ -n "${JIRA_API_KEY:-}" ]; then
+  JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
+else
+  echo "Error: Set JIRA_EMAIL and JIRA_API_KEY env vars, or create $AUTH_CRED_FILE" >&2
+  exit 1
+fi
 curl -s -X POST \
   -H "Authorization: Basic $JIRA_AUTH" \
   -H "X-Atlassian-Token: no-check" \

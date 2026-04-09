@@ -132,24 +132,36 @@ TMPSCRIPT=$(mktemp /tmp/tmux-iterm.XXXXXX) || {
 trap 'rm -f "$TMPSCRIPT"' EXIT
 
 first_label="$(lookup_label "$first")"
+# Escape AppleScript-significant characters to prevent injection
+safe_first_label="${first_label//\\/\\\\}"
+safe_first_label="${safe_first_label//\"/\\\"}"
+safe_first="${first//\\/\\\\}"
+safe_first="${safe_first//\"/\\\"}"
+safe_first="${safe_first//\'/\'}"
 cat > "$TMPSCRIPT" << HEADER
 tell application "iTerm2"
   activate
   tell current window
     tell current session
-      set name to "$first_label"
-      write text "$ATTACH_SCRIPT '$first' '$first_label' 0"
+      set name to "$safe_first_label"
+      write text "$ATTACH_SCRIPT '$safe_first' '$safe_first_label' 0"
     end tell
 HEADER
 
 idx=1
 for s in "${rest[@]}"; do
   label="$(lookup_label "$s")"
+  # Escape AppleScript-significant characters to prevent injection
+  safe_label="${label//\\/\\\\}"
+  safe_label="${safe_label//\"/\\\"}"
+  safe_s="${s//\\/\\\\}"
+  safe_s="${safe_s//\"/\\\"}"
+  safe_s="${safe_s//\'/\'}"
   cat >> "$TMPSCRIPT" << EOF
     set newTab to (create tab with default profile)
     tell current session of newTab
-      set name to "$label"
-      write text "$ATTACH_SCRIPT '$s' '$label' $idx"
+      set name to "$safe_label"
+      write text "$ATTACH_SCRIPT '$safe_s' '$safe_label' $idx"
     end tell
 EOF
   idx=$((idx + 1))
