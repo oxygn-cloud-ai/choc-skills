@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "interview.schema.json",
+  "title": "Assessment Interview",
+  "description": "Structured record of the interview phase that gathers context and defines the assessment subject.",
+  "type": "object",
+  "required": ["metadata", "rounds", "confirmed_scope", "source_requests", "subject"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["subject_id", "interview_date", "assessor"],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "interview_date": {
+          "$ref": "enums.schema.json#/definitions/iso8601_date"
+        },
+        "assessor": {
+          "type": "string",
+          "const": "Claude (Anthropic)"
+        }
+      }
+    },
+    "rounds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["round_number", "questions_asked", "user_responses", "understanding_summary"],
+        "properties": {
+          "round_number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "questions_asked": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "user_responses": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "understanding_summary": {
+            "type": "string",
+            "minLength": 50
+          }
+        }
+      }
+    },
+    "confirmed_scope": {
+      "type": "object",
+      "required": ["scope_statement", "out_of_scope", "user_confirmed", "confirmed_at"],
+      "properties": {
+        "scope_statement": {
+          "type": "string"
+        },
+        "out_of_scope": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "user_confirmed": {
+          "type": "boolean"
+        },
+        "confirmed_at": {
+          "type": "string"
+        }
+      }
+    },
+    "source_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_type", "description", "locator", "provided"],
+        "properties": {
+          "source_type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "locator": {
+            "type": ["string", "null"]
+          },
+          "provided": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "subject": {
+      "$ref": "subject.schema.json"
+    }
+  }
+}

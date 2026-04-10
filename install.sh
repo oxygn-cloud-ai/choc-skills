@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.0.0"
+VERSION="2.1.0"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then

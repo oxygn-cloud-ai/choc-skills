@@ -1,0 +1,351 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "assessment.schema.json",
+  "title": "Risk Assessment",
+  "description": "Structured risk assessment for arbitrary subjects. Supports multiple iterations.",
+  "type": "object",
+  "required": ["metadata", "subject", "findings", "evidences"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["subject_id", "assessment_date", "iteration", "status"],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "assessment_date": {
+          "$ref": "enums.schema.json#/definitions/iso8601_date"
+        },
+        "iteration": {
+          "$ref": "enums.schema.json#/definitions/assessment_iteration"
+        },
+        "status": {
+          "$ref": "enums.schema.json#/definitions/assessment_status"
+        },
+        "previous_iteration_ref": {
+          "type": ["string", "null"],
+          "description": "Filename of the previous iteration, if any"
+        },
+        "assessor": {
+          "type": "string",
+          "const": "Claude (Anthropic)"
+        }
+      }
+    },
+
+    "subject": {
+      "$ref": "subject.schema.json"
+    },
+
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "finding_id",
+          "title",
+          "risk_category",
+          "risk_statement",
+          "epistemic_basis",
+          "inherent_risk",
+          "recommended_mitigations",
+          "projected_residual_risk"
+        ],
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "pattern": "^F\\d{3}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5
+          },
+          "risk_category": {
+            "$ref": "enums.schema.json#/definitions/risk_category"
+          },
+          "risk_statement": {
+            "type": "string",
+            "minLength": 20
+          },
+          "epistemic_basis": {
+            "type": "object",
+            "required": ["facts", "user_claims", "assumptions", "unknowns"],
+            "properties": {
+              "facts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["claim", "source_id"],
+                  "properties": {
+                    "claim": { "type": "string" },
+                    "source_id": { "type": "string" }
+                  }
+                }
+              },
+              "user_claims": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["claim"],
+                  "properties": {
+                    "claim": { "type": "string" },
+                    "source_id": { "type": ["string", "null"] }
+                  }
+                }
+              },
+              "assumptions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["claim", "rationale"],
+                  "properties": {
+                    "claim": { "type": "string" },
+                    "rationale": { "type": "string" }
+                  }
+                }
+              },
+              "unknowns": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "inherent_risk": {
+            "type": "object",
+            "required": ["likelihood", "likelihood_rationale", "impact", "impact_rationale", "rating"],
+            "properties": {
+              "likelihood": { "$ref": "enums.schema.json#/definitions/likelihood" },
+              "likelihood_rationale": {
+                "type": "string",
+                "minLength": 50
+              },
+              "impact": { "$ref": "enums.schema.json#/definitions/impact" },
+              "impact_rationale": {
+                "type": "string",
+                "minLength": 50
+              },
+              "rating": { "$ref": "enums.schema.json#/definitions/risk_rating" }
+            }
+          },
+          "recommended_mitigations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["mitigation_id", "title", "priority", "owner_role", "implementation_steps", "expected_effect", "confidence"],
+              "properties": {
+                "mitigation_id": {
+                  "type": "string",
+                  "pattern": "^M\\d{3}$"
+                },
+                "title": { "type": "string" },
+                "priority": {
+                  "type": "string",
+                  "enum": ["Critical", "High", "Medium", "Low"]
+                },
+                "owner_role": { "$ref": "enums.schema.json#/definitions/suggested_owner" },
+                "implementation_steps": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "minItems": 1
+                },
+                "implementation_assumptions": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "expected_effect": { "type": "string" },
+                "confidence": { "$ref": "enums.schema.json#/definitions/confidence_level" }
+              }
+            }
+          },
+          "projected_residual_risk": {
+            "type": "object",
+            "required": ["likelihood", "likelihood_rationale", "impact", "impact_rationale", "rating", "confidence", "confidence_rationale"],
+            "properties": {
+              "likelihood": { "$ref": "enums.schema.json#/definitions/likelihood" },
+              "likelihood_rationale": {
+                "type": "string",
+                "minLength": 50
+              },
+              "impact": { "$ref": "enums.schema.json#/definitions/impact" },
+              "impact_rationale": {
+                "type": "string",
+                "minLength": 20
+              },
+              "rating": { "$ref": "enums.schema.json#/definitions/risk_rating" },
+              "confidence": { "$ref": "enums.schema.json#/definitions/confidence_level" },
+              "confidence_rationale": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "regulatory_framework": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["instrument_name", "jurisdiction", "relevance"],
+        "properties": {
+          "instrument_name": { "type": "string" },
+          "instrument_code": { "type": "string" },
+          "jurisdiction": { "$ref": "enums.schema.json#/definitions/jurisdiction" },
+          "version_date": { "type": "string" },
+          "status": { "$ref": "enums.schema.json#/definitions/regulatory_status" },
+          "relevance": {
+            "type": "string",
+            "minLength": 20
+          },
+          "url": { "type": "string", "format": "uri" },
+          "verified_date": { "$ref": "enums.schema.json#/definitions/iso8601_date" }
+        }
+      }
+    },
+
+    "adversarial_review": {
+      "type": "object",
+      "required": ["challenges", "regulatory_verification", "summary"],
+      "properties": {
+        "challenges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "section", "challenge_type", "original_claim", "challenge", "resolution_required"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^CH\\d{3}$"
+              },
+              "section": {
+                "type": "string",
+                "enum": [
+                  "subject",
+                  "context",
+                  "regulatory_framework",
+                  "inherent_risk",
+                  "recommended_mitigations",
+                  "projected_residual_risk",
+                  "evidences"
+                ]
+              },
+              "challenge_type": { "$ref": "enums.schema.json#/definitions/challenge_type" },
+              "original_claim": { "type": "string" },
+              "challenge": {
+                "type": "string",
+                "minLength": 20
+              },
+              "evidence_for_challenge": { "type": "string" },
+              "resolution_required": {
+                "type": "string",
+                "enum": ["correction_required", "evidence_required", "clarification_required", "removal_required", "user_verification_required"]
+              },
+              "suggested_resolution": { "type": "string" },
+              "severity": {
+                "type": "string",
+                "enum": ["critical", "major", "minor"]
+              }
+            }
+          }
+        },
+        "regulatory_verification": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["instrument_name", "cited_status", "verified_status", "verification_date"],
+            "properties": {
+              "instrument_name": { "type": "string" },
+              "cited_status": { "$ref": "enums.schema.json#/definitions/regulatory_status" },
+              "verified_status": { "$ref": "enums.schema.json#/definitions/regulatory_status" },
+              "verification_date": { "$ref": "enums.schema.json#/definitions/iso8601_date" },
+              "verification_source": { "type": "string" },
+              "discrepancy": {
+                "type": "boolean",
+                "description": "True if cited status differs from verified status"
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "required": ["total_challenges", "critical_count", "major_count", "minor_count", "overall_assessment"],
+          "properties": {
+            "total_challenges": { "type": "integer", "minimum": 0 },
+            "critical_count": { "type": "integer", "minimum": 0 },
+            "major_count": { "type": "integer", "minimum": 0 },
+            "minor_count": { "type": "integer", "minimum": 0 },
+            "criteria_passed": { "type": "integer", "minimum": 0, "maximum": 11 },
+            "criteria_failed": { "type": "integer", "minimum": 0, "maximum": 11 },
+            "overall_assessment": {
+              "type": "string",
+              "enum": ["acceptable", "requires_minor_revision", "requires_major_revision", "fundamentally_flawed"]
+            },
+            "key_issues": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "evidences": {
+      "type": "object",
+      "required": ["sources_used", "sources_unavailable", "caveats"],
+      "properties": {
+        "sources_used": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source_id", "source_type", "description"],
+            "properties": {
+              "source_id": { "type": "string" },
+              "source_type": { "type": "string" },
+              "description": { "type": "string" },
+              "url": { "type": "string", "format": "uri" },
+              "retrieved_date": { "$ref": "enums.schema.json#/definitions/iso8601_date" }
+            }
+          }
+        },
+        "sources_unavailable": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "caveats": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "changes_from_previous": {
+      "type": "object",
+      "description": "Only present for iterations 2+",
+      "properties": {
+        "summary": { "type": "string" },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["section", "change_type", "description"],
+            "properties": {
+              "section": { "type": "string" },
+              "change_type": {
+                "type": "string",
+                "enum": ["corrected", "expanded", "removed", "rating_changed", "retained_with_justification"]
+              },
+              "previous_value": { "type": "string" },
+              "new_value": { "type": "string" },
+              "description": { "type": "string" },
+              "triggered_by": {
+                "type": "string",
+                "enum": ["adversarial_review", "user_input", "new_evidence"]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

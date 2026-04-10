@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ingest.schema.json",
+  "title": "Source Ingest",
+  "description": "Source materials with provenance tracking for the assessment.",
+  "type": "object",
+  "required": ["metadata", "sources", "subject_brief"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["subject_id", "ingest_date", "total_sources"],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "ingest_date": {
+          "$ref": "enums.schema.json#/definitions/iso8601_date"
+        },
+        "total_sources": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_type",
+          "locator",
+          "retrieved_at",
+          "normalisation_method",
+          "content_hash",
+          "content_length_chars",
+          "access_limitations",
+          "reliability",
+          "used_in_findings"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^SRC\\d{3}$"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "local_file",
+              "pasted_text",
+              "url",
+              "jira_ticket",
+              "confluence_page",
+              "slack_message",
+              "skill_context"
+            ]
+          },
+          "locator": {
+            "type": "string"
+          },
+          "retrieved_at": {
+            "$ref": "enums.schema.json#/definitions/iso8601_date"
+          },
+          "normalisation_method": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string",
+            "description": "SHA256 of normalised content"
+          },
+          "content_length_chars": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "access_limitations": {
+            "type": ["string", "null"]
+          },
+          "reliability": {
+            "$ref": "enums.schema.json#/definitions/source_reliability"
+          },
+          "used_in_findings": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Finding IDs that cite this source"
+          }
+        }
+      }
+    },
+    "subject_brief": {
+      "type": "object",
+      "required": ["narrative", "key_facts", "open_questions"],
+      "properties": {
+        "narrative": {
+          "type": "string",
+          "minLength": 200
+        },
+        "key_facts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "open_questions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

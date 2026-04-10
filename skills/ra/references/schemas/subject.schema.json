@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "subject.schema.json",
+  "title": "Assessment Subject",
+  "description": "Identity and scope of the subject being assessed.",
+  "type": "object",
+  "required": ["subject_id", "subject_type", "title", "description", "assessment_scope", "out_of_scope"],
+  "additionalProperties": false,
+  "properties": {
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "URL-safe slug identifying this assessment"
+    },
+    "subject_type": {
+      "$ref": "enums.schema.json#/definitions/subject_type"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 5
+    },
+    "description": {
+      "type": "string",
+      "minLength": 20
+    },
+    "assessment_scope": {
+      "type": "string",
+      "minLength": 20,
+      "description": "Explicit statement of what this assessment covers"
+    },
+    "out_of_scope": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Explicit boundaries -- what this assessment does NOT cover"
+    },
+    "assessment_question": {
+      "type": "string",
+      "description": "The central question this assessment answers"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Assessment version (increments on reassessment)"
+    },
+    "assessment_date": {
+      "$ref": "enums.schema.json#/definitions/iso8601_date"
+    },
+    "assessor": {
+      "type": "string",
+      "const": "Claude (Anthropic)"
+    }
+  }
+}

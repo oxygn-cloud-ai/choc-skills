@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "enums.schema.json",
+  "title": "RA Skill Enumerations",
+  "description": "Shared enums for all RA skill artifacts.",
+
+  "definitions": {
+    "likelihood": {
+      "type": "string",
+      "enum": ["Low", "Medium", "High"],
+      "description": "Probability of risk materialising"
+    },
+
+    "impact": {
+      "type": "string",
+      "enum": ["Low", "Medium", "High"],
+      "description": "Severity if risk materialises"
+    },
+
+    "risk_rating": {
+      "type": "string",
+      "enum": ["Low", "Medium", "High", "Critical"],
+      "description": "Combined rating derived from likelihood x impact matrix"
+    },
+
+    "risk_category": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D", "ER", "F", "I", "L", "O", "OO", "P", "T"],
+      "description": "Risk category prefix from the register",
+      "enumDescriptions": {
+        "A": "Audit",
+        "B": "Business Continuity Management",
+        "C": "Compliance",
+        "D": "Product / Design",
+        "ER": "Expansion Risk",
+        "F": "Financial",
+        "I": "Investment",
+        "L": "Legal",
+        "O": "Operational",
+        "OO": "Other Operational",
+        "P": "People",
+        "T": "Technology"
+      }
+    },
+
+    "control_type": {
+      "type": "string",
+      "enum": ["Preventive", "Detective", "Corrective"],
+      "description": "Nature of the control mechanism"
+    },
+
+    "control_effectiveness": {
+      "type": "string",
+      "enum": ["Effective", "Partially Effective", "Ineffective", "Uncertain"],
+      "description": "Assessed effectiveness of the control"
+    },
+
+    "assessment_status": {
+      "type": "string",
+      "enum": ["draft", "adversarial_reviewed", "rectified", "discussed", "final"],
+      "description": "Stage of the assessment in the workflow"
+    },
+
+    "assessment_iteration": {
+      "type": "integer",
+      "enum": [1, 2, 3, 4, 5],
+      "description": "Assessment iteration number (more iterations possible for complex subjects)"
+    },
+
+    "challenge_type": {
+      "type": "string",
+      "enum": [
+        "unsupported_claim",
+        "speculative_assertion",
+        "outdated_reference",
+        "missing_evidence",
+        "unbounded_scope",
+        "rating_not_justified",
+        "control_assumed",
+        "regulatory_imprecision",
+        "logical_inconsistency",
+        "assumption_not_validated",
+        "scope_gap",
+        "stakeholder_not_consulted"
+      ],
+      "description": "Type of adversarial challenge raised"
+    },
+
+    "regulatory_status": {
+      "type": "string",
+      "enum": ["active", "superseded", "under_consultation", "proposed"],
+      "description": "Current status of a regulatory instrument"
+    },
+
+    "jurisdiction": {
+      "type": "string",
+      "enum": ["SG", "HK", "UAE", "JP", "GLOBAL"],
+      "description": "Regulatory jurisdiction"
+    },
+
+    "iso8601_date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Date in YYYY-MM-DD format"
+    },
+
+    "ticket_key": {
+      "type": "string",
+      "pattern": "^RA-\\d+$",
+      "description": "Jira ticket key in RA-NNN format"
+    },
+
+    "suggested_owner": {
+      "type": "string",
+      "enum": ["CEO", "CTO", "CFO", "COO", "Head of Compliance", "Head of Risk"],
+      "description": "Role to suggest as owner for recommendations. Use CTO, never 'Head of Technology'."
+    },
+
+    "confidence_level": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Confidence in a rating or projection"
+    },
+
+    "epistemic_type": {
+      "type": "string",
+      "enum": ["fact", "user_claim", "assumption", "unknown"],
+      "description": "Epistemic status of a claim or data point"
+    },
+
+    "subject_type": {
+      "type": "string",
+      "enum": ["document_review", "planned_change", "issue_incident", "concept"],
+      "description": "Type of subject being assessed"
+    },
+
+    "source_reliability": {
+      "type": "string",
+      "enum": ["high", "medium", "low", "unknown"],
+      "description": "Reliability of a source material"
+    }
+  },
+
+  "rating_matrix": {
+    "description": "Likelihood x Impact -> Rating derivation rules",
+    "rules": [
+      { "likelihood": "High", "impact": "High", "rating": "Critical" },
+      { "likelihood": "High", "impact": "Medium", "rating": "High" },
+      { "likelihood": "High", "impact": "Low", "rating": "Medium" },
+      { "likelihood": "Medium", "impact": "High", "rating": "High" },
+      { "likelihood": "Medium", "impact": "Medium", "rating": "Medium" },
+      { "likelihood": "Medium", "impact": "Low", "rating": "Low" },
+      { "likelihood": "Low", "impact": "High", "rating": "Medium" },
+      { "likelihood": "Low", "impact": "Medium", "rating": "Low" },
+      { "likelihood": "Low", "impact": "Low", "rating": "Low" }
+    ]
+  }
+}

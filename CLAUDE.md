@@ -20,6 +20,8 @@ Every skill must provide `help`, `doctor`, and `version` subcommands, either:
 - Inline in SKILL.md as `### help`, `### doctor`, `### version` sections, OR
 - As separate command files in `commands/help.md`, `commands/doctor.md`, `commands/version.md`
 
+All subcommands must be colon commands (`skill:subcommand`) with their own command file — no space-separated routing. Each subcommand gets its own file with proper frontmatter, `allowed-tools`, and description.
+
 Every skill must have its own `CHANGELOG.md` in its directory.
 
 ## Validation

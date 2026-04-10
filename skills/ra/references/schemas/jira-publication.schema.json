@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "jira-publication.schema.json",
+  "title": "Jira Publication Receipt",
+  "description": "Record of assessment publication to Jira as an epic with finding tasks and mitigation subtasks.",
+  "type": "object",
+  "required": ["metadata", "epic", "findings", "mitigations", "attachments", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["subject_id", "publication_date", "dry_run"],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "publication_date": {
+          "$ref": "enums.schema.json#/definitions/iso8601_date"
+        },
+        "dry_run": {
+          "type": "boolean"
+        }
+      }
+    },
+
+    "epic": {
+      "type": "object",
+      "required": ["key", "summary", "url"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^RA-\\d+$"
+        },
+        "summary": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "task_key", "summary"],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "task_key": {
+            "type": "string",
+            "pattern": "^RA-\\d+$"
+          },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+
+    "mitigations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["mitigation_id", "subtask_key", "parent_finding_id", "summary"],
+        "properties": {
+          "mitigation_id": { "type": "string" },
+          "subtask_key": {
+            "type": "string",
+            "pattern": "^RA-\\d+$"
+          },
+          "parent_finding_id": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["filename", "attached", "attachment_method"],
+        "properties": {
+          "filename": { "type": "string" },
+          "attached": { "type": "boolean" },
+          "attachment_method": {
+            "type": "string",
+            "enum": ["mcp_api", "curl_api"]
+          }
+        }
+      }
+    },
+
+    "summary": {
+      "type": "object",
+      "required": ["total_findings", "total_mitigations", "total_attachments", "all_attached"],
+      "properties": {
+        "total_findings": { "type": "integer", "minimum": 0 },
+        "total_mitigations": { "type": "integer", "minimum": 0 },
+        "total_attachments": { "type": "integer", "minimum": 0 },
+        "all_attached": { "type": "boolean" }
+      }
+    }
+  }
+}

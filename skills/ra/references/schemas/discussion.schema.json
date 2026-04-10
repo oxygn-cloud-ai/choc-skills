@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "discussion.schema.json",
+  "title": "Assessment Discussion",
+  "description": "Structured log of user discussion for assessment review and refinement.",
+  "type": "object",
+  "required": ["metadata", "unresolved_points", "exchanges", "deferred_items", "insufficient_evidence", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["subject_id", "discussion_date", "source_assessment"],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "discussion_date": {
+          "$ref": "enums.schema.json#/definitions/iso8601_date"
+        },
+        "source_assessment": {
+          "type": "string",
+          "description": "Filename of the assessment being discussed"
+        },
+        "started_at": { "type": "string", "format": "time" },
+        "completed_at": { "type": ["string", "null"], "format": "time" }
+      }
+    },
+
+    "unresolved_points": {
+      "type": "array",
+      "description": "Points identified at start of discussion that require resolution",
+      "items": {
+        "type": "object",
+        "required": ["id", "point_type", "description", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^UP\\d{3}$"
+          },
+          "point_type": {
+            "type": "string",
+            "enum": [
+              "internal_fact_unknown",
+              "control_effectiveness_uncertain",
+              "data_quality_issue",
+              "judgment_based_rating",
+              "regulatory_verification_needed",
+              "assumption_not_validated",
+              "projected_effectiveness_uncertain",
+              "scope_boundary_unclear"
+            ]
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "subject",
+              "context",
+              "regulatory_framework",
+              "inherent_risk",
+              "recommended_mitigations",
+              "projected_residual_risk",
+              "evidences"
+            ]
+          },
+          "description": { "type": "string" },
+          "question_posed": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "resolved", "deferred", "user_declined"]
+          },
+          "resolution": { "type": ["string", "null"] },
+          "assessment_impact": {
+            "type": ["string", "null"],
+            "description": "How the resolution affects the assessment"
+          }
+        }
+      }
+    },
+
+    "exchanges": {
+      "type": "array",
+      "description": "Chronological log of Q&A exchanges",
+      "items": {
+        "type": "object",
+        "required": ["id", "timestamp", "exchange_type"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^EX\\d{3}$"
+          },
+          "timestamp": { "type": "string", "format": "time" },
+          "exchange_type": {
+            "type": "string",
+            "enum": ["question_to_user", "user_response", "follow_up", "user_initiated", "clarification"]
+          },
+          "related_point_id": {
+            "type": ["string", "null"]
+          },
+          "content": { "type": "string" },
+          "speaker": {
+            "type": "string",
+            "enum": ["claude", "user"]
+          },
+          "triggers_web_search": { "type": "boolean" },
+          "web_search_result_summary": { "type": ["string", "null"] },
+          "assessment_change_triggered": {
+            "type": ["object", "null"],
+            "properties": {
+              "section": { "type": "string" },
+              "change_type": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "user_challenges": {
+      "type": "array",
+      "description": "Challenges or disagreements raised by the user",
+      "items": {
+        "type": "object",
+        "required": ["id", "challenge", "response", "outcome"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^UC\\d{3}$"
+          },
+          "challenge": { "type": "string" },
+          "related_section": { "type": "string" },
+          "response": { "type": "string" },
+          "outcome": {
+            "type": "string",
+            "enum": ["accepted_change", "rejected_with_justification", "partially_accepted", "deferred"]
+          },
+          "assessment_change": { "type": ["string", "null"] }
+        }
+      }
+    },
+
+    "deferred_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "reason", "impact_on_assessment"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^DI\\d{3}$"
+          },
+          "description": { "type": "string" },
+          "reason": { "type": "string" },
+          "impact_on_assessment": { "type": "string" }
+        }
+      }
+    },
+
+    "insufficient_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["area", "description", "impact"],
+        "properties": {
+          "area": { "type": "string" },
+          "description": { "type": "string" },
+          "impact": { "type": "string" },
+          "recommendation": { "type": "string", "description": "What additional evidence would strengthen the assessment" }
+        }
+      }
+    },
+
+    "status": {
+      "type": "object",
+      "required": ["total_unresolved", "resolved_count", "pending_count", "discussion_complete"],
+      "properties": {
+        "total_unresolved": { "type": "integer", "minimum": 0 },
+        "resolved_count": { "type": "integer", "minimum": 0 },
+        "pending_count": { "type": "integer", "minimum": 0 },
+        "deferred_count": { "type": "integer", "minimum": 0 },
+        "insufficient_evidence_count": { "type": "integer", "minimum": 0 },
+        "user_challenges_count": { "type": "integer", "minimum": 0 },
+        "discussion_complete": { "type": "boolean" },
+        "completion_reason": {
+          "type": ["string", "null"],
+          "enum": ["all_points_resolved", "user_requested_progression", "deferred_to_risk_owner", null]
+        }
+      }
+    }
+  }
+}

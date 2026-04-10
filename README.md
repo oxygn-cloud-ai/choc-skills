@@ -27,6 +27,7 @@ Install a skill. Type a slash command. Get superpowers.
 |-------|---------|---------|-------------|------|
 | **chk1** | v2.4.0 | `/chk1` | Adversarial implementation audit — fault-finding, risk-exposing review of code changes | [README](skills/chk1/README.md) |
 | **chk2** | v2.2.0 | `/chk2` | Adversarial security audit for web services — 211 checks across 30 categories | [README](skills/chk2/README.md) |
+| **ra** | v1.0.0 | `/ra` | Bespoke risk assessment — interview-driven assessment of documents, initiatives, concepts, incidents | [README](skills/ra/README.md) |
 | **rr** | v5.1.0 | `/rr` | Risk register assessment — interactive 6-step workflow or autonomous batch mode | [README](skills/rr/README.md) |
 
 ## Standalone Tools
@@ -45,7 +46,7 @@ cd choc-skills
 ./install.sh
 ```
 
-Skills with sub-commands (chk1, chk2, rr) have per-skill installers for full setup. The root installer will prompt you when a per-skill installer is available.
+Skills with sub-commands (chk1, chk2, ra, rr) have per-skill installers for full setup. The root installer will prompt you when a per-skill installer is available.
 
 ### A specific skill
 
@@ -56,7 +57,7 @@ Skills with sub-commands (chk1, chk2, rr) have per-skill installers for full set
 ### Full setup (with sub-commands and routers)
 
 ```bash
-cd skills/chk1 && ./install.sh    # or chk2, rr
+cd skills/chk1 && ./install.sh    # or chk2, ra, rr
 ```
 
 ### Verify
