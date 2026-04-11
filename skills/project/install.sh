@@ -164,7 +164,8 @@ Route to the appropriate sub-command:
 | `new` | Run `/project:new` |
 | `audit` | Run `/project:audit` |
 | `config` | Run `/project:config` |
-| `help` | Run `/project help` (the main skill) |
+| `update`, `--update`, `upgrade` | Run `/project:update` |
+| `help`, `--help`, `-h` | Run `/project help` (the main skill) |
 | `doctor` | Run `/project doctor` (the main skill) |
 | `version` | Run `/project version` (the main skill) |
 | anything else | Show: "Unknown command. Run `/project help` for usage." |

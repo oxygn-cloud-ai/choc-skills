@@ -21,7 +21,11 @@ git rev-parse --show-toplevel 2>/dev/null
 ```
 If not in a git repo: "Not in a git repository. Navigate to a project and try again."
 
-## Step 2: Read standards
+## Step 2: Verify dependencies and read standards
+
+Before reading, verify the dependency files exist:
+- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file is required for project auditing. Restore it or check your ~/.claude configuration."
+- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. This file is required for project auditing."
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the full role list and requirements.
 Read `~/.claude/GITHUB_CONFIG.md` for label, CI, branch protection, and doc requirements.

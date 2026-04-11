@@ -1,11 +1,11 @@
 ---
 name: project
-version: 1.0.0
+version: 1.1.0
 description: Project repository administration — create new, audit, configure, status check. Multi-session workflow scaffolding per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/GITHUB_CONFIG.md.
 user-invocable: true
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash(gh *), Bash(git *), Bash(mkdir *), Bash(cp *), Bash(mv *), Bash(sed *), Bash(cat *), Bash(chmod *), Bash(touch *), Bash(ls *), Bash(test *), Bash(basename *), Bash(dirname *), Bash(stat *), Bash(date *), Bash(python3 *), Bash(npm *), Bash(find *), Write, Edit, AskUserQuestion
-argument-hint: [status | new | audit | config | help | doctor | version]
+argument-hint: [status | new | audit | config | update | help | doctor | version]
 ---
 
 # project — Project Repository Administration
@@ -21,7 +21,7 @@ The router at `~/.claude/commands/project.md` intercepts sub-command arguments a
 If `$ARGUMENTS` equals `help`, `--help`, or `-h`, display the following usage guide and stop.
 
 ```
-project v1.0.0 — Project Repository Administration
+project v1.1.0 — Project Repository Administration
 
 USAGE
   /project                  Show status for current project (same as /project status)
@@ -29,6 +29,7 @@ USAGE
   /project new              Create a new project with full multi-session setup
   /project audit            Audit against global standards, report gaps
   /project config           Change project config: worktrees, labels, Jira, CI
+  /project update           Update to latest version
   /project help             Display this usage guide
   /project doctor           Check skill installation health
   /project version          Show installed version
@@ -76,7 +77,7 @@ If `$ARGUMENTS` equals `doctor`, `--doctor`, or `check`, run skill-install healt
 1. **Skill installed**: `test -f ~/.claude/skills/project/SKILL.md`. If present, read the `version:` line and display it.
 2. **Source repo marker**: `test -f ~/.claude/skills/project/.source-repo`. If present, read the path and verify `test -d "$(cat ~/.claude/skills/project/.source-repo)"` — catches unmounted external drives.
 3. **Router present**: `test -f ~/.claude/commands/project.md`.
-4. **Subcommand files present**: `ls ~/.claude/commands/project/*.md` — expect 4 files: `new.md`, `status.md`, `audit.md`, `config.md`. No stale `doctor.md` or `help.md` (those were removed in the v1.0.0 migration).
+4. **Subcommand files present**: `ls ~/.claude/commands/project/*.md` — expect 5 files: `new.md`, `status.md`, `audit.md`, `config.md`, `update.md`. No stale `doctor.md` or `help.md` (those were removed in the v1.0.0 migration).
 5. **Global architecture doc**: `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — the skill is useless without it (FAIL if missing).
 6. **Global GitHub config**: `test -f ~/.claude/GITHUB_CONFIG.md` — FAIL if missing.
 7. **git installed**: `command -v git` — FAIL if missing.
@@ -90,7 +91,7 @@ project doctor — Skill Installation Health Check
   [PASS] Skill installed at ~/.claude/skills/project/SKILL.md (v1.0.0)
   [PASS] Source repo: /Volumes/.../choc-skills/skills/project (reachable)
   [PASS] Router: ~/.claude/commands/project.md
-  [PASS] Subcommands: 4 files (new, status, audit, config)
+  [PASS] Subcommands: 5 files (new, status, audit, config, update)
   [PASS] ~/.claude/MULTI_SESSION_ARCHITECTURE.md
   [PASS] ~/.claude/GITHUB_CONFIG.md
   [PASS] git: /opt/homebrew/bin/git
@@ -107,7 +108,7 @@ End of doctor output. Do not continue.
 If `$ARGUMENTS` equals `version`, `--version`, or `-v`, output the version and stop.
 
 ```
-project v1.0.0
+project v1.1.0
 ```
 
 End of version output. Do not continue.

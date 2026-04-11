@@ -42,7 +42,11 @@ Before anything else, verify this is safe to run:
    ```
    If this succeeds: "GitHub repo `<owner>/<name>` already exists. Choose a different name or use `/project:audit` to audit the existing repo."
 
-## Step 1: Read the architecture
+## Step 1: Verify dependencies and read the architecture
+
+Verify dependencies exist before reading:
+- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file defines the multi-session workflow and is required for project creation."
+- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. This file defines labels, CI, and branch protection standards."
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions, worktree layout, and Jira structure. This is the authoritative reference — do not hardcode or inline its contents.
 
@@ -151,11 +155,22 @@ Once the user provides the key:
 
 ## Step 8: Initial commit + push
 
-```bash
-git add -A
-git commit -m "chore: initial project scaffold
+Stage only the files created by the scaffold — do NOT use `git add -A` (risks staging pre-existing sensitive files):
 
-Co-Authored-By: Claude <noreply@anthropic.com>"
+```bash
+git add README.md CLAUDE.md GITHUB_CONFIG.md PHILOSOPHY.md .gitignore
+# Software only — add language-specific scaffolding:
+# Python: git add pyproject.toml src/ tests/
+# Node: git add package.json src/ tsconfig.json
+# Rust: git add Cargo.toml src/
+# Go: git add go.mod main.go
+# If ARCHITECTURE.md was created: git add ARCHITECTURE.md
+git commit -m "$(cat <<'EOF'
+chore: initial project scaffold
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+EOF
+)"
 git push -u origin main
 ```
 

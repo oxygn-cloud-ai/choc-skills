@@ -21,9 +21,13 @@ git rev-parse --show-toplevel 2>/dev/null
 ```
 If not in a git repo, say "Not in a git repository. Navigate to a project and try again."
 
-## Step 2: Read references
+## Step 2: Verify dependencies and read references
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role list and expected worktree layout.
+Verify dependencies exist before reading:
+- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
+- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: WARN and continue (skip label/CI standard comparison)
+
+Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role list and expected worktree layout (if available).
 Read the project's `CLAUDE.md` and `GITHUB_CONFIG.md` if they exist.
 
 ## Step 3: Gather data
@@ -39,13 +43,27 @@ BRANCH=$(git branch --show-current)
 
 # Version (check common locations)
 VERSION=$(python3 -c "
-import json, tomllib, pathlib
-for f in ['pyproject.toml']:
-    p = pathlib.Path(f)
+import json, pathlib, re
+try:
+    import tomllib
+except ImportError:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None
+if tomllib:
+    for f in ['pyproject.toml']:
+        p = pathlib.Path(f)
+        if p.exists():
+            d = tomllib.loads(p.read_text())
+            v = d.get('project',{}).get('version') or d.get('tool',{}).get('poetry',{}).get('version')
+            if v: print(v); exit()
+else:
+    # Regex fallback for pyproject.toml without tomllib
+    p = pathlib.Path('pyproject.toml')
     if p.exists():
-        d = tomllib.loads(p.read_text())
-        v = d.get('project',{}).get('version') or d.get('tool',{}).get('poetry',{}).get('version')
-        if v: print(v); exit()
+        m = re.search(r'^version\s*=\s*[\"'']([^\"'']+)[\"'']', p.read_text(), re.M)
+        if m: print(m.group(1)); exit()
 for f in ['package.json']:
     p = pathlib.Path(f)
     if p.exists():
@@ -56,7 +74,7 @@ print('n/a')
 # Docs
 for doc in README.md ARCHITECTURE.md PHILOSOPHY.md CLAUDE.md GITHUB_CONFIG.md; do
   if [ -f "$doc" ]; then
-    echo "[x] $doc ($(stat -f '%Sm' -t '%Y-%m-%d' "$doc" 2>/dev/null || date -r "$doc" +%Y-%m-%d 2>/dev/null || echo '?'))"
+    echo "[x] $doc ($(stat -f '%Sm' -t '%Y-%m-%d' "$doc" 2>/dev/null || stat -c '%Y' "$doc" 2>/dev/null | xargs -I{} date -d @{} +%Y-%m-%d 2>/dev/null || echo '?'))"
   else
     echo "[ ] $doc (MISSING)"
   fi
@@ -78,7 +96,7 @@ gh label list --json name --jq '.[].name' 2>/dev/null | sort
 
 # Open issues (Jira — via Atlassian MCP if available, otherwise note)
 # Fallback: check GitHub issues
-gh issue list --state open --json number,labels --jq 'group_by(.labels[0].name) | map({key: .[0].labels[0].name, count: length}) | .[]' 2>/dev/null
+gh issue list --state open --json number,labels --jq '[.[] | {label: (.labels[0].name // "unlabeled")}] | group_by(.label) | map({key: .[0].label, count: length}) | .[]' 2>/dev/null
 
 # Tests
 python3 -m pytest --co -q 2>/dev/null | tail -1 || npm test --dry-run 2>/dev/null || echo "n/a"

@@ -24,6 +24,10 @@ git rev-parse --show-toplevel 2>/dev/null
 ```
 If not in a git repo: "Not in a git repository."
 
+Verify dependencies exist before reading:
+- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. Required for project configuration."
+- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. Required for project configuration."
+
 Read the project's `GITHUB_CONFIG.md` for current configuration.
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions.
 
@@ -67,19 +71,25 @@ Options:
 ### Remove worktree session
 1. Show list of current worktrees
 2. Ask which to remove. **Enforce: `master` cannot be removed.** If the user selects `master`, say: "The master session cannot be removed — it's the coordination layer for all other sessions."
-3. Check for unmerged work before removing:
+3. Check for work-in-progress before removing (ALL three checks required):
    ```bash
    BRANCH="session/<role>"
+   # Check 1: Uncommitted changes in the worktree
+   DIRTY=$(git -C ".worktrees/<role>" status --porcelain 2>/dev/null | head -5)
+   # Check 2: Unmerged commits (ahead of main)
    AHEAD=$(git rev-list --count main.."$BRANCH" 2>/dev/null || echo 0)
-   if [ "$AHEAD" -gt 0 ]; then
-     # WARN: this branch has unmerged commits
-   fi
+   # Check 3: Unpushed commits (ahead of remote)
+   UNPUSHED=$(git log --oneline "origin/$BRANCH..$BRANCH" 2>/dev/null | wc -l | tr -d ' ')
    ```
-   If unmerged: warn the user explicitly ("session/<role> has N unmerged commits — removing will lose that work") and ask for confirmation before proceeding.
-4. Remove:
+   If ANY check finds work, warn the user explicitly with specifics:
+   - Uncommitted: "session/<role> has uncommitted changes:\n<first 5 lines of status>"
+   - Unmerged: "session/<role> has N commits not merged to main"
+   - Unpushed: "session/<role> has N commits not pushed to origin"
+   Then: "Removing this worktree will **permanently destroy** this work. Are you absolutely sure?" Require explicit "yes" confirmation via AskUserQuestion before proceeding.
+4. Remove (only after all safety checks pass or user explicitly confirms destruction):
    ```bash
    git worktree remove ".worktrees/<role>"
-   git branch -D "session/<role>"  # -D (force) since user confirmed
+   git branch -D "session/<role>"  # -D (force) since user confirmed after safety warnings
    git push origin --delete "session/<role>" 2>/dev/null
    ```
 5. Remove `.claude/sessions/<role>.md`
