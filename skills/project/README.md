@@ -51,10 +51,10 @@ In Claude Code:
 
 The `project` skill administers project repositories that follow the Oxygn multi-session workflow:
 
-- **`new`** — Scaffolds a brand-new repo with GitHub remote, Jira epic reference, docs (README/ARCHITECTURE/PHILOSOPHY/CLAUDE/GITHUB_CONFIG), session worktrees (11 for Software, 8 for Non-Software), startup prompts, CI workflow, and branch protection. Disables GitHub Issues (Jira is sole tracker).
-- **`status`** — Reports the current project's config, worktrees, CI state, Jira epic key, and docs completeness.
-- **`audit`** — Runs the compliance audit against global standards. Reports per-check verdicts (`PASS`/`FAIL`/`WARN`/`SKIP`) across docs, worktrees, CI, branch protection, Jira config, and coverage.
-- **`config`** — Interactively modifies project configuration: toggle project type, add/remove worktrees, enable/disable branch protection, disable GitHub Issues, set Jira epic key, document deviations.
+- **`new`** — Scaffolds a brand-new repo with GitHub remote, labels, Jira epic reference, docs (README/ARCHITECTURE/PHILOSOPHY/CLAUDE/GITHUB_CONFIG), session worktrees (11 for Software, 8 for Non-Software), startup prompts, CI workflow with `notify-failure`/`notify-recovery`, and branch protection.
+- **`status`** — Reports the current project's config, worktrees, CI state, label set, Jira epic key, open issues by priority, and docs completeness.
+- **`audit`** — Runs the compliance audit against global standards. Reports per-check verdicts (`PASS`/`FAIL`/`WARN`/`SKIP`) for 15 checks across docs, worktrees, CI, labels, branch protection, and coverage.
+- **`config`** — Interactively modifies project configuration: toggle project type, add/remove worktrees, manage labels, enable/disable CI or branch protection, set Jira epic key, document deviations.
 
 ## Subcommand reference
 
@@ -113,7 +113,7 @@ rm -f  ~/.claude/commands/project.md
 
 ## Version
 
-Current: **1.3.0**
+Current: **1.0.0**
 
 ## License
 

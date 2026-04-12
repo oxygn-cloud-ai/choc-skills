@@ -1,6 +1,6 @@
 ---
 name: project-config
-description: Change project configuration — type, worktrees, Jira, branch protection
+description: Change project configuration — type, worktrees, labels, Jira, CI, protection
 allowed-tools:
   - Bash
   - Read
@@ -42,8 +42,9 @@ Options:
 - **Add worktree session** — create a new session worktree (asks: role name, purpose)
 - **Remove worktree session** — remove a session worktree and optionally delete its branch
 - **List worktrees** — show all active worktrees with branch, path, and status
+- **Add/remove labels** — manage GitHub labels
 - **Enable/disable branch protection** — toggle branch protection on main
-- **Disable GitHub Issues** — disable Issues and remove labels (Jira is sole tracker)
+- **Enable/disable CI workflow** — add or remove .github/workflows/test.yml
 - **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and GITHUB_CONFIG.md
 - **Update deviations** — document a deviation from global standards in GITHUB_CONFIG.md
 - **Done — no changes**
@@ -52,7 +53,7 @@ Options:
 
 ### Change project type
 1. Ask: "Switch to Software or Non-Software?"
-2. If switching to Software: add missing worktrees (chk1, chk2, playtester), create CI, set protection
+2. If switching to Software: add missing worktrees (chk1, chk2, playtester), create CI, set protection, add full label set
 3. If switching to Non-Software: warn about removing CI/protection, remove extra worktrees if user confirms
 4. Update GITHUB_CONFIG.md
 
@@ -106,22 +107,18 @@ for wt in $(git worktree list --porcelain | grep '^worktree ' | sed 's/worktree 
 done
 ```
 
-### Disable GitHub Issues
-1. Disable Issues on the repo:
-   ```bash
-   gh repo edit <owner>/<name> --enable-issues=false
-   ```
-2. Delete all remaining GitHub labels:
-   ```bash
-   gh label list --json name --jq '.[].name' | while read -r label; do
-     gh label delete "$label" --yes 2>/dev/null || true
-   done
-   ```
-3. Update GITHUB_CONFIG.md
+### Add/remove labels
+- Show current labels
+- Ask which to add or remove
+- Execute `gh label create` or `gh label delete`
 
 ### Enable/disable branch protection
 - Toggle via `gh api repos/{owner}/{repo}/branches/main/protection`
 - Update GITHUB_CONFIG.md
+
+### Enable/disable CI
+- Create or remove `.github/workflows/test.yml`
+- Read template from `~/.claude/GITHUB_CONFIG.md` section 3
 
 ### Set Jira epic key
 - Ask for the key (e.g., CPT-42)
