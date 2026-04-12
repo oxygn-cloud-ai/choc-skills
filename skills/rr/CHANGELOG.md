@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.1] - 2026-04-12
+
+### Fixed
+- Cleaned up semantic text after orchestrator→bin rename: variable `ORCHESTRATOR_SOURCE` → `BIN_SOURCE`, health check messages, command file prose
+
 ## [5.2.0] - 2026-04-12
 
 ### Changed
