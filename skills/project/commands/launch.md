@@ -126,34 +126,21 @@ tmux new-window -t "$PROJECT_SLUG" -n "$ROLE" -c "$REPO_ROOT/.worktrees/$ROLE"
 
 For each role/window, build and send the Claude command:
 
+Build the claude command string based on which options the user selected in Step 5:
+
+1. Start with base: `claude`
+2. If "dangerously-skip-permissions" selected: append `--dangerously-skip-permissions`
+3. If "verbose" selected: append `--verbose`
+4. If "max-turns" selected: append `--max-turns <N>` (using the number from the follow-up question)
+5. If "model override" selected: append `--model <model>` (using the model from the follow-up question)
+
+Then, if "Prompt pipe" was selected and `.claude/sessions/<role>.md` exists in the project:
+- Read the prompt file content
+- Pipe it to Claude via stdin: `cat "$PROMPT_FILE" | claude [flags]`
+- If no prompt file exists for this role, launch Claude without a prompt
+
+Send the assembled command to the tmux window:
 ```bash
-# Base command
-CMD="claude"
-
-# Add flags from options checklist
-if [[ selected: --dangerously-skip-permissions ]]; then
-  CMD="$CMD --dangerously-skip-permissions"
-fi
-if [[ selected: verbose ]]; then
-  CMD="$CMD --verbose"
-fi
-if [[ selected: --max-turns ]]; then
-  CMD="$CMD --max-turns $MAX_TURNS"
-fi
-if [[ selected: --model ]]; then
-  CMD="$CMD --model $MODEL"
-fi
-
-# Add prompt pipe if selected
-if [[ selected: prompt pipe ]]; then
-  PROMPT_FILE="$REPO_ROOT/.claude/sessions/${ROLE}.md"
-  if [ -f "$PROMPT_FILE" ]; then
-    # Use --prompt flag to pipe the session startup prompt
-    CMD="$CMD --prompt \"\$(cat '$PROMPT_FILE')\""
-  fi
-fi
-
-# Send to tmux window
 tmux send-keys -t "$PROJECT_SLUG:$ROLE" "$CMD" Enter
 ```
 

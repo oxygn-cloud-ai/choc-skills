@@ -5,7 +5,7 @@ set -euo pipefail
 # Works in any terminal (iTerm2, Blink, Moshi, Prompt 3) over SSH/Mosh
 #
 # Usage: project-picker.sh
-# Bind in tmux: bind-key P run-shell "~/.local/bin/project-picker.sh"
+# Bind in tmux: bind-key P display-popup -E -w 60 -h 20 "~/.local/bin/project-picker.sh"
 
 # --- Colors (ANSI, universally supported) ---
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -61,13 +61,14 @@ get_window_count() {
 }
 
 get_active_count() {
-  local session=$1
-  tmux list-windows -t "$session" -F '#{window_activity}' 2>/dev/null | while read -r activity; do
-    now=$(date +%s)
-    diff=$((now - activity))
-    # Consider "active" if activity within last 300 seconds (5 min)
-    [ "$diff" -lt 300 ] && echo "active"
-  done | wc -l | tr -d ' '
+  local session=$1 count=0 now
+  now=$(date +%s)
+  while read -r activity; do
+    [ -z "$activity" ] && continue
+    local diff=$((now - activity))
+    [ "$diff" -lt 300 ] && count=$((count + 1))
+  done < <(tmux list-windows -t "$session" -F '#{window_activity}' 2>/dev/null)
+  echo "$count"
 }
 
 format_age() {
@@ -123,7 +124,9 @@ show_projects() {
       else
         indicator="${DIM}○${RESET}"
       fi
-      draw_row "$width" "  ${BOLD}${letter})${RESET} ${CYAN}${session}${RESET}$(printf '%*s' $((20 - ${#session})) '')${wcount} windows  ${acount} active ${indicator}"
+      local npad=$((20 - ${#session}))
+      [ "$npad" -lt 1 ] && npad=1
+      draw_row "$width" "  ${BOLD}${letter})${RESET} ${CYAN}${session}${RESET}$(printf '%*s' "$npad" '')${wcount} windows  ${acount} active ${indicator}"
       idx=$((idx + 1))
     done
 

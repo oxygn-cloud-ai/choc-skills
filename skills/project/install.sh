@@ -77,6 +77,7 @@ if [ "${1:-}" = "--uninstall" ]; then
   [ -d "$SKILL_TARGET" ] && rm -rf "$SKILL_TARGET" && ok "Removed ${SKILL_TARGET}" || warn "Skill not installed"
   [ -d "$COMMANDS_TARGET" ] && rm -rf "$COMMANDS_TARGET" && ok "Removed ${COMMANDS_TARGET}" || warn "Commands not installed"
   [ -f "${HOME}/.claude/commands/project.md" ] && rm -f "${HOME}/.claude/commands/project.md" && ok "Removed router" || true
+  [ -f "${HOME}/.local/bin/project-picker.sh" ] && rm -f "${HOME}/.local/bin/project-picker.sh" && ok "Removed picker script" || true
   ok "project uninstalled"
   exit 0
 fi
@@ -128,6 +129,18 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     ok "gh: $(command -v gh)"
   else
     err "gh: not found (required for /project:new and /project:config)"; issues=$((issues + 1))
+  fi
+
+  if command -v tmux >/dev/null 2>&1; then
+    ok "tmux: $(command -v tmux)"
+  else
+    warn "tmux: not found (required for /project:launch and project-picker.sh)"
+  fi
+
+  if [ -f "${HOME}/.local/bin/project-picker.sh" ]; then
+    ok "Picker script: ${HOME}/.local/bin/project-picker.sh"
+  else
+    warn "Picker script: not installed (run install.sh --force to install)"
   fi
 
   echo ""
