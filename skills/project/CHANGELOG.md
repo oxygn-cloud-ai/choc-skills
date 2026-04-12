@@ -2,6 +2,17 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.0] - 2026-04-12
+
+### Added
+- `/project:launch` subcommand — creates tmux session per project with named windows per worktree role, launches Claude Code in each with configurable options
+- `--all` mode scans TMUX_REPOS_DIR for all projects with `.worktrees/`
+- `--dry-run` mode previews launch without side effects
+- Interactive options checklist: prompt pipe, --dangerously-skip-permissions, model override, max-turns, resume, skip idle, verbose, dry run
+- `project-picker.sh` — standalone two-level TUI for navigating project sessions from any terminal (Blink, Moshi, Prompt 3 over Mosh)
+- Keyboard navigation: single-keypress selection (a-z) at both project and role levels, Esc to go back
+- tmux binding: Prefix + Shift+P opens the picker from anywhere
+
 ## [1.1.0] - 2026-04-12
 
 ### Added

@@ -164,6 +164,7 @@ Route to the appropriate sub-command:
 | `new` | Run `/project:new` |
 | `audit` | Run `/project:audit` |
 | `config` | Run `/project:config` |
+| `launch` (with optional flags) | Run `/project:launch` passing flags |
 | `update`, `--update`, `upgrade` | Run `/project:update` |
 | `help`, `--help`, `-h` | Run `/project help` (the main skill) |
 | `doctor` | Run `/project doctor` (the main skill) |
@@ -192,11 +193,26 @@ else
   warn "No commands/ directory found — sub-commands not installed"
 fi
 
-# 4. Record source repo path (for /project update)
+# 4. Install picker script (if bin/ directory exists)
+BIN_SOURCE="${SCRIPT_DIR}/bin"
+PICKER_TARGET="${HOME}/.local/bin"
+if [ -d "$BIN_SOURCE" ]; then
+  mkdir -p "$PICKER_TARGET"
+  for file in "${BIN_SOURCE}"/*.sh; do
+    [ -f "$file" ] || continue
+    cp "$file" "${PICKER_TARGET}/$(basename "$file")"
+    chmod +x "${PICKER_TARGET}/$(basename "$file")"
+  done
+  ok "Picker script -> ${PICKER_TARGET}/project-picker.sh"
+else
+  warn "No bin/ directory found — picker script not installed"
+fi
+
+# 5. Record source repo path (for /project update)
 echo "$SCRIPT_DIR" > "${SKILL_TARGET}/.source-repo"
 ok "Source repo marker -> ${SKILL_TARGET}/.source-repo"
 
-# 5. Verify
+# 6. Verify
 ver=$(grep -m1 '^version:' "${SKILL_TARGET}/SKILL.md" 2>/dev/null | sed 's/^version: *//' || true)
 echo ""
 ok "project v${ver} installed successfully"
@@ -205,5 +221,6 @@ info "Files installed:"
 printf "  ${DIM}%-50s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
 printf "  ${DIM}%-50s${RESET} (router)\n" "${HOME}/.claude/commands/project.md"
 [ -d "$COMMANDS_TARGET" ] && printf "  ${DIM}%-50s${RESET} (sub-commands)\n" "${COMMANDS_TARGET}/"
+[ -f "${PICKER_TARGET}/project-picker.sh" ] && printf "  ${DIM}%-50s${RESET} (session picker)\n" "${PICKER_TARGET}/project-picker.sh"
 echo ""
 info "Usage: /project or /project help"
