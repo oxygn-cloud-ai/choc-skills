@@ -4,6 +4,10 @@ set -euo pipefail
 # project-picker.sh — Two-level TUI for navigating project tmux sessions
 # Works in any terminal (iTerm2, Blink, Moshi, Prompt 3) over SSH/Mosh
 #
+# Supports two session models:
+#   - Per-role sessions: grouped by PROJECT env var (set by /project:launch)
+#   - Standalone sessions: legacy single-session-per-repo (backward compatible)
+#
 # Usage: project-picker.sh
 # Bind in tmux: bind-key P display-popup -E -w 60 -h 20 "~/.local/bin/project-picker.sh"
 
@@ -45,32 +49,6 @@ draw_row() {
   printf '│ %b%*s│\n' "$content" "$pad" ""
 }
 
-# --- Session discovery ---
-get_sessions() {
-  tmux ls -F '#{session_name}' 2>/dev/null || true
-}
-
-get_windows() {
-  local session=$1
-  tmux list-windows -t "$session" -F '#{window_name} #{window_activity}' 2>/dev/null || true
-}
-
-get_window_count() {
-  local session=$1
-  tmux list-windows -t "$session" 2>/dev/null | wc -l | tr -d ' '
-}
-
-get_active_count() {
-  local session=$1 count=0 now
-  now=$(date +%s)
-  while read -r activity; do
-    [ -z "$activity" ] && continue
-    local diff=$((now - activity))
-    [ "$diff" -lt 300 ] && count=$((count + 1))
-  done < <(tmux list-windows -t "$session" -F '#{window_activity}' 2>/dev/null)
-  echo "$count"
-}
-
 format_age() {
   local activity=$1
   local now
@@ -87,17 +65,104 @@ format_age() {
   fi
 }
 
+# --- Session discovery ---
+
+# Get tmux env var for a session, returns empty string on failure
+get_session_env() {
+  local session="$1" var="$2"
+  local val
+  val=$(tmux show-environment -t "$session" "$var" 2>/dev/null | cut -d= -f2-) || true
+  # tmux prints "-VAR" when var is removed; filter that out
+  if [[ "$val" == -* ]] || [[ -z "$val" ]]; then
+    echo ""
+  else
+    echo "$val"
+  fi
+}
+
+# Build project list: groups per-role sessions by PROJECT, keeps standalone sessions as-is
+# Output format: "type:name" where type is "project" or "standalone"
+get_projects() {
+  local -A seen_projects
+  local entries=()
+
+  while IFS= read -r s; do
+    [ -z "$s" ] && continue
+    local proj
+    proj=$(get_session_env "$s" "PROJECT")
+    if [ -n "$proj" ]; then
+      # Per-role session — group under project
+      if [ -z "${seen_projects[$proj]+x}" ]; then
+        seen_projects["$proj"]=1
+        entries+=("project:$proj")
+      fi
+    else
+      # Standalone session
+      entries+=("standalone:$s")
+    fi
+  done < <(tmux ls -F '#{session_name}' 2>/dev/null || true)
+
+  printf '%s\n' "${entries[@]}"
+}
+
+# Get role count and active count for a project (per-role sessions)
+get_project_role_count() {
+  local project="$1" count=0
+  while IFS= read -r s; do
+    [ -z "$s" ] && continue
+    local proj
+    proj=$(get_session_env "$s" "PROJECT")
+    [ "$proj" = "$project" ] && count=$((count + 1))
+  done < <(tmux ls -F '#{session_name}' 2>/dev/null || true)
+  echo "$count"
+}
+
+get_project_active_count() {
+  local project="$1" count=0 now
+  now=$(date +%s)
+  while IFS= read -r s; do
+    [ -z "$s" ] && continue
+    local proj
+    proj=$(get_session_env "$s" "PROJECT")
+    [ "$proj" = "$project" ] || continue
+    # Check session activity (most recent window activity)
+    local activity
+    activity=$(tmux list-windows -t "$s" -F '#{window_activity}' 2>/dev/null | sort -rn | head -1)
+    [ -z "$activity" ] && continue
+    local diff=$((now - activity))
+    [ "$diff" -lt 300 ] && count=$((count + 1))
+  done < <(tmux ls -F '#{session_name}' 2>/dev/null || true)
+  echo "$count"
+}
+
+# Get window count and active count for a standalone session
+get_window_count() {
+  local session=$1
+  tmux list-windows -t "$session" 2>/dev/null | wc -l | tr -d ' '
+}
+
+get_standalone_active_count() {
+  local session=$1 count=0 now
+  now=$(date +%s)
+  while read -r activity; do
+    [ -z "$activity" ] && continue
+    local diff=$((now - activity))
+    [ "$diff" -lt 300 ] && count=$((count + 1))
+  done < <(tmux list-windows -t "$session" -F '#{window_activity}' 2>/dev/null)
+  echo "$count"
+}
+
 # --- Key mapping ---
 LETTERS=(a b c d e f g h i j k l m n o p q r s t u v w x y z)
 
 # --- Level 1: Project Selection ---
 show_projects() {
-  local sessions=()
-  while IFS= read -r s; do
-    [ -n "$s" ] && sessions+=("$s")
-  done < <(get_sessions)
+  local entries=()
+  while IFS= read -r e; do
+    [ -n "$e" ] && entries+=("$e")
+  done < <(get_projects)
 
-  if [ ${#sessions[@]} -eq 0 ]; then
+  if [ ${#entries[@]} -eq 0 ]; then
     clear_screen
     echo "No tmux sessions found. Run /project:launch to create sessions."
     exit 0
@@ -105,28 +170,38 @@ show_projects() {
 
   while true; do
     clear_screen
-    local width=52
+    local width=56
 
     draw_box_top "$width"
-    draw_row "$width" "${BOLD}Projects${RESET}                             ${DIM}[?] Help${RESET}"
+    draw_row "$width" "${BOLD}Projects${RESET}                                 ${DIM}[?] Help${RESET}"
     draw_row "$width" ""
 
     local idx=0
-    for session in "${sessions[@]}"; do
+    for entry in "${entries[@]}"; do
+      local etype ename
+      etype="${entry%%:*}"
+      ename="${entry#*:}"
+
       local letter="${LETTERS[$idx]}"
-      local wcount
-      wcount=$(get_window_count "$session")
-      local acount
-      acount=$(get_active_count "$session")
-      local indicator
-      if [ "$acount" -gt 0 ]; then
+      local count_label active_count indicator
+
+      if [ "$etype" = "project" ]; then
+        count_label="$(get_project_role_count "$ename") roles"
+        active_count=$(get_project_active_count "$ename")
+      else
+        count_label="$(get_window_count "$ename") windows"
+        active_count=$(get_standalone_active_count "$ename")
+      fi
+
+      if [ "$active_count" -gt 0 ]; then
         indicator="${GREEN}●${RESET}"
       else
         indicator="${DIM}○${RESET}"
       fi
-      local npad=$((20 - ${#session}))
+
+      local npad=$((20 - ${#ename}))
       [ "$npad" -lt 1 ] && npad=1
-      draw_row "$width" "  ${BOLD}${letter})${RESET} ${CYAN}${session}${RESET}$(printf '%*s' "$npad" '')${wcount} windows  ${acount} active ${indicator}"
+      draw_row "$width" "  ${BOLD}${letter})${RESET} ${CYAN}${ename}${RESET}$(printf '%*s' "$npad" '')${count_label}  ${active_count} active ${indicator}"
       idx=$((idx + 1))
     done
 
@@ -134,7 +209,6 @@ show_projects() {
     draw_row "$width" "  ${DIM}Press a-${LETTERS[$((idx - 1))]} to select, r refresh, q quit${RESET}"
     draw_box_bottom "$width"
 
-    # Read single keypress
     local key
     IFS= read -rsn1 key
 
@@ -151,8 +225,8 @@ show_projects() {
         echo "  ?      Show this help"
         echo ""
         echo "Level 2 (Roles):"
-        echo "  a-k    Attach to specific role window"
-        echo "  *      Attach to project session (master window)"
+        echo "  a-z    Attach to specific role session"
+        echo "  *      Attach to master role (or first window)"
         echo "  Esc    Back to project list"
         echo "  r      Refresh"
         echo "  q      Quit"
@@ -164,29 +238,153 @@ show_projects() {
         continue
         ;;
       *)
-        # Check if it's a valid letter selection
         local selected_idx=-1
         for i in "${!LETTERS[@]}"; do
-          if [ "${LETTERS[$i]}" = "$key" ] && [ "$i" -lt "${#sessions[@]}" ]; then
+          if [ "${LETTERS[$i]}" = "$key" ] && [ "$i" -lt "${#entries[@]}" ]; then
             selected_idx=$i
             break
           fi
         done
         if [ "$selected_idx" -ge 0 ]; then
-          show_roles "${sessions[$selected_idx]}"
+          local sel_entry="${entries[$selected_idx]}"
+          local sel_type="${sel_entry%%:*}"
+          local sel_name="${sel_entry#*:}"
+          if [ "$sel_type" = "project" ]; then
+            show_project_roles "$sel_name"
+          else
+            show_standalone_windows "$sel_name"
+          fi
         fi
         ;;
     esac
   done
 }
 
-# --- Level 2: Role Selection ---
-show_roles() {
+# --- Level 2: Role Selection (per-role sessions grouped by PROJECT) ---
+show_project_roles() {
+  local project=$1
+
+  while true; do
+    clear_screen
+    local width=56
+
+    # Collect role sessions sorted by ROLE_INDEX
+    local role_names=()
+    local role_sessions=()
+    local role_activities=()
+
+    local raw_entries=()
+    while IFS= read -r s; do
+      [ -z "$s" ] && continue
+      local proj
+      proj=$(get_session_env "$s" "PROJECT")
+      [ "$proj" = "$project" ] || continue
+      local role role_idx activity
+      role=$(get_session_env "$s" "ROLE")
+      role_idx=$(get_session_env "$s" "ROLE_INDEX")
+      [ -z "$role" ] && role="$s"
+      [ -z "$role_idx" ] && role_idx="99"
+      activity=$(tmux list-windows -t "$s" -F '#{window_activity}' 2>/dev/null | sort -rn | head -1)
+      [ -z "$activity" ] && activity="0"
+      raw_entries+=("${role_idx}:${role}:${s}:${activity}")
+    done < <(tmux ls -F '#{session_name}' 2>/dev/null || true)
+
+    # Sort by ROLE_INDEX
+    local sorted=()
+    while IFS= read -r line; do
+      [ -n "$line" ] && sorted+=("$line")
+    done < <(printf '%s\n' "${raw_entries[@]}" | sort -t: -k1 -n)
+
+    for entry in "${sorted[@]}"; do
+      IFS=: read -r _ role session activity <<< "$entry"
+      role_names+=("$role")
+      role_sessions+=("$session")
+      role_activities+=("$activity")
+    done
+
+    draw_box_top "$width"
+    draw_row "$width" "${BOLD}${CYAN}${project}${RESET}                              ${DIM}[Esc] Back${RESET}"
+    draw_row "$width" ""
+
+    local idx=0
+    for role in "${role_names[@]}"; do
+      local letter="${LETTERS[$idx]}"
+      local activity="${role_activities[$idx]}"
+      local now
+      now=$(date +%s)
+      local diff=$((now - activity))
+      local indicator age_str
+
+      if [ "$diff" -lt 300 ]; then
+        indicator="${GREEN}● active${RESET}"
+        age_str=$(format_age "$activity")
+      else
+        indicator="${DIM}○ idle${RESET}"
+        age_str=""
+      fi
+
+      local name_pad=$((16 - ${#role}))
+      [ "$name_pad" -lt 1 ] && name_pad=1
+      draw_row "$width" "  ${BOLD}${letter})${RESET} ${role}$(printf '%*s' "$name_pad" '')${indicator}  ${DIM}${age_str}${RESET}"
+      idx=$((idx + 1))
+    done
+
+    draw_row "$width" ""
+    draw_row "$width" "  ${DIM}Press a-${LETTERS[$((idx - 1))]} to attach, * master, Esc back, q quit${RESET}"
+    draw_box_bottom "$width"
+
+    local key
+    IFS= read -rsn1 key
+
+    case "$key" in
+      q) clear_screen; exit 0 ;;
+      r) continue ;;
+      '*')
+        # Attach to master role session (or first if master not found)
+        local master_session=""
+        for i in "${!role_names[@]}"; do
+          if [ "${role_names[$i]}" = "master" ]; then
+            master_session="${role_sessions[$i]}"
+            break
+          fi
+        done
+        [ -z "$master_session" ] && master_session="${role_sessions[0]}"
+        clear_screen
+        exec tmux attach-session -t "$master_session"
+        ;;
+      $'\x1b')
+        local seq=""
+        read -rsn2 -t 0.1 seq 2>/dev/null || true
+        if [ -z "$seq" ]; then
+          return
+        fi
+        continue
+        ;;
+      *)
+        local selected_idx=-1
+        for i in "${!LETTERS[@]}"; do
+          if [ "${LETTERS[$i]}" = "$key" ] && [ "$i" -lt "${#role_sessions[@]}" ]; then
+            selected_idx=$i
+            break
+          fi
+        done
+        if [ "$selected_idx" -ge 0 ]; then
+          local target_session="${role_sessions[$selected_idx]}"
+          clear_screen
+          exec tmux attach-session -t "$target_session"
+        fi
+        ;;
+    esac
+  done
+}
+
+# --- Level 2: Window Selection (standalone sessions, backward compatible) ---
+show_standalone_windows() {
   local session=$1
 
   while true; do
     clear_screen
-    local width=52
+    local width=56
 
     local windows=()
     local activities=()
@@ -197,10 +395,10 @@ show_roles() {
       wactivity=$(echo "$line" | awk '{print $2}')
       windows+=("$wname")
       activities+=("$wactivity")
-    done < <(get_windows "$session")
+    done < <(tmux list-windows -t "$session" -F '#{window_name} #{window_activity}' 2>/dev/null || true)
 
     draw_box_top "$width"
-    draw_row "$width" "${BOLD}${CYAN}${session}${RESET}                          ${DIM}[Esc] Back${RESET}"
+    draw_row "$width" "${BOLD}${CYAN}${session}${RESET}                              ${DIM}[Esc] Back${RESET}"
     draw_row "$width" ""
 
     local idx=0
@@ -237,20 +435,15 @@ show_roles() {
       q) clear_screen; exit 0 ;;
       r) continue ;;
       '*')
-        # Attach to session (lands on current/master window)
         clear_screen
         exec tmux attach-session -t "$session"
         ;;
       $'\x1b')
-        # Esc key — could be standalone or start of escape sequence
-        # Read additional chars with tiny timeout
         local seq=""
         read -rsn2 -t 0.1 seq 2>/dev/null || true
         if [ -z "$seq" ]; then
-          # Standalone Esc — go back
           return
         fi
-        # Otherwise it was an escape sequence (arrow key etc) — ignore
         continue
         ;;
       *)

@@ -284,6 +284,8 @@ fi
 printf "\n${BOLD}Installing scripts${RESET}\n\n"
 
 mkdir -p "$INSTALL_DIR"
+mkdir -p "$HOME/.local/share/iterm2-tmux/backgrounds"
+ok "Backgrounds directory: ~/.local/share/iterm2-tmux/backgrounds/"
 
 for script in "${SCRIPTS[@]}"; do
   source_path="${BIN_DIR}/${script}"
