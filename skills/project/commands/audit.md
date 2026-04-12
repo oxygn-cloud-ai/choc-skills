@@ -49,14 +49,10 @@ For each check, report PASS, FAIL, WARN, or SKIP with details.
 5. **Session startup prompts**: `.claude/sessions/<role>.md` exists for each expected role
 6. **Branch protection on main**: Derive `OWNER_REPO` from `git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||'`, then `gh api "repos/$OWNER_REPO/branches/main/protection"` succeeds. SKIP for Non-Software if documented deviation.
 7. **CI workflow exists** (Software only): `.github/workflows/test.yml` or similar. SKIP for Non-Software.
-8. **notify-failure job** (Software only): grep for `notify-failure` in workflow files.
-9. **notify-recovery job** (Software only): grep for `notify-recovery` in workflow files.
-10. **P1-P4 labels exist**: `gh label list` includes P1, P2, P3, P4
-11. **Category labels exist**: check for expected labels per project type
-12. **No deprecated labels**: no `P1-blocking`, `P2-important`, `severity-*`, etc.
-13. **Every open issue has priority**: check `gh issue list` for issues missing P-labels
-14. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
-15. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.
+8. **GitHub Issues disabled**: `gh repo view --json hasIssuesEnabled --jq .hasIssuesEnabled` returns `false`. WARN if still enabled.
+9. **No GitHub labels**: `gh label list` returns empty. WARN if labels exist (Jira is sole tracker).
+10. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
+11. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.
 
 ## Step 5: Display report
 
@@ -71,15 +67,12 @@ Type: <Software|Non-Software>
   [WARN] Session prompts: .claude/sessions/playtester.md missing
   [PASS] Branch protection on main
   [PASS] CI workflow: .github/workflows/test.yml
-  [FAIL] notify-failure job missing from CI workflow
-  [PASS] notify-recovery job present
-  [PASS] P1-P4 labels exist
-  [WARN] Deprecated labels found: severity-high, severity-low
-  [PASS] All open issues have priority labels
+  [PASS] GitHub Issues disabled
+  [PASS] No GitHub labels present
   [WARN] Stale worktree: session/playtester (no commits in 5 days)
   [SKIP] Coverage thresholds (not configured)
 
-  Result: 8 passed, 3 warnings, 3 failed, 1 skipped
+  Result: 7 passed, 2 warnings, 2 failed, 1 skipped
 
   To fix gaps, run /project:config or address manually.
 ```

@@ -1,6 +1,6 @@
 ---
 name: project
-version: 1.2.0
+version: 1.3.0
 description: Project repository administration — create new, audit, configure, status check. Multi-session workflow scaffolding per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/GITHUB_CONFIG.md.
 user-invocable: true
 disable-model-invocation: true
@@ -21,7 +21,7 @@ The router at `~/.claude/commands/project.md` intercepts sub-command arguments a
 If `$ARGUMENTS` equals `help`, `--help`, or `-h`, display the following usage guide and stop.
 
 ```
-project v1.2.0 — Project Repository Administration
+project v1.3.0 — Project Repository Administration
 
 USAGE
   /project                  Show status for current project (same as /project status)
@@ -31,15 +31,15 @@ USAGE
   /project launch --all     Launch all projects in TMUX_REPOS_DIR
   /project launch --dry-run Preview without launching
   /project audit            Audit against global standards, report gaps
-  /project config           Change project config: worktrees, labels, Jira, CI
+  /project config           Change project config: worktrees, Jira, branch protection
   /project update           Update to latest version
   /project help             Display this usage guide
   /project doctor           Check skill installation health
   /project version          Show installed version
 
 PROJECT TYPES
-  software         11 sessions, CI, branch protection, full labels, code scaffolding
-  non-software     8 sessions (no chk1/chk2/playtester), no CI, reduced labels
+  software         11 sessions, CI, branch protection, code scaffolding
+  non-software     8 sessions (no chk1/chk2/playtester), no CI
 
 STANDARD WORKTREE SESSIONS (per ~/.claude/MULTI_SESSION_ARCHITECTURE.md)
   master           Supervisor — alignment, cooperation, orderly updates
@@ -84,7 +84,7 @@ If `$ARGUMENTS` equals `doctor`, `--doctor`, or `check`, run skill-install healt
 5. **Global architecture doc**: `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — the skill is useless without it (FAIL if missing).
 6. **Global GitHub config**: `test -f ~/.claude/GITHUB_CONFIG.md` — FAIL if missing.
 7. **git installed**: `command -v git` — FAIL if missing.
-8. **gh installed**: `command -v gh` — FAIL if missing (required for repo creation, labels, branch protection).
+8. **gh installed**: `command -v gh` — FAIL if missing (required for repo creation, branch protection).
 9. **gh authenticated**: `gh auth status 2>&1 | grep -q "Logged in"` — WARN if not (some subcommands work without auth, but `/project:new` does not).
 
 Format:
@@ -111,7 +111,7 @@ End of doctor output. Do not continue.
 If `$ARGUMENTS` equals `version`, `--version`, or `-v`, output the version and stop.
 
 ```
-project v1.2.0
+project v1.3.0
 ```
 
 End of version output. Do not continue.

@@ -116,30 +116,18 @@ Create these files at the repo root:
 - Go: `go.mod`, `main.go`, `.gitignore`
 - Other: `.gitignore`
 
-## Step 6: Create GitHub labels
+## Step 6: Disable GitHub Issues
 
-Read label definitions from `~/.claude/GITHUB_CONFIG.md` section 2.
+Jira is the single source of truth for all issue tracking (see `~/.claude/MULTI_SESSION_ARCHITECTURE.md` section 5). GitHub Issues are not used.
 
-For Software projects — full set:
+Disable GitHub Issues on the repo:
 ```bash
-gh label create "P1" --color "b60205" --description "Critical — blocks progress, fix immediately" 2>/dev/null || true
-gh label create "P2" --color "d93f0b" --description "High — fix soon, before next release" 2>/dev/null || true
-gh label create "P3" --color "fbca04" --description "Medium — fix when touching related code" 2>/dev/null || true
-gh label create "P4" --color "c5def5" --description "Low — cosmetic, infra, or nice-to-have" 2>/dev/null || true
-gh label create "bug" --color "d73a4a" --description "Something isn't working" 2>/dev/null || true
-gh label create "enhancement" --color "a2eeef" --description "New feature or improvement" 2>/dev/null || true
-gh label create "security" --color "ee0701" --description "Security vulnerability or hardening" 2>/dev/null || true
-gh label create "performance" --color "f9d0c4" --description "Performance issue or optimization" 2>/dev/null || true
-gh label create "code-quality" --color "bfdadc" --description "Code quality, maintainability, or correctness" 2>/dev/null || true
-gh label create "documentation" --color "0075ca" --description "Documentation update needed" 2>/dev/null || true
-gh label create "ci-failure" --color "b60205" --description "Automated CI failure report" 2>/dev/null || true
+gh repo edit <owner>/<name> --enable-issues=false
 ```
 
-For Non-Software — reduced set (P1-P4 + bug, enhancement, documentation only).
-
-Delete GitHub's default labels that aren't in our set:
+Delete all GitHub default labels (they serve no purpose with Issues disabled):
 ```bash
-for label in "good first issue" "help wanted" "invalid" "wontfix" "question" "duplicate"; do
+for label in "good first issue" "help wanted" "invalid" "wontfix" "question" "duplicate" "bug" "documentation" "enhancement"; do
   gh label delete "$label" --yes 2>/dev/null || true
 done
 ```
@@ -225,11 +213,9 @@ Add a brief quick-reference section specific to each role (3-5 bullet points sum
 ## Step 11: CI workflow (Software only)
 
 Create `.github/workflows/test.yml` with:
-- Language-appropriate test job
-- `notify-failure` job from `~/.claude/GITHUB_CONFIG.md` section 3 reference implementation
-- `notify-recovery` job
+- Language-appropriate test job(s)
 
-Adapt the `needs:` list to match the actual test job name(s).
+CI failure monitoring is handled by the **Master session** running on the local machine, not by GitHub Actions. The Master session polls CI status via `gh run list` and files failures as Jira tasks under the project's epic. See `~/.claude/MULTI_SESSION_ARCHITECTURE.md` section 2 for the Master's monitoring duties.
 
 ## Step 12: Branch protection (Software)
 
@@ -283,11 +269,12 @@ Project <name> created successfully.
 <success_criteria>
 - [ ] GitHub repo created with correct visibility
 - [ ] All required docs present at repo root
-- [ ] Labels match GITHUB_CONFIG.md spec for project type
+- [ ] GitHub Issues disabled on repo
+- [ ] GitHub default labels deleted
 - [ ] Jira epic key documented in CLAUDE.md and GITHUB_CONFIG.md
 - [ ] All session worktrees created with correct branch names
 - [ ] Session startup prompts created in .claude/sessions/
-- [ ] CI workflow present (Software only) with notify-failure/recovery
+- [ ] CI workflow present (Software only)
 - [ ] Branch protection set (Software only)
 - [ ] Project memory initialized
 - [ ] Initial commit pushed to main

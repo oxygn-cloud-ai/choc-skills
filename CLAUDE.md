@@ -1,5 +1,10 @@
 # CLAUDE.md — choc-skills
 
+## Jira
+
+- **Project:** CPT (Claude Progress Tracking)
+- **Epic:** CPT-3 (choc-skills)
+
 ## What This Repo Is
 
 A monorepo for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills and standalone tools. Each skill is independently versioned and released. Runs on macOS, Linux, and WSL.
