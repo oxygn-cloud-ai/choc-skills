@@ -21,7 +21,6 @@ choc-skills/
 ├── tests/                  # BATS test suite
 └── .github/workflows/
     ├── ci.yml              # Primary CI (ShellCheck, validate, install, checksums, BATS)
-    ├── labels.yml          # Label sync
     ├── release-skill.yml   # Per-skill release (triggered by <skill>/v* tags)
     └── release.yml         # Milestone release (triggered by v* tags)
 ```

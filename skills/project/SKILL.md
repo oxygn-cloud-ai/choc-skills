@@ -91,7 +91,7 @@ Format:
 ```
 project doctor — Skill Installation Health Check
 
-  [PASS] Skill installed at ~/.claude/skills/project/SKILL.md (v1.0.0)
+  [PASS] Skill installed at ~/.claude/skills/project/SKILL.md (v1.3.0)
   [PASS] Source repo: /Volumes/.../choc-skills/skills/project (reachable)
   [PASS] Router: ~/.claude/commands/project.md
   [PASS] Subcommands: 6 files (new, status, launch, audit, config, update)

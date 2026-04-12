@@ -28,7 +28,7 @@ Before reading, verify the dependency files exist:
 - `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. This file is required for project auditing."
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the full role list and requirements.
-Read `~/.claude/GITHUB_CONFIG.md` for label, CI, branch protection, and doc requirements.
+Read `~/.claude/GITHUB_CONFIG.md` for CI, branch protection, issue tracking, and doc requirements.
 Read the project's `GITHUB_CONFIG.md` to understand project type and documented deviations.
 
 ## Step 3: Determine project type

@@ -46,11 +46,11 @@ Before anything else, verify this is safe to run:
 
 Verify dependencies exist before reading:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file defines the multi-session workflow and is required for project creation."
-- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. This file defines labels, CI, and branch protection standards."
+- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. This file defines CI and branch protection standards."
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions, worktree layout, and Jira structure. This is the authoritative reference — do not hardcode or inline its contents.
 
-Read `~/.claude/GITHUB_CONFIG.md` for label definitions, CI templates, and branch protection spec.
+Read `~/.claude/GITHUB_CONFIG.md` for CI, branch protection, and issue tracking policy.
 
 ## Step 2: Gather basics
 
@@ -191,9 +191,30 @@ done
 
 ## Step 10: Create session startup prompts
 
-Create `.claude/sessions/<role>.md` for each session role. Each prompt is thin — it states the role, points at the architecture doc for protocol, and includes project-specific references.
+```bash
+mkdir -p .claude/sessions
+```
 
-Template:
+Create `.claude/sessions/<role>.md` for each session role. Each prompt states the role, points at the correct architecture doc section, includes project references, and has a 3-5 bullet quick-reference.
+
+### Section mapping
+
+| Role | Architecture section |
+|------|---------------------|
+| Master | 2 |
+| Planner | 3 |
+| Fixer | 4 |
+| Implementer | 5 |
+| Merger | 6 |
+| chk1 | 7 |
+| chk2 | 8 |
+| PerformanceReviewer | 9 |
+| Playtester | 10 |
+| Reviewer | 11 |
+| Triager | 12 |
+
+### Template
+
 ```markdown
 # <Role> Session — <project-name>
 
@@ -206,9 +227,12 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
 - Jira epic: <epic-key>
 - Repo: <owner>/<name>
 - Read CLAUDE.md and ARCHITECTURE.md for project context.
+
+## Quick Reference
+- <3-5 bullet points summarizing the key protocol steps for this role>
 ```
 
-Add a brief quick-reference section specific to each role (3-5 bullet points summarizing the protocol steps).
+Each prompt must include all four sections: role identity, protocol reference with correct section number, project block, and quick reference.
 
 ## Step 11: CI workflow (Software only)
 
@@ -223,7 +247,7 @@ Wait for CI to complete first, then:
 ```bash
 gh api "repos/<owner>/<name>/branches/main/protection" -X PUT --input - <<'EOF'
 {
-  "required_status_checks": { "strict": false, "contexts": ["test"] },
+  "required_status_checks": { "strict": true, "contexts": ["test"] },
   "enforce_admins": false,
   "required_pull_request_reviews": null,
   "restrictions": null,
@@ -254,7 +278,7 @@ Project <name> created successfully.
   Jira Epic:  <epic-key>
   Branch:     main (protected: <yes/no>)
   CI:         <.github/workflows/test.yml | n/a>
-  Labels:     <count> created
+  Issues:     GitHub Issues disabled (Jira-only)
   Docs:       PHILOSOPHY.md, README.md, ARCHITECTURE.md, CLAUDE.md, GITHUB_CONFIG.md
   Worktrees:  <count> sessions in .worktrees/
   Prompts:    .claude/sessions/*.md

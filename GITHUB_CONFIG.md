@@ -31,7 +31,6 @@ Enabled on `main` with:
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | `ci.yml` | push/PR to main | Primary CI — lint, validate, install, checksums, tests |
-| `labels.yml` | manual | Label synchronization |
 | `release-skill.yml` | `<skill>/v*` tag | Per-skill release |
 | `release.yml` | `v*` tag | Milestone release |
 
