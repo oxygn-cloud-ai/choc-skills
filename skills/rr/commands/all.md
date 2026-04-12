@@ -14,10 +14,10 @@ Parse any flags or filters from $ARGUMENTS (everything after the `all` keyword):
 
 ## Mode Selection
 
-Check if the agent orchestrator is available by running these checks via Bash:
+Check if the agent bin is available by running these checks via Bash:
 
 ```bash
-test -x ~/.claude/skills/rr/orchestrator/rr-prepare.sh && echo "orchestrator_available"
+test -x ~/.claude/skills/rr/bin/rr-prepare.sh && echo "bin_available"
 test -n "${JIRA_EMAIL:-}" && test -n "${JIRA_API_KEY:-}" && echo "jira_creds_set"
 ```
 
@@ -60,7 +60,7 @@ Monitor progress: /rr monitor (in separate terminal)
 Build the command with applicable flags and run via Bash tool:
 
 ```bash
-RR_CATEGORY_FILTER="${category_filter}" ~/.claude/skills/rr/orchestrator/rr-prepare.sh [--force] [--qtr:Q1|Q2|Q3|Q4]
+RR_CATEGORY_FILTER="${category_filter}" ~/.claude/skills/rr/bin/rr-prepare.sh [--force] [--qtr:Q1|Q2|Q3|Q4]
 ```
 
 Capture the batch count from the last line of stdout. If 0, report "No risks to process" and stop.
@@ -76,7 +76,7 @@ Capture the batch count from the last line of stdout. If 0, report "No risks to 
 
 2. Read the sub-agent prompt template:
    ```
-   ~/.claude/skills/rr/orchestrator/sub-agent-prompt.md
+   ~/.claude/skills/rr/bin/sub-agent-prompt.md
    ```
 
 3. List all batch files:
@@ -125,7 +125,7 @@ For each wave of batches:
 
 4. Update CPT with wave progress (non-blocking) via Bash:
    ```bash
-   ~/.claude/skills/rr/orchestrator/_update_cpt.sh dispatch_progress "Wave N of M complete: X succeeded, Y failed" || true
+   ~/.claude/skills/rr/bin/_update_cpt.sh dispatch_progress "Wave N of M complete: X succeeded, Y failed" || true
    ```
 
 5. Proceed to the next wave.
@@ -156,7 +156,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dispatch complete: ${succeeded}/${total} ba
 Run via Bash tool:
 
 ```bash
-~/.claude/skills/rr/orchestrator/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4]
+~/.claude/skills/rr/bin/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4]
 ```
 
 ### Report to User
@@ -176,13 +176,13 @@ Re-run fails: /rr fix
 
 ## Sequential Mode (Fallback)
 
-Report to user why agent orchestrator mode is not available, then proceed sequentially.
+Report to user why agent bin mode is not available, then proceed sequentially.
 
 ### CPT — Sequential Mode Start
 
 At the start of sequential processing, update CPT via Bash (non-blocking):
 ```bash
-~/.claude/skills/rr/orchestrator/_update_cpt.sh started "Sequential mode: processing N risks" || true
+~/.claude/skills/rr/bin/_update_cpt.sh started "Sequential mode: processing N risks" || true
 ```
 Do NOT update CPT per-risk (avoids spam). Only update at completion.
 
@@ -276,7 +276,7 @@ For each pending risk in the progress file:
 
 After all risks are processed (or context limit reached), update CPT via Bash (non-blocking):
 ```bash
-~/.claude/skills/rr/orchestrator/_update_cpt.sh complete "Sequential mode: N/M risks processed" || true
+~/.claude/skills/rr/bin/_update_cpt.sh complete "Sequential mode: N/M risks processed" || true
 ```
 
 ## After

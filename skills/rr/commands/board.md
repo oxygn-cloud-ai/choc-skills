@@ -28,7 +28,7 @@ If 0: report error and stop:
 Run the aggregation script via Bash tool:
 
 ```bash
-python3 ~/.claude/skills/rr/orchestrator/rr-board-aggregate.py \
+python3 ~/.claude/skills/rr/bin/rr-board-aggregate.py \
   --work-dir "${RR_WORK_DIR:-$HOME/rr-work}" \
   --quarter "<Q1|Q2|Q3|Q4>" \
   --year "<YYYY>"
@@ -176,7 +176,7 @@ curl -s -X POST \
 
 After successful ticket creation, update CPT via Bash:
 ```bash
-~/.claude/skills/rr/orchestrator/_update_cpt.sh board_paper_published "Board Risk Oversight Paper: <Q> <YYYY> published as <TICKET-KEY>" || true
+~/.claude/skills/rr/bin/_update_cpt.sh board_paper_published "Board Risk Oversight Paper: <Q> <YYYY> published as <TICKET-KEY>" || true
 ```
 
 ## Phase 5: Report

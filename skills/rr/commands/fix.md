@@ -4,7 +4,7 @@ Context from user: $ARGUMENTS
 
 ## Identify Failures
 
-Check both parallel orchestrator and sequential mode for failed assessments.
+Check both parallel bin and sequential mode for failed assessments.
 
 ### Sub-agent Failures (Agent Orchestrator)
 
@@ -85,7 +85,7 @@ Stop here.
 If sub-agent failures exist:
 1. Ask user: "Re-run N failed batches via Agent dispatch? (y/n)"
 2. If yes:
-   a. Read the sub-agent prompt template from `~/.claude/skills/rr/orchestrator/sub-agent-prompt.md`
+   a. Read the sub-agent prompt template from `~/.claude/skills/rr/bin/sub-agent-prompt.md`
    b. For each failed batch:
       - Determine the batch_id from the error file or missing result
       - Verify the extract file exists: `${RR_WORK_DIR:-~/rr-work}/extracts/batch_<batch_id>.json`
@@ -99,7 +99,7 @@ If sub-agent failures exist:
       - Report success or persistent failure
    c. After all retries, run finalization for any newly completed assessments:
       ```bash
-      ~/.claude/skills/rr/orchestrator/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4 if applicable]
+      ~/.claude/skills/rr/bin/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4 if applicable]
       ```
 3. Report retry results
 

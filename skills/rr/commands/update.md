@@ -8,7 +8,7 @@ Context from user: $ARGUMENTS
 
 2. If found:
    - Run `git -C <repo-path> pull` to update the repo
-   - Always run `bash <repo-path>/install.sh --force` (the per-skill installer, which updates SKILL.md, orchestrator scripts, reference files, sub-commands, and router)
+   - Always run `bash <repo-path>/install.sh --force` (the per-skill installer, which updates SKILL.md, bin scripts, reference files, sub-commands, and router)
    - Report the installed version after install completes (read from the freshly installed `~/.claude/skills/rr/SKILL.md`)
 
 3. If `.source-repo` not found:

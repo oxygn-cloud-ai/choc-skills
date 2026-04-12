@@ -45,7 +45,7 @@ WORKFLOW (Single Risk)
 LOCATION
   ~/.claude/skills/rr/SKILL.md
   ~/.claude/commands/rr/*.md (sub-commands)
-  ~/.claude/skills/rr/orchestrator/ (batch scripts)
+  ~/.claude/skills/rr/bin/ (batch scripts)
   ~/.claude/skills/rr/references/ (schemas, workflow, context)
 ```
 

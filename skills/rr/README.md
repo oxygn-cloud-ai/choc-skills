@@ -120,7 +120,7 @@ Each completed review produces 7 JSON files in `$RR_OUTPUT_DIR` (default: `~/rr-
 ~/.claude/skills/rr/
   SKILL.md                           Main skill definition
   .source-repo                       Repo path (for /rr update)
-  orchestrator/
+  bin/
     rr-prepare.sh                    Phases 1-3: discovery, filter, extraction
     rr-finalize.sh                   Phases 5-7: collection, publication, completion
     sub-agent-prompt.md              Sub-agent prompt template for Agent dispatch

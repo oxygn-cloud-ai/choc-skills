@@ -22,6 +22,8 @@ Every skill must provide `help`, `doctor`, and `version` subcommands, either:
 
 All subcommands must be colon commands (`skill:subcommand`) with their own command file — no space-separated routing. Each subcommand gets its own file with proper frontmatter, `allowed-tools`, and description.
 
+Skills with standalone scripts (shell, Python) must place them in a `bin/` directory within the skill. The installer copies them to `~/.local/bin/` or `~/.claude/skills/<name>/bin/` and makes them executable. Do not use `orchestrator/` — `bin/` is the standard convention.
+
 Every skill must have its own `CHANGELOG.md` in its directory.
 
 ## Validation

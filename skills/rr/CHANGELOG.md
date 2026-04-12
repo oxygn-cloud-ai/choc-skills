@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.0] - 2026-04-12
+
+### Changed
+- Renamed `orchestrator/` directory to `bin/` for consistency with repo-wide convention. All install paths, health checks, and references updated. No functional changes to scripts.
+
 ## [5.1.0] - 2026-04-09
 
 ### Changed

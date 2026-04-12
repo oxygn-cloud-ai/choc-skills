@@ -4,7 +4,7 @@ set -euo pipefail
 # Per-skill installer for rr
 # Installs SKILL.md to ~/.claude/skills/rr/
 # Installs sub-command .md files to ~/.claude/commands/rr/
-# Installs orchestrator scripts to ~/.claude/skills/rr/orchestrator/
+# Installs bin scripts to ~/.claude/skills/rr/bin/
 # Installs reference files to ~/.claude/skills/rr/references/
 
 SKILL_NAME="rr"
@@ -28,7 +28,7 @@ SKILL_TARGET="${HOME}/.claude/skills/${SKILL_NAME}"
 COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
-ORCHESTRATOR_SOURCE="${SCRIPT_DIR}/orchestrator"
+ORCHESTRATOR_SOURCE="${SCRIPT_DIR}/bin"
 REFERENCES_SOURCE="${SCRIPT_DIR}/references"
 FORCE=false
 
@@ -45,7 +45,7 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
 ${BOLD}rr skill installer${RESET}
 
 ${BOLD}USAGE${RESET}
-  ./install.sh              Install rr (skill + sub-commands + orchestrator + references)
+  ./install.sh              Install rr (skill + sub-commands + bin + references)
   ./install.sh --force      Install/overwrite without prompting
   ./install.sh --check      Verify installation health
   ./install.sh --uninstall  Remove rr completely
@@ -55,7 +55,7 @@ ${BOLD}USAGE${RESET}
 ${BOLD}INSTALLS TO${RESET}
   ~/.claude/skills/rr/SKILL.md             Main skill file
   ~/.claude/skills/rr/.source-repo         Repo path marker (for /rr update)
-  ~/.claude/skills/rr/orchestrator/        Batch orchestrator scripts (9 files)
+  ~/.claude/skills/rr/bin/        Batch bin scripts (9 files)
   ~/.claude/skills/rr/references/          Schemas, workflow, context (16+ files)
   ~/.claude/commands/rr/*.md               Sub-command files (11 files)
   ~/.claude/commands/rr.md                 Router file
@@ -130,22 +130,22 @@ if [ "${1:-}" = "--check" ]; then
   fi
 
   # Orchestrator
-  if [ -d "${SKILL_TARGET}/orchestrator" ]; then
-    count=$(find "${SKILL_TARGET}/orchestrator" -type f | wc -l | tr -d ' ')
+  if [ -d "${SKILL_TARGET}/bin" ]; then
+    count=$(find "${SKILL_TARGET}/bin" -type f | wc -l | tr -d ' ')
     if [ "$count" -ge 9 ]; then
-      ok "Orchestrator: ${count} files in ${SKILL_TARGET}/orchestrator"
+      ok "Orchestrator: ${count} files in ${SKILL_TARGET}/bin"
     else
-      warn "Orchestrator: only ${count}/9 files in ${SKILL_TARGET}/orchestrator"
+      warn "Orchestrator: only ${count}/9 files in ${SKILL_TARGET}/bin"
       issues=$((issues + 1))
     fi
-    if [ -f "${SKILL_TARGET}/orchestrator/sub-agent-prompt.md" ]; then
+    if [ -f "${SKILL_TARGET}/bin/sub-agent-prompt.md" ]; then
       ok "Sub-agent prompt: present"
     else
       warn "Sub-agent prompt: missing"
       issues=$((issues + 1))
     fi
   else
-    err "Orchestrator directory not found: ${SKILL_TARGET}/orchestrator"
+    err "Orchestrator directory not found: ${SKILL_TARGET}/bin"
     issues=$((issues + 1))
   fi
 
@@ -209,7 +209,7 @@ fi
 # --- Install ---
 [ -f "$SKILL_SOURCE" ] || die "SKILL.md not found in ${SCRIPT_DIR}"
 [ -d "$COMMANDS_SOURCE" ] || die "commands/ directory not found in ${SCRIPT_DIR}"
-[ -d "$ORCHESTRATOR_SOURCE" ] || die "orchestrator/ directory not found in ${SCRIPT_DIR}"
+[ -d "$ORCHESTRATOR_SOURCE" ] || die "bin/ directory not found in ${SCRIPT_DIR}"
 [ -d "$REFERENCES_SOURCE" ] || die "references/ directory not found in ${SCRIPT_DIR}"
 
 # Check for existing install
@@ -226,7 +226,7 @@ fi
 
 # Check for jq
 if ! command -v jq >/dev/null 2>&1; then
-  warn "jq not found — batch mode orchestrator requires jq"
+  warn "jq not found — batch mode bin requires jq"
   warn "Install with: brew install jq"
 fi
 
@@ -282,21 +282,21 @@ for file in "${COMMANDS_SOURCE}"/*.md; do
 done
 ok "Sub-commands: ${count} files -> ${COMMANDS_TARGET}/"
 
-# 5. Install orchestrator scripts (clean first to remove stale files from previous versions)
-rm -rf "${SKILL_TARGET}/orchestrator"
-mkdir -p "${SKILL_TARGET}/orchestrator"
+# 5. Install bin scripts (clean first to remove stale files from previous versions)
+rm -rf "${SKILL_TARGET:?}/bin"
+mkdir -p "${SKILL_TARGET:?}/bin"
 orch_count=0
 for file in "${ORCHESTRATOR_SOURCE}"/*; do
   [ -f "$file" ] || continue
   name=$(basename "$file")
-  cp "$file" "${SKILL_TARGET}/orchestrator/${name}"
+  cp "$file" "${SKILL_TARGET}/bin/${name}"
   # Make .sh and .py files executable
   if [[ "$name" == *.sh || "$name" == *.py ]]; then
-    chmod +x "${SKILL_TARGET}/orchestrator/${name}"
+    chmod +x "${SKILL_TARGET}/bin/${name}"
   fi
   orch_count=$((orch_count + 1))
 done
-ok "Orchestrator: ${orch_count} files -> ${SKILL_TARGET}/orchestrator/"
+ok "Orchestrator: ${orch_count} files -> ${SKILL_TARGET}/bin/"
 
 # 6. Install reference files (recursive, preserving tree structure)
 ref_count=0
@@ -329,7 +329,7 @@ info "Files installed:"
 printf "  ${DIM}%-55s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
 printf "  ${DIM}%-55s${RESET} (router)\n" "${HOME}/.claude/commands/rr.md"
 printf "  ${DIM}%-55s${RESET} (${count} sub-commands)\n" "${COMMANDS_TARGET}/"
-printf "  ${DIM}%-55s${RESET} (${orch_count} orchestrator files)\n" "${SKILL_TARGET}/orchestrator/"
+printf "  ${DIM}%-55s${RESET} (${orch_count} bin files)\n" "${SKILL_TARGET}/bin/"
 printf "  ${DIM}%-55s${RESET} (${ref_count} reference files)\n" "${SKILL_TARGET}/references/"
 echo ""
 info "Usage: /rr help"

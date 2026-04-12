@@ -79,13 +79,13 @@ teardown() {
 # rr
 # ============================================================
 
-@test "rr install.sh --force installs SKILL.md + router + commands + orchestrator + references" {
+@test "rr install.sh --force installs SKILL.md + router + commands + bin + references" {
   run bash "$REPO_DIR/skills/rr/install.sh" --force
   [ "$status" -eq 0 ]
   [ -f "${HOME}/.claude/skills/rr/SKILL.md" ]
   [ -f "${HOME}/.claude/commands/rr.md" ]
   [ -d "${HOME}/.claude/commands/rr" ]
-  [ -d "${HOME}/.claude/skills/rr/orchestrator" ]
+  [ -d "${HOME}/.claude/skills/rr/bin" ]
   [ -d "${HOME}/.claude/skills/rr/references" ]
 }
 
