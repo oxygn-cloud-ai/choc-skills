@@ -185,9 +185,22 @@ project launch — $PROJECT_NAME
   | j | reviewer    | created | ●      | ✓      |
   | k | triager     | created | ●      | ✓      |
 
-  To attach: tmux attach -t $PROJECT_SLUG
-  To navigate: Prefix+P for project picker, or tmux select-window -t $PROJECT_SLUG:<role>
-  To pick remotely: project-picker.sh
+  Navigate: Prefix+P for project picker, or tmux select-window -t $PROJECT_SLUG:<role>
+  Pick remotely: project-picker.sh
+```
+
+### Auto-attach
+
+After displaying the report, attach to the tmux session automatically. Handle the case where the user is already inside tmux:
+
+```bash
+if [ -n "$TMUX" ]; then
+  # Already inside tmux — switch client to the new session
+  tmux switch-client -t "$PROJECT_SLUG"
+else
+  # Outside tmux — attach
+  tmux attach-session -t "$PROJECT_SLUG"
+fi
 ```
 
 ## `--all` mode
