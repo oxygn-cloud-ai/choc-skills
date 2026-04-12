@@ -2,6 +2,21 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.3.0] - 2026-04-12
+
+### Changed
+- **Jira is sole issue tracker** — removed all GitHub Issues and label management from new, audit, config, and status subcommands
+- `/project:new` now disables GitHub Issues and deletes default labels instead of creating them
+- `/project:audit` checks that GitHub Issues are disabled and no labels exist (replaces 6 label/notify checks)
+- `/project:config` replaces "Add/remove labels" with "Disable GitHub Issues"
+- CI failure monitoring moved to Master session (local machine via BWS) — no notify-failure/recovery jobs in CI
+- Removed "Enable/disable CI workflow" from config options
+
+### Removed
+- GitHub label creation/management from all subcommands
+- notify-failure/notify-recovery CI job scaffolding from `/project:new`
+- Label and issue priority checks from `/project:audit`
+
 ## [1.2.0] - 2026-04-12
 
 ### Added
