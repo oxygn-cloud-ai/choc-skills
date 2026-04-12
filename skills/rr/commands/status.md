@@ -4,7 +4,7 @@ Context from user: $ARGUMENTS
 
 ## Check Both Progress Sources
 
-Check for progress from both parallel bin mode and sequential mode. Report whichever is found (or both if both exist).
+Check for progress from both parallel batch mode and sequential mode. Report whichever is found (or both if both exist).
 
 ### Parallel Orchestrator Progress
 
@@ -40,7 +40,7 @@ If yes:
 
 ## Output
 
-Present a structured summary. If parallel bin progress is found:
+Present a structured summary. If parallel batch progress is found:
 
 ```
 rr status — Batch Progress (Parallel Orchestrator)

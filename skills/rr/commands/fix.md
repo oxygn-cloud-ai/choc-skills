@@ -4,7 +4,7 @@ Context from user: $ARGUMENTS
 
 ## Identify Failures
 
-Check both parallel bin and sequential mode for failed assessments.
+Check both parallel batch and sequential mode for failed assessments.
 
 ### Sub-agent Failures (Agent Orchestrator)
 

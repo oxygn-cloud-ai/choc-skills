@@ -28,7 +28,7 @@ SKILL_TARGET="${HOME}/.claude/skills/${SKILL_NAME}"
 COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
-ORCHESTRATOR_SOURCE="${SCRIPT_DIR}/bin"
+BIN_SOURCE="${SCRIPT_DIR}/bin"
 REFERENCES_SOURCE="${SCRIPT_DIR}/references"
 FORCE=false
 
@@ -129,13 +129,13 @@ if [ "${1:-}" = "--check" ]; then
     issues=$((issues + 1))
   fi
 
-  # Orchestrator
+  # Bin scripts
   if [ -d "${SKILL_TARGET}/bin" ]; then
     count=$(find "${SKILL_TARGET}/bin" -type f | wc -l | tr -d ' ')
     if [ "$count" -ge 9 ]; then
-      ok "Orchestrator: ${count} files in ${SKILL_TARGET}/bin"
+      ok "Bin scripts: ${count} files in ${SKILL_TARGET}/bin"
     else
-      warn "Orchestrator: only ${count}/9 files in ${SKILL_TARGET}/bin"
+      warn "Bin scripts: only ${count}/9 files in ${SKILL_TARGET}/bin"
       issues=$((issues + 1))
     fi
     if [ -f "${SKILL_TARGET}/bin/sub-agent-prompt.md" ]; then
@@ -145,7 +145,7 @@ if [ "${1:-}" = "--check" ]; then
       issues=$((issues + 1))
     fi
   else
-    err "Orchestrator directory not found: ${SKILL_TARGET}/bin"
+    err "Bin directory not found: ${SKILL_TARGET}/bin"
     issues=$((issues + 1))
   fi
 
@@ -209,7 +209,7 @@ fi
 # --- Install ---
 [ -f "$SKILL_SOURCE" ] || die "SKILL.md not found in ${SCRIPT_DIR}"
 [ -d "$COMMANDS_SOURCE" ] || die "commands/ directory not found in ${SCRIPT_DIR}"
-[ -d "$ORCHESTRATOR_SOURCE" ] || die "bin/ directory not found in ${SCRIPT_DIR}"
+[ -d "$BIN_SOURCE" ] || die "bin/ directory not found in ${SCRIPT_DIR}"
 [ -d "$REFERENCES_SOURCE" ] || die "references/ directory not found in ${SCRIPT_DIR}"
 
 # Check for existing install
@@ -226,7 +226,7 @@ fi
 
 # Check for jq
 if ! command -v jq >/dev/null 2>&1; then
-  warn "jq not found — batch mode bin requires jq"
+  warn "jq not found — batch mode requires jq"
   warn "Install with: brew install jq"
 fi
 
@@ -285,8 +285,8 @@ ok "Sub-commands: ${count} files -> ${COMMANDS_TARGET}/"
 # 5. Install bin scripts (clean first to remove stale files from previous versions)
 rm -rf "${SKILL_TARGET:?}/bin"
 mkdir -p "${SKILL_TARGET:?}/bin"
-orch_count=0
-for file in "${ORCHESTRATOR_SOURCE}"/*; do
+bin_count=0
+for file in "${BIN_SOURCE}"/*; do
   [ -f "$file" ] || continue
   name=$(basename "$file")
   cp "$file" "${SKILL_TARGET}/bin/${name}"
@@ -294,9 +294,9 @@ for file in "${ORCHESTRATOR_SOURCE}"/*; do
   if [[ "$name" == *.sh || "$name" == *.py ]]; then
     chmod +x "${SKILL_TARGET}/bin/${name}"
   fi
-  orch_count=$((orch_count + 1))
+  bin_count=$((bin_count + 1))
 done
-ok "Orchestrator: ${orch_count} files -> ${SKILL_TARGET}/bin/"
+ok "Bin scripts: ${bin_count} files -> ${SKILL_TARGET}/bin/"
 
 # 6. Install reference files (recursive, preserving tree structure)
 ref_count=0
@@ -329,7 +329,7 @@ info "Files installed:"
 printf "  ${DIM}%-55s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
 printf "  ${DIM}%-55s${RESET} (router)\n" "${HOME}/.claude/commands/rr.md"
 printf "  ${DIM}%-55s${RESET} (${count} sub-commands)\n" "${COMMANDS_TARGET}/"
-printf "  ${DIM}%-55s${RESET} (${orch_count} bin files)\n" "${SKILL_TARGET}/bin/"
+printf "  ${DIM}%-55s${RESET} (${bin_count} bin files)\n" "${SKILL_TARGET}/bin/"
 printf "  ${DIM}%-55s${RESET} (${ref_count} reference files)\n" "${SKILL_TARGET}/references/"
 echo ""
 info "Usage: /rr help"

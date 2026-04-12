@@ -14,7 +14,7 @@ Parse any flags or filters from $ARGUMENTS (everything after the `all` keyword):
 
 ## Mode Selection
 
-Check if the agent bin is available by running these checks via Bash:
+Check if the batch scripts are available by running these checks via Bash:
 
 ```bash
 test -x ~/.claude/skills/rr/bin/rr-prepare.sh && echo "bin_available"
@@ -176,7 +176,7 @@ Re-run fails: /rr fix
 
 ## Sequential Mode (Fallback)
 
-Report to user why agent bin mode is not available, then proceed sequentially.
+Report to user why batch script mode is not available, then proceed sequentially.
 
 ### CPT — Sequential Mode Start
 
