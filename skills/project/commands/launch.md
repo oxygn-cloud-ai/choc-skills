@@ -22,12 +22,21 @@ Verify dependencies exist:
 - `command -v tmux` — if missing: **STOP** with error: "tmux is required. Install with: brew install tmux"
 - `command -v claude` — if missing: **STOP** with error: "Claude Code CLI is required."
 
-## Step 1: Detect project
+## Step 1: Detect project and verify Jira epic
 
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 ```
 If not in a git repo: "Not in a git repository. Navigate to a project and try again."
+
+**Jira epic guard:** Before proceeding, verify the project has a Jira epic configured. Check both `CLAUDE.md` and `GITHUB_CONFIG.md` for a `CPT-<number>` reference:
+```bash
+EPIC_KEY=$(grep -oE 'CPT-[0-9]+' "$REPO_ROOT/CLAUDE.md" "$REPO_ROOT/GITHUB_CONFIG.md" 2>/dev/null | head -1 | sed 's/.*://')
+```
+If `$EPIC_KEY` is empty, **STOP** with error:
+> "No Jira epic key found in CLAUDE.md or GITHUB_CONFIG.md. Sessions cannot launch without a Jira epic — every session's Jira queries must be scoped to an epic to prevent cross-project leakage. Run `/project:config` → 'Set Jira epic key' to configure one."
+
+Do NOT offer to continue without an epic. Do NOT launch any sessions.
 
 Parse `$ARGUMENTS` for flags:
 - `--all` → scan `${TMUX_REPOS_DIR:-~/Repos}` for all projects with `.worktrees/`
@@ -236,8 +245,15 @@ Note: Auto-attach is not performed because `/project:launch` runs inside Claude 
 ## `--all` mode
 
 For each project found in `$REPOS_DIR` with `.worktrees/`:
-1. Run Steps 2-8 for each project (each project gets its own iTerm2 window)
-2. Present a combined summary at the end:
+1. **Run the Jira epic guard** for each project (same check as Step 1):
+   ```bash
+   EPIC_KEY=$(grep -oE 'CPT-[0-9]+' "$PROJECT_DIR/CLAUDE.md" "$PROJECT_DIR/GITHUB_CONFIG.md" 2>/dev/null | head -1 | sed 's/.*://')
+   ```
+   If no epic key is found: **skip this project** with warning:
+   > "Skipping <project-name>: no Jira epic key configured. Run `/project:config` in that repo to set one."
+   Do NOT launch any sessions for projects without an epic.
+2. Run Steps 2-8 for each project that passes the epic guard (each project gets its own iTerm2 window)
+3. Present a combined summary at the end (include skipped projects with reason):
 
 ```
 project launch --all — $N projects launched

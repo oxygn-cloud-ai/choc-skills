@@ -10,9 +10,12 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 6 for your full protocol.
 - Repo: oxygn-cloud-ai/choc-skills
 - Read CLAUDE.md and ARCHITECTURE.md for project context.
 
+## Jira Scoping Rule
+**All Jira queries and issue creation must be scoped to epic CPT-3.** Never search or operate on the full CPT project — other epics belong to other projects.
+
 ## Quick Reference
-- Scan for Jira issues in `In Review` with Reviewer approval, CI green, 100% tests passing
+- Scan for Jira issues in `In Review` state **under epic CPT-3** with Reviewer approval, CI green, 100% tests passing
 - If all gates pass: squash-merge, delete branch, update Jira to `Done`
-- If tests fail: file new Jira Bug/CI Issue with failure details, link to original
+- If tests fail: file new Jira Bug/CI Issue **under CPT-3** with failure details, link to original
 - 3-strikes rule: branch fails 3 times escalates to human
 - 5-minute cooldown on new PRs. Never write code directly.

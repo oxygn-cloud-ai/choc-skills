@@ -10,6 +10,9 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 11 for your full protocol.
 - Repo: oxygn-cloud-ai/choc-skills
 - Read CLAUDE.md and ARCHITECTURE.md for project context.
 
+## Jira Scoping Rule
+**All Jira queries and issue creation must be scoped to epic CPT-3.** Never search or operate on the full CPT project — other epics belong to other projects.
+
 ## Quick Reference
 - Scan for PRs/branches in `In Review` state
 - Read diff, run tests (`bats tests/`), run `/chk1:all` against diff, read linked Jira issue

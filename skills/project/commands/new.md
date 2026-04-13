@@ -132,12 +132,19 @@ for label in "good first issue" "help wanted" "invalid" "wontfix" "question" "du
 done
 ```
 
-## Step 7: Jira epic
+## Step 7: Jira epic (MANDATORY)
+
+**A Jira epic is required. The project cannot proceed without one.**
 
 Ask the user:
 > "Does a Jira epic already exist in CPT for this project? If yes, provide the key (e.g., CPT-42). If no, create one in Jira and provide the key."
 
-Once the user provides the key:
+If the user says they don't have one, haven't created one, or wants to skip this step: **STOP** with error:
+> "A Jira epic key is required before project setup can continue. Every session must be scoped to an epic to prevent cross-project leakage in the shared CPT Jira project. Create an epic in CPT and re-run `/project:new`."
+
+Do NOT proceed with a placeholder or empty epic. Do NOT offer to continue without one.
+
+Once the user provides the key (must match pattern `CPT-<number>`):
 - Update CLAUDE.md with the Jira epic key
 - Update GITHUB_CONFIG.md with the Jira epic key
 
@@ -228,11 +235,15 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
 - Repo: <owner>/<name>
 - Read CLAUDE.md and ARCHITECTURE.md for project context.
 
+## Jira Scoping Rule
+**All Jira queries and issue creation must be scoped to epic <epic-key>.** Never search or operate on the full CPT project — other epics belong to other projects.
+
 ## Quick Reference
 - <3-5 bullet points summarizing the key protocol steps for this role>
+- Every bullet that references a Jira search, filing, or dedup operation must explicitly name the epic (<epic-key>)
 ```
 
-Each prompt must include all four sections: role identity, protocol reference with correct section number, project block, and quick reference.
+Each prompt must include all five sections: role identity, protocol reference with correct section number, project block, Jira scoping rule, and quick reference. Every Quick Reference bullet that touches Jira must explicitly reference the project's epic key — never use unscoped "search Jira" or "file to Jira".
 
 ## Step 11: CI workflow (Software only)
 
@@ -297,7 +308,7 @@ Project <name> created successfully.
 - [ ] GitHub default labels deleted
 - [ ] Jira epic key documented in CLAUDE.md and GITHUB_CONFIG.md
 - [ ] All session worktrees created with correct branch names
-- [ ] Session startup prompts created in .claude/sessions/
+- [ ] Session startup prompts created in .claude/sessions/ with Jira scoping rule referencing the project's epic
 - [ ] CI workflow present (Software only)
 - [ ] Branch protection set (Software only)
 - [ ] Project memory initialized

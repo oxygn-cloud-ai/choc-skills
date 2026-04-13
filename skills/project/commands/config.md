@@ -57,6 +57,10 @@ Options:
 4. Update GITHUB_CONFIG.md
 
 ### Add worktree session
+
+**Pre-check:** Read the project's CLAUDE.md or GITHUB_CONFIG.md to find the Jira epic key. If no epic key is configured, **STOP** with error:
+> "No Jira epic key found. Run `/project:config` → 'Set Jira epic key' first. Sessions cannot be created without an epic — they would have no Jira scope."
+
 1. Ask: "Role name?" (slug, e.g., `designer`)
 2. Ask: "One-line purpose?"
 3. Create worktree:
@@ -64,7 +68,7 @@ Options:
    git worktree add ".worktrees/<role>" -b "session/<role>" main
    git push -u origin "session/<role>"
    ```
-4. Create session prompt at `.claude/sessions/<role>.md`
+4. Create session prompt at `.claude/sessions/<role>.md` — must include the `## Jira Scoping Rule` section referencing the project's epic key, and all Quick Reference bullets that touch Jira must explicitly name the epic
 5. Update GITHUB_CONFIG.md with the new role
 
 ### Remove worktree session
@@ -124,8 +128,18 @@ done
 - Update GITHUB_CONFIG.md
 
 ### Set Jira epic key
-- Ask for the key (e.g., CPT-42)
+- Ask for the key (must match pattern `CPT-<number>`, e.g., CPT-42)
 - Update CLAUDE.md and GITHUB_CONFIG.md
+- **Regenerate all session startup prompts** in `.claude/sessions/` to reference the new epic key:
+  1. For each `.claude/sessions/<role>.md`, update the `Jira epic:` line in the Project block
+  2. Update the `## Jira Scoping Rule` section to reference the new epic key
+  3. Update every Quick Reference bullet that mentions the old epic key
+  4. If any session prompt is missing the `## Jira Scoping Rule` section, add it:
+     ```
+     ## Jira Scoping Rule
+     **All Jira queries and issue creation must be scoped to epic <new-epic-key>.** Never search or operate on the full CPT project — other epics belong to other projects.
+     ```
+- Verify all session prompts were updated by grepping for the old epic key — if any remain, fix them
 
 ### Update deviations
 - Ask: "What deviation are you documenting?"
