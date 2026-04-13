@@ -173,11 +173,12 @@ if [[ -n "$TARGET_PROJECT" ]]; then
 
   first_bg_line="$(bg_applescript_line "$first_session")"
 
-  # Suppress autostart: the .zshrc hooks check for these locks.
-  # Create them now so new tabs opened by this script don't re-trigger
-  # tmux-iterm-tabs.sh in autostart mode.
-  mkdir -p "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
-  touch "/tmp/tmux-iterm-tabs-$(date +%Y%m%d).lock" 2>/dev/null || true
+  # Suppress autostart: write sentinel so autostart mode exits early.
+  # Also claim the directory lock with fresh mtime so .zshrc hooks
+  # opened by the new tabs see a valid lock.
+  echo "$TARGET_PROJECT" > "/tmp/.iterm2-tmux-session-active"
+  rm -rf "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
+  mkdir "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
 
   cat > "$TMPSCRIPT" << HEADER
 tell application "iTerm2"
@@ -235,12 +236,25 @@ FOOTER
     exit 1
   fi
 
+  # Refresh locks after AppleScript completes to extend the suppression window
+  touch "/tmp/.iterm2-tmux-session-active" 2>/dev/null || true
+  touch "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
+
   exit 0
 fi
 
 # ===========================================================================
 # MODE: autostart (all unattached sessions)
 # ===========================================================================
+
+# Skip if --session mode recently ran (prevents tab explosion from new shells)
+SESSION_LOCK="/tmp/.iterm2-tmux-session-active"
+if [[ -f "$SESSION_LOCK" ]]; then
+  lock_age=$(( $(date +%s) - $(/usr/bin/stat -f%m "$SESSION_LOCK") ))
+  if (( lock_age < 60 )); then
+    exit 0
+  fi
+fi
 
 # Wait for external volume if needed (up to 10s)
 for _ in {1..10}; do
