@@ -98,8 +98,16 @@ gh label list --json name --jq '.[].name' 2>/dev/null | sort
 # Fallback: check GitHub issues
 gh issue list --state open --json number,labels --jq '[.[] | {label: (.labels[0].name // "unlabeled")}] | group_by(.label) | map({key: .[0].label, count: length}) | .[]' 2>/dev/null
 
-# Tests
-python3 -m pytest --co -q 2>/dev/null | tail -1 || npm test --dry-run 2>/dev/null || echo "n/a"
+# Tests (detect test framework without running tests)
+if [ -f "pyproject.toml" ] || [ -d "tests" ]; then
+  python3 -m pytest --co -q 2>/dev/null | tail -1 || echo "pytest (not runnable)"
+elif [ -f "package.json" ]; then
+  node -e "const p=require('./package.json'); console.log(p.scripts?.test ? 'npm test configured' : 'no test script')" 2>/dev/null || echo "node project (no test info)"
+elif [ -f "Cargo.toml" ]; then
+  echo "cargo test (Rust)"
+else
+  echo "n/a"
+fi
 ```
 
 ## Step 4: Display status

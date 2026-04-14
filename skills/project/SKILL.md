@@ -82,7 +82,7 @@ If `$ARGUMENTS` equals `doctor`, `--doctor`, or `check`, run skill-install healt
 3. **Router present**: `test -f ~/.claude/commands/project.md`.
 4. **Subcommand files present**: `ls ~/.claude/commands/project/*.md` — expect 6 files: `new.md`, `status.md`, `launch.md`, `audit.md`, `config.md`, `update.md`. No stale `doctor.md` or `help.md` (those were removed in the v1.0.0 migration).
 5. **Global architecture doc**: `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — the skill is useless without it (FAIL if missing).
-6. **Global GitHub config**: `test -f ~/.claude/PROJECT_STANDARDS.md` — FAIL if missing.
+6. **Global project standards**: `test -f ~/.claude/PROJECT_STANDARDS.md` — FAIL if missing.
 7. **git installed**: `command -v git` — FAIL if missing.
 8. **gh installed**: `command -v gh` — FAIL if missing (required for repo creation, labels, branch protection).
 9. **gh authenticated**: `gh auth status 2>&1 | grep -q "Logged in"` — WARN if not (some subcommands work without auth, but `/project:new` does not).
@@ -91,7 +91,7 @@ Format:
 ```
 project doctor — Skill Installation Health Check
 
-  [PASS] Skill installed at ~/.claude/skills/project/SKILL.md (v1.0.0)
+  [PASS] Skill installed at ~/.claude/skills/project/SKILL.md (v1.3.0)
   [PASS] Source repo: /Volumes/.../choc-skills/skills/project (reachable)
   [PASS] Router: ~/.claude/commands/project.md
   [PASS] Subcommands: 6 files (new, status, launch, audit, config, update)
@@ -125,7 +125,7 @@ Before executing any main-skill logic, silently verify:
 1. **Global architecture doc present**: `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md`. If missing:
    > **project error**: `~/.claude/MULTI_SESSION_ARCHITECTURE.md` not found. This skill is authoritative on the multi-session workflow and cannot operate without it. Restore the file or run `/project doctor` for diagnostics.
 
-2. **Global GitHub config present**: `test -f ~/.claude/PROJECT_STANDARDS.md`. If missing:
+2. **Global project standards present**: `test -f ~/.claude/PROJECT_STANDARDS.md`. If missing:
    > **project error**: `~/.claude/PROJECT_STANDARDS.md` not found. See `/project doctor` for diagnostics.
 
 ---

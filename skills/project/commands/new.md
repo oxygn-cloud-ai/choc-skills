@@ -107,7 +107,9 @@ Create these files at the repo root:
 
 **CLAUDE.md** — project name, type, description, Jira epic (placeholder until step 7), key files, development commands (language-specific).
 
-**PROJECT_CONFIG.json** — structured project configuration (schemaVersion, project, jira, github, sessions, coverage, deviations). Copy PROJECT_CONFIG.schema.json from choc-skills repo for validation.
+**PROJECT_CONFIG.json** — structured project configuration (schemaVersion, project, jira, github, sessions, coverage, deviations). Generate from the schema template.
+
+**PROJECT_CONFIG.schema.json** — copy from `~/.claude/skills/project/PROJECT_CONFIG.schema.json` (installed with the skill). This enables `scripts/validate-config.sh` for the new project.
 
 **Language-specific scaffolding** (Software only):
 - Python: `pyproject.toml` (with version 0.1.0), `src/<name>/__init__.py`, `tests/conftest.py`, `.gitignore`

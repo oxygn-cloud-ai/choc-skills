@@ -114,7 +114,7 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
   fi
 
   if [ -f "${HOME}/.claude/PROJECT_STANDARDS.md" ]; then
-    ok "Global GitHub config present"
+    ok "Global project standards present"
   else
     err "${HOME}/.claude/PROJECT_STANDARDS.md missing (required at runtime)"; issues=$((issues + 1))
   fi
@@ -221,7 +221,17 @@ else
   warn "No bin/ directory found — picker script not installed"
 fi
 
-# 5. Record source repo path (for /project update)
+# 5. Install PROJECT_CONFIG.schema.json (for /project:new)
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SCHEMA_SOURCE="${REPO_ROOT}/PROJECT_CONFIG.schema.json"
+if [ -f "$SCHEMA_SOURCE" ]; then
+  cp "$SCHEMA_SOURCE" "${SKILL_TARGET}/PROJECT_CONFIG.schema.json"
+  ok "Schema -> ${SKILL_TARGET}/PROJECT_CONFIG.schema.json"
+else
+  warn "PROJECT_CONFIG.schema.json not found at repo root — /project:new won't be able to copy it to new projects"
+fi
+
+# 6. Record source repo path (for /project update)
 echo "$SCRIPT_DIR" > "${SKILL_TARGET}/.source-repo"
 ok "Source repo marker -> ${SKILL_TARGET}/.source-repo"
 

@@ -40,8 +40,10 @@ In Claude Code:
 /project                  Show status for current project (same as /project status)
 /project status           Show project config, worktrees, Jira, CI, docs
 /project new              Create a new project with full multi-session setup
+/project launch           Launch tmux sessions with Claude in each worktree
 /project audit            Audit against global standards, report gaps
 /project config           Change project config: worktrees, labels, Jira, CI
+/project update           Update to latest version from source repo
 /project help             Display full usage guide
 /project doctor           Check skill installation health
 /project version          Show installed version
@@ -55,6 +57,8 @@ The `project` skill administers project repositories that follow the Oxygn multi
 - **`status`** — Reports the current project's config, worktrees, CI state, label set, Jira epic key, open issues by priority, and docs completeness.
 - **`audit`** — Runs the compliance audit against global standards. Reports per-check verdicts (`PASS`/`FAIL`/`WARN`/`SKIP`) for 15 checks across docs, worktrees, CI, labels, branch protection, and coverage.
 - **`config`** — Interactively modifies project configuration: toggle project type, add/remove worktrees, manage labels, enable/disable CI or branch protection, set Jira epic key, document deviations.
+- **`launch`** — Creates tmux session per project with named windows per worktree role, launches Claude Code in each with configurable options (prompt pipe, model override, max-turns, skip idle).
+- **`update`** — Pulls latest from source repo and re-installs the skill.
 
 ## Subcommand reference
 
@@ -64,6 +68,8 @@ The `project` skill administers project repositories that follow the Oxygn multi
 | `status` | Show project status | `commands/status.md` |
 | `audit` | Compliance audit | `commands/audit.md` |
 | `config` | Modify configuration | `commands/config.md` |
+| `launch` | Launch tmux sessions | `commands/launch.md` |
+| `update` | Update from source | `commands/update.md` |
 | `help` | Usage guide | inline in `SKILL.md` |
 | `doctor` | Skill health check | inline in `SKILL.md` |
 | `version` | Version string | inline in `SKILL.md` |
@@ -113,7 +119,7 @@ rm -f  ~/.claude/commands/project.md
 
 ## Version
 
-Current: **1.0.0**
+Current: **1.3.0**
 
 ## License
 
