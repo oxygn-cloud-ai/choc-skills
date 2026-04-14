@@ -78,6 +78,7 @@ if [ "${1:-}" = "--uninstall" ]; then
   [ -d "$COMMANDS_TARGET" ] && rm -rf "$COMMANDS_TARGET" && ok "Removed ${COMMANDS_TARGET}" || warn "Commands not installed"
   [ -f "${HOME}/.claude/commands/project.md" ] && rm -f "${HOME}/.claude/commands/project.md" && ok "Removed router" || true
   [ -f "${HOME}/.local/bin/project-picker.sh" ] && rm -f "${HOME}/.local/bin/project-picker.sh" && ok "Removed picker script" || true
+  [ -f "${HOME}/.local/bin/project-launch-session.sh" ] && rm -f "${HOME}/.local/bin/project-launch-session.sh" && ok "Removed launch-session script" || true
   ok "project uninstalled"
   exit 0
 fi
@@ -143,6 +144,12 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     warn "Picker script: not installed (run install.sh --force to install)"
   fi
 
+  if [ -f "${HOME}/.local/bin/project-launch-session.sh" ]; then
+    ok "Launch-session script: ${HOME}/.local/bin/project-launch-session.sh"
+  else
+    err "Launch-session script: not installed (run install.sh --force) — /project:launch will fail without it"; issues=$((issues + 1))
+  fi
+
   echo ""
   if [ "$issues" -eq 0 ]; then
     printf "  ${GREEN}All checks passed${RESET}\n\n"
@@ -206,19 +213,21 @@ else
   warn "No commands/ directory found — sub-commands not installed"
 fi
 
-# 4. Install picker script (if bin/ directory exists)
+# 4. Install bin/ scripts (picker + launch-session helper)
 BIN_SOURCE="${SCRIPT_DIR}/bin"
-PICKER_TARGET="${HOME}/.local/bin"
+BIN_TARGET="${HOME}/.local/bin"
 if [ -d "$BIN_SOURCE" ]; then
-  mkdir -p "$PICKER_TARGET"
+  mkdir -p "$BIN_TARGET"
+  bin_count=0
   for file in "${BIN_SOURCE}"/*.sh; do
     [ -f "$file" ] || continue
-    cp "$file" "${PICKER_TARGET}/$(basename "$file")"
-    chmod +x "${PICKER_TARGET}/$(basename "$file")"
+    cp "$file" "${BIN_TARGET}/$(basename "$file")"
+    chmod +x "${BIN_TARGET}/$(basename "$file")"
+    bin_count=$((bin_count + 1))
   done
-  ok "Picker script -> ${PICKER_TARGET}/project-picker.sh"
+  ok "bin/ scripts: ${bin_count} file(s) -> ${BIN_TARGET}/"
 else
-  warn "No bin/ directory found — picker script not installed"
+  warn "No bin/ directory found — project-picker.sh and project-launch-session.sh not installed"
 fi
 
 # 5. Install PROJECT_CONFIG.schema.json (for /project:new)
@@ -244,6 +253,7 @@ info "Files installed:"
 printf "  ${DIM}%-50s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
 printf "  ${DIM}%-50s${RESET} (router)\n" "${HOME}/.claude/commands/project.md"
 [ -d "$COMMANDS_TARGET" ] && printf "  ${DIM}%-50s${RESET} (sub-commands)\n" "${COMMANDS_TARGET}/"
-[ -f "${PICKER_TARGET}/project-picker.sh" ] && printf "  ${DIM}%-50s${RESET} (session picker)\n" "${PICKER_TARGET}/project-picker.sh"
+[ -f "${BIN_TARGET}/project-picker.sh" ] && printf "  ${DIM}%-50s${RESET} (session picker)\n" "${BIN_TARGET}/project-picker.sh"
+[ -f "${BIN_TARGET}/project-launch-session.sh" ] && printf "  ${DIM}%-50s${RESET} (launch helper)\n" "${BIN_TARGET}/project-launch-session.sh"
 echo ""
 info "Usage: /project or /project help"

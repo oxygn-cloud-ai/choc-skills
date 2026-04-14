@@ -2,6 +2,71 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.0.3] - 2026-04-14
+
+### Fixed (CPT-41 third-pass review — 11 additional findings from Codex + self adversarial audit of v2.0.2)
+
+- **HIGH**: Extracted all per-role launch logic from `commands/launch.md`
+  (prompt pseudocode) into `skills/project/bin/project-launch-session.sh`
+  (real bash script installed to `~/.local/bin/`). Prior pseudocode assumed
+  "helpers defined once persist across Bash calls" — false for Claude Code's
+  tool model, where each Bash invocation is a fresh subshell. Now /project:launch
+  invokes the script per role, which keeps all helpers in one process.
+- **HIGH**: Replaced tab-delimited `jq` env-var serialization with `jq @sh`.
+  Tab-delimited `key<TAB>value` + `IFS=$'\t' read` silently corrupted values
+  containing tabs (truncation) or newlines (value split across multiple
+  iterations). `@sh` produces POSIX-compatible single-quoted strings; lossless
+  for any value.
+- **HIGH**: `/loop` dispatch is now SINGLE-LINE. Previous approach pasted
+  `/loop <N>m <multi-line prompt text>` as a bracketed-paste block, but
+  `/loop`'s parser behavior on multi-line pasted args is undocumented (and a
+  prompt line starting with `/` could flip into slash-command mode). New form:
+  `/loop <N>m Read the file loops/loop.md in this worktree and execute the
+  recurring task described there.` — deterministic, and the session re-reads
+  the file on every tick (edits take effect immediately).
+- **HIGH**: `/project:launch` now resolves REPO_ROOT via
+  `git rev-parse --git-common-dir` + parent — works correctly whether invoked
+  from the main repo OR from inside a `.worktrees/<role>/` subdirectory.
+  Previous `git rev-parse --show-toplevel` returned the worktree path in a
+  worktree, so `.worktrees/` was never found.
+- **HIGH**: Identity-prompt processing timeout now SKIPS loop dispatch
+  (exit 4) instead of firing `/loop` into a busy Claude. Previous `|| echo`
+  just warned and fell through to /loop, which is the failure mode we were
+  trying to prevent.
+- **MEDIUM**: Launch script requires bash explicitly (declared in pre-checks).
+  `printf %q` + `$'...'` quoting was claimed portable; actually bash/zsh-only.
+  Now the generated setup script has `#!/usr/bin/env bash` shebang and is
+  executed under bash regardless of the pane's login shell.
+- **MEDIUM**: `scripts/validate-config.sh` is now worktree-aware. It was
+  comparing `project.name` ("choc-skills") against `basename $CONFIG_DIR`
+  ("master" when run from a worktree), producing spurious WARN noise. Now
+  resolves the main repo name via `git rev-parse --git-common-dir`.
+- **MEDIUM**: Config lookup fallback. `/project:launch` now checks both
+  `$REPO_ROOT/PROJECT_CONFIG.json` and
+  `$REPO_ROOT/.worktrees/master/PROJECT_CONFIG.json`, so launch works even
+  before the config is merged to `main`.
+- **LOW**: `USER_GUIDE.md` Launch section and example both said
+  `cat .claude/sessions/<role>.md | claude [flags]` — which is the exact
+  stdin-pipe approach v2.0.2 was supposed to eliminate. Updated both to
+  describe the bracketed-paste flow.
+- **LOW**: `skills/project/install.sh` health check now verifies
+  `~/.local/bin/project-launch-session.sh` is installed; missing it is an
+  ERROR (not WARN) because `/project:launch` cannot function without it.
+- **LOW**: New `tests/project-launch-session.bats` — 19 smoke tests covering
+  arg parsing, pre-flight validation, sanitized env var name, safe quoting of
+  values containing single quotes, rejection of invalid identifiers,
+  override precedence, idle-skip, and config-fallback. Total BATS: 74.
+
+### Added
+
+- `skills/project/bin/project-launch-session.sh` — per-role launcher (~250
+  lines of real, shellcheck-clean bash). Supports `--dry-run` and `--help`.
+  Installed to `~/.local/bin/` by `skills/project/install.sh`.
+
+### Credits
+Second adversarial audit by Codex CLI 0.118.0 + self-review against commit
+fca9a9d. All 11 findings resolved. 74/74 BATS tests pass.
+
 ## [2.0.2] - 2026-04-14
 
 ### Fixed (CPT-41 logic-review follow-up — dual audit by self + Codex)

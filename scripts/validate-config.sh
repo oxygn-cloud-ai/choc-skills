@@ -129,13 +129,24 @@ else
   err "schemaVersion must be 1, got: $SV"
 fi
 
-# Check project.name matches directory name
+# Check project.name matches directory name. In a git worktree the directory
+# basename is the ROLE (e.g., "master"), not the project. Resolve to the main
+# repo name via `git rev-parse --git-common-dir` so the check stays meaningful.
 PROJ_NAME=$(jq -r '.project.name' "$CONFIG_FILE")
 DIR_NAME=$(basename "$CONFIG_DIR")
+if command -v git &>/dev/null && git -C "$CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+  # Get the main repo root (works in both worktrees and the main repo)
+  COMMON_DIR=$(git -C "$CONFIG_DIR" rev-parse --git-common-dir 2>/dev/null)
+  if [[ -n "$COMMON_DIR" && -d "$COMMON_DIR" ]]; then
+    # COMMON_DIR is usually .git — its parent is the main repo
+    MAIN_REPO=$(cd "$COMMON_DIR/.." && pwd 2>/dev/null)
+    [[ -n "$MAIN_REPO" ]] && DIR_NAME=$(basename "$MAIN_REPO")
+  fi
+fi
 if [[ "$PROJ_NAME" == "$DIR_NAME" ]]; then
-  pass "project.name matches directory name ($PROJ_NAME)"
+  pass "project.name matches repo directory name ($PROJ_NAME)"
 else
-  warn "project.name ($PROJ_NAME) does not match directory name ($DIR_NAME)"
+  warn "project.name ($PROJ_NAME) does not match repo directory name ($DIR_NAME)"
 fi
 
 # Check jira.epicKey starts with jira.projectKey

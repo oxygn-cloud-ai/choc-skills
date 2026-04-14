@@ -2,7 +2,7 @@
 
 A comprehensive guide to the `/project` skill — project repository administration for multi-session Claude Code workflows.
 
-**Skill version:** 2.0.2
+**Skill version:** 2.0.3
 
 ---
 
@@ -272,14 +272,18 @@ All tracking happens in **Jira** (not GitHub Issues, not GitHub PRs). Reviewer p
 8. **Dry run** — show plan without executing
 
 **How it works:**
-1. Detects project from `git rev-parse --show-toplevel`
-2. Reads project type from `PROJECT_CONFIG.json` (or infers)
+1. Detects project root via `git rev-parse --git-common-dir` (works from main repo OR any worktree)
+2. Reads project type, roles, loops, and env vars from `PROJECT_CONFIG.json`
 3. Scans `.worktrees/` for existing role directories
-4. Creates tmux session: `tmux new-session -d -s <project> -n master`
-5. Creates windows: `tmux new-window -t <project> -n <role>` for each role
-6. Builds Claude command with selected flags
-7. If prompt pipe selected: `cat .claude/sessions/<role>.md | claude [flags]`
-8. Selects master window and reports status table
+4. Creates tmux session: `tmux new-session -d -s <project> -n master` with master's worktree as cwd
+5. Creates a window per role: `tmux new-window -t <project> -n <role> -c <worktree>`
+6. For each role, invokes `~/.local/bin/project-launch-session.sh` which:
+   - Generates a per-role setup script at `/tmp/project-launch-<slug>-<role>.sh`
+   - Sources it in the pane (sets env vars, `cd`, `exec claude` with flags — attached to pane TTY, NOT via stdin pipe)
+   - Waits for Claude readiness by polling `tmux capture-pane` for output stability (no blind `sleep`)
+   - If prompt pipe enabled: pastes `.claude/sessions/<role>.md` as a single bracketed-paste block via `tmux load-buffer` / `paste-buffer -p`
+   - Dispatches `/loop <N>m Read the file loops/loop.md in this worktree and execute the recurring task described there.` (single line — no multi-line `/loop` args)
+7. Selects master window and reports status table
 
 **Navigating launched sessions:**
 ```bash
@@ -415,7 +419,7 @@ Runs 9 health checks:
 /project -v
 ```
 
-Outputs: `project v2.0.2`
+Outputs: `project v2.0.3`
 
 ## Key Concepts
 
@@ -494,10 +498,7 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 4 for your full protocol.
 - ...
 ```
 
-When `/project:launch` starts a session with "Prompt pipe" enabled, it feeds this file to Claude:
-```bash
-cat .claude/sessions/fixer.md | claude --dangerously-skip-permissions
-```
+When `/project:launch` starts a session with "Prompt pipe" enabled, Claude is launched attached to the pane TTY (stdin = TTY, NOT a pipe — a pipe would close at EOF and break subsequent `/loop` dispatch), and the prompt file is pasted as a single bracketed-paste block into Claude's input box, then Enter submits it as one user message. See the Loop Prompts section below for how the follow-up `/loop` command is dispatched.
 
 ### Loop Prompts
 
@@ -519,7 +520,13 @@ Loop prompts are recurring task instructions — separate from session identity 
 - `intervalMinutes: 0` = loop disabled for this role
 - `prompt` path is relative to the worktree root (default: `loops/loop.md`)
 
-**Dispatch:** `/project:launch` reads each role's `loops/loop.md`, inlines the contents into the `/loop` command, and pastes it as a single bracketed-paste block after Claude reaches a stable state (polled, no blind `sleep`). The `/loop` skill takes "a prompt or a slash command" — a file path would be treated as literal text, so the text is inlined rather than passed as a path.
+**Dispatch:** After Claude reaches a stable state (polled via `tmux capture-pane`, no blind `sleep`), `/project:launch` sends ONE SINGLE LINE to the session:
+```
+/loop <N>m Read the file loops/loop.md in this worktree and execute the recurring task described there.
+```
+The session Claude then Reads that file on each tick and does whatever it describes. Edits to `loops/loop.md` take effect on the next tick — the file is re-read each cycle.
+
+We deliberately do NOT inline multi-line prompt text into the `/loop` args. `/loop`'s slash-command parser behavior on multi-line pasted arguments is undocumented and a line starting with `/` in the pasted content could flip into slash-command-within-slash-command territory. A single-line prompt is unambiguous for all known `/loop` implementations.
 
 ### Environment Variables
 
@@ -678,4 +685,4 @@ When all gates pass, Master notifies you:
 
 ---
 
-*This guide covers /project v2.0.2. Run `/project version` to check your installed version.*
+*This guide covers /project v2.0.3. Run `/project version` to check your installed version.*
