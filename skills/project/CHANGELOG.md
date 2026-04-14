@@ -2,6 +2,19 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.3.0] - 2026-04-14
+
+### Changed
+- **Breaking**: Replaced `GITHUB_CONFIG.md` (both global and per-project) with `PROJECT_CONFIG.json` (structured, schema-validated) and `~/.claude/PROJECT_STANDARDS.md` (narrative standards)
+- All commands (new, config, status, audit, launch) updated to read `PROJECT_CONFIG.json` for project config and `PROJECT_STANDARDS.md` for standards
+- `install.sh` health check now looks for `PROJECT_STANDARDS.md` instead of `GITHUB_CONFIG.md`
+- SKILL.md doctor check updated accordingly
+
+### Added
+- `PROJECT_CONFIG.schema.json` — JSON Schema for validating PROJECT_CONFIG.json
+- `scripts/validate-config.sh` — validates PROJECT_CONFIG.json against schema with semantic checks
+- `tests/validate-config.bats` — 16 BATS tests for config validation
+
 ## [1.2.0] - 2026-04-12
 
 ### Added

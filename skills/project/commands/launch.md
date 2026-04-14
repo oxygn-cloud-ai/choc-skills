@@ -64,7 +64,7 @@ done
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the role list.
 
-Detect project type from `GITHUB_CONFIG.md` or infer:
+Detect project type from `PROJECT_CONFIG.json` or infer:
 - **Software** (11 roles): master, planner, implementer, fixer, merger, chk1, chk2, performance, playtester, reviewer, triager
 - **Non-Software** (8 roles): master, planner, implementer, fixer, merger, performance, reviewer, triager
 

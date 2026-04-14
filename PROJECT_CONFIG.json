@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "choc-skills",
+    "type": "software",
+    "description": "Claude Code skills monorepo — independently versioned skills for multi-session workflows"
+  },
+  "jira": {
+    "projectKey": "CPT",
+    "cloudId": "81a55da4-28c8-4a49-8a47-03a98a73f152",
+    "epicKey": "CPT-3",
+    "boardUrl": "https://chocfin.atlassian.net/jira/software/projects/CPT/boards/2"
+  },
+  "github": {
+    "owner": "oxygn-cloud-ai",
+    "repo": "choc-skills",
+    "defaultBranch": "main",
+    "issuesEnabled": false,
+    "branchProtection": {
+      "requiredStatusChecks": [
+        "ShellCheck",
+        "Validate Skills",
+        "Installer Smoke Test (ubuntu-latest)",
+        "Installer Smoke Test (macos-latest)",
+        "Verify Checksums",
+        "File Permissions",
+        "BATS Unit Tests"
+      ],
+      "strict": false,
+      "enforceAdmins": false,
+      "allowForcePushes": false,
+      "allowDeletions": false
+    }
+  },
+  "sessions": {
+    "roles": [
+      "master",
+      "planner",
+      "implementer",
+      "fixer",
+      "merger",
+      "chk1",
+      "chk2",
+      "performance",
+      "playtester",
+      "reviewer",
+      "triager"
+    ],
+    "loops": {
+      "master": { "intervalMinutes": 5 },
+      "triager": { "intervalMinutes": 10 },
+      "reviewer": { "intervalMinutes": 10 },
+      "merger": { "intervalMinutes": 10 },
+      "chk1": { "intervalMinutes": 15 },
+      "chk2": { "intervalMinutes": 15 },
+      "fixer": { "intervalMinutes": 10 },
+      "implementer": { "intervalMinutes": 10 }
+    }
+  },
+  "coverage": {
+    "tool": "bashcov",
+    "thresholds": {}
+  },
+  "sandbox": {
+    "type": "docker",
+    "setupInstructions": "docker run -it --rm -v $(pwd):/workspace ubuntu:latest bash"
+  },
+  "deviations": [
+    {
+      "standard": "Coverage thresholds",
+      "deviation": "No coverage thresholds set",
+      "justification": "Shell-based skill repo — bashcov not yet integrated into CI. Thresholds will be set once baseline is measured."
+    }
+  ]
+}

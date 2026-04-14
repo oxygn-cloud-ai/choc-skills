@@ -81,7 +81,7 @@ cd skills/chk1 && ./install.sh --force
 10. Run `./scripts/validate-skills.sh` — must be 0 errors
 11. Run `./scripts/generate-checksums.sh` — regenerate checksums
 12. Run `bats tests/` — must pass
-13. Submit a PR
+13. Push your branch for review
 
 ## Checksums
 

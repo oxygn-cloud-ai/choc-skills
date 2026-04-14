@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/oxygn-cloud-ai/choc-skills/PROJECT_CONFIG.schema.json",
+  "title": "PROJECT_CONFIG",
+  "description": "Project configuration for multi-session Claude Code workflows. Replaces GITHUB_CONFIG.md.",
+  "type": "object",
+  "required": ["schemaVersion", "project", "jira", "github", "sessions"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Bump when breaking changes are made to this schema."
+    },
+    "project": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Repository/project name (must match directory name)."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["software", "non-software"],
+          "description": "Project type. Software projects get all 11 session roles; non-software may skip chk1, chk2, playtester."
+        },
+        "description": {
+          "type": "string",
+          "description": "One-line project description."
+        }
+      }
+    },
+    "jira": {
+      "type": "object",
+      "required": ["projectKey", "epicKey"],
+      "additionalProperties": false,
+      "properties": {
+        "projectKey": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]+$",
+          "description": "Jira project key (e.g., CPT)."
+        },
+        "cloudId": {
+          "type": "string",
+          "description": "Atlassian Cloud ID for API calls."
+        },
+        "epicKey": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]+-\\d+$",
+          "description": "Jira epic key for this project (e.g., CPT-3)."
+        },
+        "boardUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Jira board URL for human reference."
+        }
+      }
+    },
+    "github": {
+      "type": "object",
+      "required": ["owner", "repo"],
+      "additionalProperties": false,
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "GitHub org or user (e.g., oxygn-cloud-ai)."
+        },
+        "repo": {
+          "type": "string",
+          "description": "GitHub repo name."
+        },
+        "defaultBranch": {
+          "type": "string",
+          "default": "main",
+          "description": "Default branch name."
+        },
+        "issuesEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether GitHub Issues are enabled. Should be false (Jira is source of truth)."
+        },
+        "branchProtection": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "requiredStatusChecks": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "CI job names that must pass before merge. Only include checks that consistently pass."
+            },
+            "strict": {
+              "type": "boolean",
+              "default": true,
+              "description": "Require branches to be up-to-date with default branch before merge."
+            },
+            "enforceAdmins": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether admins are subject to branch protection. Set true once workflow is stable."
+            },
+            "allowForcePushes": {
+              "type": "boolean",
+              "default": false,
+              "description": "Allow force pushes to protected branch. Should be false."
+            },
+            "allowDeletions": {
+              "type": "boolean",
+              "default": false,
+              "description": "Allow deleting protected branch. Should be false."
+            }
+          }
+        }
+      }
+    },
+    "sessions": {
+      "type": "object",
+      "required": ["roles"],
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["master", "planner", "implementer", "fixer", "merger", "chk1", "chk2", "performance", "playtester", "reviewer", "triager"]
+          },
+          "uniqueItems": true,
+          "description": "Active session roles for this project."
+        },
+        "loops": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^(master|planner|implementer|fixer|merger|chk1|chk2|performance|playtester|reviewer|triager)$": {
+              "type": "object",
+              "required": ["intervalMinutes"],
+              "additionalProperties": false,
+              "properties": {
+                "intervalMinutes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Loop interval in minutes. 0 = no loop (on-demand only)."
+                }
+              }
+            }
+          },
+          "description": "Per-role loop intervals. Roles not listed here default to intervalMinutes: 0."
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "type": "string",
+          "description": "Coverage tool name (e.g., kcov, bashcov, istanbul)."
+        },
+        "thresholds": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "line": { "type": "number", "minimum": 0, "maximum": 100 },
+            "branch": { "type": "number", "minimum": 0, "maximum": 100 },
+            "function": { "type": "number", "minimum": 0, "maximum": 100 }
+          },
+          "description": "Coverage thresholds. Must reflect actual values, not aspirations. Ratchet up, never lower silently."
+        }
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["docker", "vm", "runpod", "none"],
+          "description": "Sandbox type for Playtester session."
+        },
+        "setupInstructions": {
+          "type": "string",
+          "description": "How to set up the sandbox environment."
+        }
+      }
+    },
+    "servers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "test": { "type": "string", "format": "uri", "description": "Test server URL for chk2." },
+        "staging": { "type": "string", "format": "uri", "description": "Staging server URL for chk2." },
+        "production": { "type": "string", "format": "uri", "description": "Production server URL for chk2." }
+      }
+    },
+    "deviations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["standard", "deviation", "justification"],
+        "additionalProperties": false,
+        "properties": {
+          "standard": {
+            "type": "string",
+            "description": "Which standard is being deviated from."
+          },
+          "deviation": {
+            "type": "string",
+            "description": "What the deviation is."
+          },
+          "justification": {
+            "type": "string",
+            "description": "Why the deviation is justified."
+          }
+        }
+      },
+      "description": "Documented deviations from PROJECT_STANDARDS.md. Every deviation must be justified."
+    }
+  }
+}
