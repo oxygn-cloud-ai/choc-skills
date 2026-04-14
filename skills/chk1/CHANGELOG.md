@@ -2,6 +2,11 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.1] - 2026-04-14
+
+### Removed
+- Removed reference to Co-Authored-By tags from session-boundary detection heuristic per global no-AI-attribution rule.
+
 ## [2.4.0] - 2026-04-09
 
 ### Changed
