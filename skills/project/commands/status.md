@@ -25,10 +25,10 @@ If not in a git repo, say "Not in a git repository. Navigate to a project and tr
 
 Verify dependencies exist before reading:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
-- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: WARN and continue (skip label/CI standard comparison)
+- `test -f ~/.claude/PROJECT_CONFIG.json` — if missing: WARN and continue (skip label/CI standard comparison)
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role list and expected worktree layout (if available).
-Read the project's `CLAUDE.md` and `GITHUB_CONFIG.md` if they exist.
+Read the project's `CLAUDE.md` and `PROJECT_CONFIG.json` if they exist.
 
 ## Step 3: Gather data
 
@@ -72,7 +72,7 @@ print('n/a')
 " 2>/dev/null || echo "n/a")
 
 # Docs
-for doc in README.md ARCHITECTURE.md PHILOSOPHY.md CLAUDE.md GITHUB_CONFIG.md; do
+for doc in README.md ARCHITECTURE.md PHILOSOPHY.md CLAUDE.md PROJECT_CONFIG.json; do
   if [ -f "$doc" ]; then
     echo "[x] $doc ($(stat -f '%Sm' -t '%Y-%m-%d' "$doc" 2>/dev/null || stat -c '%Y' "$doc" 2>/dev/null | xargs -I{} date -d @{} +%Y-%m-%d 2>/dev/null || echo '?'))"
   else
@@ -108,7 +108,7 @@ Format all gathered data into the status display:
 
 ```
 Project: <name>
-Type: <from GITHUB_CONFIG.md or infer from presence of CI/tests>
+Type: <from PROJECT_CONFIG.json or infer from presence of CI/tests>
 Path: <path>
 GitHub: <remote URL>
 Jira Epic: <from CLAUDE.md or "not configured">
@@ -119,7 +119,7 @@ Docs:
   [x] ARCHITECTURE.md    (2026-04-10)
   [x] PHILOSOPHY.md      (2026-04-08)
   [x] CLAUDE.md          (2026-04-10)
-  [ ] GITHUB_CONFIG.md   (MISSING)
+  [ ] PROJECT_CONFIG.json   (MISSING)
 
 CI:
   Workflow: <filename or "none">

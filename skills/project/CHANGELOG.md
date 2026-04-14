@@ -2,6 +2,21 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.3.0] - 2026-04-14
+
+### Added
+- `PROJECT_CONFIG.json` at repo root — structured JSON config replacing `GITHUB_CONFIG.md` with sections: `schemaVersion`, `project`, `jira`, `github`, `sessions`, `loops`, `coverage`, `deviations`
+- `scripts/validate-config.sh` — jq-based validation of PROJECT_CONFIG.json (required fields, types, valid role names, polling role subset, non-negative intervalMinutes)
+- Loop interval configuration: `loops` section with per-role `intervalMinutes` for 8 polling sessions (master, triager, reviewer, merger, chk1, chk2, fixer, implementer)
+- `/project:config` "Configure loop intervals" menu option — view and edit per-role loop intervals with validation
+
+### Changed
+- All command files (config, audit, new, status, launch) now read/write `PROJECT_CONFIG.json` instead of `GITHUB_CONFIG.md`
+- SKILL.md, install.sh, README.md: all references updated from `GITHUB_CONFIG.md` to `PROJECT_CONFIG.json`
+- `/project:launch` report now shows loop interval per role
+- `/project:audit` runs `validate-config.sh` when `PROJECT_CONFIG.json` exists
+- `/project:new` scaffolds `PROJECT_CONFIG.json` from template with schema validation
+
 ## [1.2.0] - 2026-04-12
 
 ### Added

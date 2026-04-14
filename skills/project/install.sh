@@ -58,7 +58,7 @@ ${BOLD}INSTALLS TO${RESET}
 
 ${BOLD}REQUIREMENTS${RESET}
   ~/.claude/MULTI_SESSION_ARCHITECTURE.md  (runtime reference)
-  ~/.claude/GITHUB_CONFIG.md               (runtime reference)
+  ~/.claude/PROJECT_CONFIG.json               (runtime reference)
   git, gh (authenticated)
 EOF
   exit 0
@@ -113,10 +113,10 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     err "${HOME}/.claude/MULTI_SESSION_ARCHITECTURE.md missing (required at runtime)"; issues=$((issues + 1))
   fi
 
-  if [ -f "${HOME}/.claude/GITHUB_CONFIG.md" ]; then
-    ok "Global GitHub config present"
+  if [ -f "${HOME}/.claude/PROJECT_CONFIG.json" ]; then
+    ok "Global project config present"
   else
-    err "${HOME}/.claude/GITHUB_CONFIG.md missing (required at runtime)"; issues=$((issues + 1))
+    err "${HOME}/.claude/PROJECT_CONFIG.json missing (required at runtime)"; issues=$((issues + 1))
   fi
 
   if command -v git >/dev/null 2>&1; then

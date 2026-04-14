@@ -12,7 +12,7 @@ allowed-tools:
 ---
 
 <objective>
-Interactively modify the current project's configuration. Changes are persisted to GITHUB_CONFIG.md and applied to GitHub/git.
+Interactively modify the current project's configuration. Changes are persisted to PROJECT_CONFIG.json and applied to GitHub/git.
 </objective>
 
 <process>
@@ -26,9 +26,7 @@ If not in a git repo: "Not in a git repository."
 
 Verify dependencies exist before reading:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. Required for project configuration."
-- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. Required for project configuration."
-
-Read the project's `GITHUB_CONFIG.md` for current configuration.
+Read the project's `PROJECT_CONFIG.json` for current configuration.
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions.
 
 ## Step 2: Show current config and ask what to change
@@ -45,8 +43,9 @@ Options:
 - **Add/remove labels** — manage GitHub labels
 - **Enable/disable branch protection** — toggle branch protection on main
 - **Enable/disable CI workflow** — add or remove .github/workflows/test.yml
-- **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and GITHUB_CONFIG.md
-- **Update deviations** — document a deviation from global standards in GITHUB_CONFIG.md
+- **Configure loop intervals** — show current per-role intervals, edit any role's `intervalMinutes`
+- **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and PROJECT_CONFIG.json
+- **Update deviations** — document a deviation from global standards in PROJECT_CONFIG.json
 - **Done — no changes**
 
 ## Step 3: Execute the chosen action
@@ -55,7 +54,7 @@ Options:
 1. Ask: "Switch to Software or Non-Software?"
 2. If switching to Software: add missing worktrees (chk1, chk2, playtester), create CI, set protection, add full label set
 3. If switching to Non-Software: warn about removing CI/protection, remove extra worktrees if user confirms
-4. Update GITHUB_CONFIG.md
+4. Update PROJECT_CONFIG.json
 
 ### Add worktree session
 1. Ask: "Role name?" (slug, e.g., `designer`)
@@ -66,7 +65,7 @@ Options:
    git push -u origin "session/<role>"
    ```
 4. Create session prompt at `.claude/sessions/<role>.md`
-5. Update GITHUB_CONFIG.md with the new role
+5. Update PROJECT_CONFIG.json with the new role
 
 ### Remove worktree session
 1. Show list of current worktrees
@@ -93,7 +92,7 @@ Options:
    git push origin --delete "session/<role>" 2>/dev/null
    ```
 5. Remove `.claude/sessions/<role>.md`
-6. Update GITHUB_CONFIG.md
+6. Update PROJECT_CONFIG.json
 
 ### List worktrees
 ```bash
@@ -114,19 +113,32 @@ done
 
 ### Enable/disable branch protection
 - Toggle via `gh api repos/{owner}/{repo}/branches/main/protection`
-- Update GITHUB_CONFIG.md
+- Update PROJECT_CONFIG.json
 
 ### Enable/disable CI
 - Create or remove `.github/workflows/test.yml`
-- Read template from `~/.claude/GITHUB_CONFIG.md` section 3
+
+### Configure loop intervals
+1. Read `PROJECT_CONFIG.json` and display current `loops` section as a table:
+   ```
+   | Role         | intervalMinutes |
+   |--------------|-----------------|
+   | master       | 5               |
+   | triager      | 10              |
+   ...
+   ```
+2. Ask: "Which role's interval do you want to change?" (or "done")
+3. Ask: "New intervalMinutes for <role>?" (must be non-negative integer; 0 means no loop)
+4. Update `PROJECT_CONFIG.json` via jq: `jq --arg r "$ROLE" --argjson v $VAL '.loops[$r].intervalMinutes = $v'`
+5. Run `scripts/validate-config.sh` to confirm the change is valid
 
 ### Set Jira epic key
 - Ask for the key (e.g., CPT-42)
-- Update CLAUDE.md and GITHUB_CONFIG.md
+- Update CLAUDE.md and PROJECT_CONFIG.json
 
 ### Update deviations
 - Ask: "What deviation are you documenting?"
-- Append to GITHUB_CONFIG.md deviations section with justification
+- Append to PROJECT_CONFIG.json `.deviations` array via jq with justification
 
 ## Step 4: Confirm
 

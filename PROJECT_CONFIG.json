@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "choc-skills",
+    "type": "software",
+    "repo": "oxygn-cloud-ai/choc-skills",
+    "defaultBranch": "main"
+  },
+  "jira": {
+    "project": "CPT",
+    "epic": "CPT-3"
+  },
+  "github": {
+    "issues": false,
+    "branchProtection": {
+      "enabled": true,
+      "strict": true,
+      "allowForcePushes": false,
+      "allowDeletions": false,
+      "enforceAdmins": false,
+      "requiredStatusChecks": [
+        "ShellCheck",
+        "Validate Skills",
+        "Installer Smoke Test (ubuntu-latest)",
+        "Installer Smoke Test (macos-latest)",
+        "Verify Checksums",
+        "File Permissions",
+        "BATS Unit Tests"
+      ]
+    },
+    "workflows": [
+      { "name": "ci.yml", "trigger": "push/PR to main", "purpose": "Primary CI" },
+      { "name": "release-skill.yml", "trigger": "<skill>/v* tag", "purpose": "Per-skill release" },
+      { "name": "release.yml", "trigger": "v* tag", "purpose": "Milestone release" }
+    ]
+  },
+  "sessions": {
+    "master":      { "branch": "session/master",      "worktree": ".worktrees/master" },
+    "planner":     { "branch": "session/planner",     "worktree": ".worktrees/planner" },
+    "implementer": { "branch": "session/implementer", "worktree": ".worktrees/implementer" },
+    "fixer":       { "branch": "session/fixer",       "worktree": ".worktrees/fixer" },
+    "merger":      { "branch": "session/merger",       "worktree": ".worktrees/merger" },
+    "chk1":        { "branch": "session/chk1",        "worktree": ".worktrees/chk1" },
+    "chk2":        { "branch": "session/chk2",        "worktree": ".worktrees/chk2" },
+    "performance": { "branch": "session/performance", "worktree": ".worktrees/performance" },
+    "playtester":  { "branch": "session/playtester",  "worktree": ".worktrees/playtester" },
+    "reviewer":    { "branch": "session/reviewer",    "worktree": ".worktrees/reviewer" },
+    "triager":     { "branch": "session/triager",     "worktree": ".worktrees/triager" }
+  },
+  "loops": {
+    "master":      { "intervalMinutes": 5 },
+    "triager":     { "intervalMinutes": 10 },
+    "reviewer":    { "intervalMinutes": 10 },
+    "merger":      { "intervalMinutes": 10 },
+    "chk1":        { "intervalMinutes": 15 },
+    "chk2":        { "intervalMinutes": 30 },
+    "fixer":       { "intervalMinutes": 15 },
+    "implementer": { "intervalMinutes": 15 }
+  },
+  "coverage": {
+    "enabled": false,
+    "thresholds": {}
+  },
+  "deviations": []
+}

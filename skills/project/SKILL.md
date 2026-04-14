@@ -1,7 +1,7 @@
 ---
 name: project
-version: 1.2.0
-description: Project repository administration — create new, audit, configure, status check. Multi-session workflow scaffolding per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/GITHUB_CONFIG.md.
+version: 1.3.0
+description: Project repository administration — create new, audit, configure, status check. Multi-session workflow scaffolding per ~/.claude/MULTI_SESSION_ARCHITECTURE.md. Structured config via PROJECT_CONFIG.json.
 user-invocable: true
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash(gh *), Bash(git *), Bash(mkdir *), Bash(cp *), Bash(mv *), Bash(sed *), Bash(cat *), Bash(chmod *), Bash(touch *), Bash(ls *), Bash(test *), Bash(basename *), Bash(dirname *), Bash(stat *), Bash(date *), Bash(python3 *), Bash(npm *), Bash(find *), Write, Edit, AskUserQuestion
@@ -21,7 +21,7 @@ The router at `~/.claude/commands/project.md` intercepts sub-command arguments a
 If `$ARGUMENTS` equals `help`, `--help`, or `-h`, display the following usage guide and stop.
 
 ```
-project v1.2.0 — Project Repository Administration
+project v1.3.0 — Project Repository Administration
 
 USAGE
   /project                  Show status for current project (same as /project status)
@@ -61,7 +61,7 @@ ISSUE TRACKING
 
 REFERENCE FILES
   Architecture:  ~/.claude/MULTI_SESSION_ARCHITECTURE.md
-  Standards:     ~/.claude/GITHUB_CONFIG.md
+  Standards:     ~/.claude/PROJECT_CONFIG.json
   Global rules:  ~/.claude/CLAUDE.md
 
 LOCATION
@@ -82,7 +82,7 @@ If `$ARGUMENTS` equals `doctor`, `--doctor`, or `check`, run skill-install healt
 3. **Router present**: `test -f ~/.claude/commands/project.md`.
 4. **Subcommand files present**: `ls ~/.claude/commands/project/*.md` — expect 6 files: `new.md`, `status.md`, `launch.md`, `audit.md`, `config.md`, `update.md`. No stale `doctor.md` or `help.md` (those were removed in the v1.0.0 migration).
 5. **Global architecture doc**: `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — the skill is useless without it (FAIL if missing).
-6. **Global GitHub config**: `test -f ~/.claude/GITHUB_CONFIG.md` — FAIL if missing.
+6. **Global project config**: `test -f ~/.claude/PROJECT_CONFIG.json` — FAIL if missing.
 7. **git installed**: `command -v git` — FAIL if missing.
 8. **gh installed**: `command -v gh` — FAIL if missing (required for repo creation, labels, branch protection).
 9. **gh authenticated**: `gh auth status 2>&1 | grep -q "Logged in"` — WARN if not (some subcommands work without auth, but `/project:new` does not).
@@ -96,7 +96,7 @@ project doctor — Skill Installation Health Check
   [PASS] Router: ~/.claude/commands/project.md
   [PASS] Subcommands: 6 files (new, status, launch, audit, config, update)
   [PASS] ~/.claude/MULTI_SESSION_ARCHITECTURE.md
-  [PASS] ~/.claude/GITHUB_CONFIG.md
+  [PASS] ~/.claude/PROJECT_CONFIG.json
   [PASS] git: /opt/homebrew/bin/git
   [PASS] gh: /opt/homebrew/bin/gh
   [PASS] gh authenticated
@@ -111,7 +111,7 @@ End of doctor output. Do not continue.
 If `$ARGUMENTS` equals `version`, `--version`, or `-v`, output the version and stop.
 
 ```
-project v1.2.0
+project v1.3.0
 ```
 
 End of version output. Do not continue.
@@ -125,8 +125,8 @@ Before executing any main-skill logic, silently verify:
 1. **Global architecture doc present**: `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md`. If missing:
    > **project error**: `~/.claude/MULTI_SESSION_ARCHITECTURE.md` not found. This skill is authoritative on the multi-session workflow and cannot operate without it. Restore the file or run `/project doctor` for diagnostics.
 
-2. **Global GitHub config present**: `test -f ~/.claude/GITHUB_CONFIG.md`. If missing:
-   > **project error**: `~/.claude/GITHUB_CONFIG.md` not found. See `/project doctor` for diagnostics.
+2. **Global project config present**: `test -f ~/.claude/PROJECT_CONFIG.json`. If missing:
+   > **project error**: `~/.claude/PROJECT_CONFIG.json` not found. See `/project doctor` for diagnostics.
 
 ---
 

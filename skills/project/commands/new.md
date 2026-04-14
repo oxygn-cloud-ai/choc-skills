@@ -12,7 +12,7 @@ allowed-tools:
 ---
 
 <objective>
-Create a new project repository fully configured per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/GITHUB_CONFIG.md.
+Create a new project repository fully configured per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/PROJECT_CONFIG.json.
 </objective>
 
 <process>
@@ -46,11 +46,11 @@ Before anything else, verify this is safe to run:
 
 Verify dependencies exist before reading:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file defines the multi-session workflow and is required for project creation."
-- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. This file defines labels, CI, and branch protection standards."
+- `test -f ~/.claude/PROJECT_CONFIG.json` — if missing: **STOP** with error: "~/.claude/PROJECT_CONFIG.json not found. This file defines labels, CI, and branch protection standards."
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions, worktree layout, and Jira structure. This is the authoritative reference — do not hardcode or inline its contents.
 
-Read `~/.claude/GITHUB_CONFIG.md` for label definitions, CI templates, and branch protection spec.
+Read `~/.claude/PROJECT_CONFIG.json` for label definitions, CI templates, and branch protection spec.
 
 ## Step 2: Gather basics
 
@@ -107,7 +107,7 @@ Create these files at the repo root:
 
 **CLAUDE.md** — project name, type, description, Jira epic (placeholder until step 7), key files, development commands (language-specific).
 
-**GITHUB_CONFIG.md** — inherits from global, documents project type, Jira epic, any deviations.
+**PROJECT_CONFIG.json** — structured JSON config with sections: `schemaVersion`, `project`, `jira`, `github`, `sessions`, `loops`, `coverage`, `deviations`. Scaffold from `~/.claude/PROJECT_CONFIG.json` template if it exists, otherwise generate from the schema. Run `scripts/validate-config.sh` after creation to verify.
 
 **Language-specific scaffolding** (Software only):
 - Python: `pyproject.toml` (with version 0.1.0), `src/<name>/__init__.py`, `tests/conftest.py`, `.gitignore`
@@ -118,7 +118,7 @@ Create these files at the repo root:
 
 ## Step 6: Create GitHub labels
 
-Read label definitions from `~/.claude/GITHUB_CONFIG.md` section 2.
+Create the standard label set (labels are defined inline — the global config is JSON, not a narrative doc).
 
 For Software projects — full set:
 ```bash
@@ -151,14 +151,14 @@ Ask the user:
 
 Once the user provides the key:
 - Update CLAUDE.md with the Jira epic key
-- Update GITHUB_CONFIG.md with the Jira epic key
+- Update PROJECT_CONFIG.json with the Jira epic key
 
 ## Step 8: Initial commit + push
 
 Stage only the files created by the scaffold — do NOT use `git add -A` (risks staging pre-existing sensitive files):
 
 ```bash
-git add README.md CLAUDE.md GITHUB_CONFIG.md PHILOSOPHY.md .gitignore
+git add README.md CLAUDE.md PROJECT_CONFIG.json PHILOSOPHY.md .gitignore
 # Software only — add language-specific scaffolding:
 # Python: git add pyproject.toml src/ tests/
 # Node: git add package.json src/ tsconfig.json
@@ -226,7 +226,7 @@ Add a brief quick-reference section specific to each role (3-5 bullet points sum
 
 Create `.github/workflows/test.yml` with:
 - Language-appropriate test job
-- `notify-failure` job from `~/.claude/GITHUB_CONFIG.md` section 3 reference implementation
+- `notify-failure` job from `~/.claude/PROJECT_CONFIG.json` section 3 reference implementation
 - `notify-recovery` job
 
 Adapt the `needs:` list to match the actual test job name(s).
@@ -269,7 +269,7 @@ Project <name> created successfully.
   Branch:     main (protected: <yes/no>)
   CI:         <.github/workflows/test.yml | n/a>
   Labels:     <count> created
-  Docs:       PHILOSOPHY.md, README.md, ARCHITECTURE.md, CLAUDE.md, GITHUB_CONFIG.md
+  Docs:       PHILOSOPHY.md, README.md, ARCHITECTURE.md, CLAUDE.md, PROJECT_CONFIG.json
   Worktrees:  <count> sessions in .worktrees/
   Prompts:    .claude/sessions/*.md
 
@@ -283,8 +283,8 @@ Project <name> created successfully.
 <success_criteria>
 - [ ] GitHub repo created with correct visibility
 - [ ] All required docs present at repo root
-- [ ] Labels match GITHUB_CONFIG.md spec for project type
-- [ ] Jira epic key documented in CLAUDE.md and GITHUB_CONFIG.md
+- [ ] Labels match PROJECT_CONFIG.json spec for project type
+- [ ] Jira epic key documented in CLAUDE.md and PROJECT_CONFIG.json
 - [ ] All session worktrees created with correct branch names
 - [ ] Session startup prompts created in .claude/sessions/
 - [ ] CI workflow present (Software only) with notify-failure/recovery

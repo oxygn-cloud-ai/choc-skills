@@ -64,9 +64,14 @@ done
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the role list.
 
-Detect project type from `GITHUB_CONFIG.md` or infer:
+Detect project type from `PROJECT_CONFIG.json` (via `jq -r '.project.type'`) or infer:
 - **Software** (11 roles): master, planner, implementer, fixer, merger, chk1, chk2, performance, playtester, reviewer, triager
 - **Non-Software** (8 roles): master, planner, implementer, fixer, merger, performance, reviewer, triager
+
+Read loop intervals from `PROJECT_CONFIG.json`:
+```bash
+jq -r '.loops | to_entries[] | "\(.key) \(.value.intervalMinutes)"' PROJECT_CONFIG.json
+```
 
 Build the actual role list by checking which `.worktrees/<role>` directories exist:
 ```bash
@@ -171,19 +176,19 @@ project launch — $PROJECT_NAME
   Windows: $N_LAUNCHED / $N_TOTAL
   Claude:  $N_WITH_CLAUDE running
 
-  | # | Role        | Status  | Claude | Prompt |
-  |---|-------------|---------|--------|--------|
-  | a | master      | created | ●      | ✓      |
-  | b | planner     | created | ●      | ✓      |
-  | c | implementer | created | ○ idle | —      |
-  | d | fixer       | created | ○ idle | —      |
-  | e | merger      | created | ●      | ✓      |
-  | f | chk1        | created | ●      | ✓      |
-  | g | chk2        | created | ●      | ✓      |
-  | h | performance | created | ○ idle | —      |
-  | i | playtester  | created | ○ idle | —      |
-  | j | reviewer    | created | ●      | ✓      |
-  | k | triager     | created | ●      | ✓      |
+  | # | Role        | Status  | Claude | Prompt | Loop Interval |
+  |---|-------------|---------|--------|--------|---------------|
+  | a | master      | created | ●      | ✓      | 5m            |
+  | b | planner     | created | ●      | ✓      | —             |
+  | c | implementer | created | ○ idle | —      | 15m           |
+  | d | fixer       | created | ○ idle | —      | 15m           |
+  | e | merger      | created | ●      | ✓      | 10m           |
+  | f | chk1        | created | ●      | ✓      | 15m           |
+  | g | chk2        | created | ●      | ✓      | 30m           |
+  | h | performance | created | ○ idle | —      | —             |
+  | i | playtester  | created | ○ idle | —      | —             |
+  | j | reviewer    | created | ●      | ✓      | 10m           |
+  | k | triager     | created | ●      | ✓      | 10m           |
 
   To attach: tmux attach -t $PROJECT_SLUG
   To navigate: Prefix+P for project picker, or tmux select-window -t $PROJECT_SLUG:<role>
