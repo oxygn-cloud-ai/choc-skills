@@ -107,7 +107,11 @@ Create these files at the repo root:
 
 **CLAUDE.md** — project name, type, description, Jira epic (placeholder until step 7), key files, development commands (language-specific).
 
-**PROJECT_CONFIG.json** — structured JSON config with sections: `schemaVersion`, `project`, `jira`, `github`, `sessions`, `loops`, `coverage`, `deviations`. Scaffold from `~/.claude/PROJECT_CONFIG.json` template if it exists, otherwise generate from the schema. Run `scripts/validate-config.sh` after creation to verify.
+**PROJECT_CONFIG.json** — structured JSON config with sections: `schemaVersion`, `project`, `jira`, `github`, `sessions`, `loops`, `env`, `coverage`, `deviations`. Scaffold from `~/.claude/PROJECT_CONFIG.json` template if it exists, otherwise generate from the schema. The `env` section must include:
+- `env.project` — project-level vars exported to all sessions. Auto-populate `<PROJECT_SLUG_UPPER>_PATH` with the repo root path (e.g., `"CHOC-SKILLS_PATH": "/path/to/repo"`)
+- `env.sessions` — per-session override objects, one per role (empty objects initially)
+
+Run `scripts/validate-config.sh` after creation to verify.
 
 **Language-specific scaffolding** (Software only):
 - Python: `pyproject.toml` (with version 0.1.0), `src/<name>/__init__.py`, `tests/conftest.py`, `.gitignore`
@@ -221,6 +225,29 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
 ```
 
 Add a brief quick-reference section specific to each role (3-5 bullet points summarizing the protocol steps).
+
+## Step 10b: Create loop prompt files
+
+Create loop prompt files in each polling role's worktree (roles with `intervalMinutes > 0` in PROJECT_CONFIG.json):
+
+```bash
+for role in master triager reviewer merger chk1 chk2 fixer implementer; do
+  mkdir -p ".worktrees/$role/loops"
+done
+```
+
+For each polling role, create `.worktrees/<role>/loops/<role>.md` with a role-appropriate recurring task prompt. Template varies by role:
+
+- **master**: CI health check, Jira scan for blocked issues, worktree staleness check
+- **triager**: Triage cycle — find New/Needs Triage issues, verify, transition to Ready for Coding
+- **reviewer**: Review cycle — find In Review issues, check diff, approve or request changes
+- **merger**: Merge cycle — find Done issues with unmerged branches, merge, cleanup
+- **chk1**: Audit cycle — check new commits on main, run quality checks, file findings
+- **chk2**: Security audit cycle — check new commits, run security checks, file findings
+- **fixer**: Check for bugs in Ready for Coding, pick up highest priority
+- **implementer**: Check for features/improvements in Ready for Coding, pick up highest priority
+
+Non-polling roles (planner, performance, playtester) do not get loop prompt files.
 
 ## Step 11: CI workflow (Software only)
 

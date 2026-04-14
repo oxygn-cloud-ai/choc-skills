@@ -2,6 +2,22 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.4.0] - 2026-04-14
+
+### Added
+- `/project:launch` Step 7: Export environment variables from `PROJECT_CONFIG.json` to tmux windows before Claude launches — supports `env.project` (all sessions) and `env.sessions.<role>` (per-session overrides)
+- `/project:launch` Step 9: Send `/loop <interval>m <prompt-file>` to polling sessions after Claude initializes — reads `loops.<role>.intervalMinutes` from config, references `.worktrees/<role>/loops/<role>.md` prompt files
+- `/project:config` "Configure environment variables" menu option — add/edit/remove project-level and per-session env vars with jq-based persistence
+- `/project:new` Step 10b: Scaffold `.worktrees/<role>/loops/` directories with role-appropriate loop prompt files for all polling roles
+- `/project:new` `env` section in PROJECT_CONFIG.json scaffold — auto-populates `<PROJECT>_PATH` and empty per-session objects
+- `/project:status` now shows env vars (project-level and session overrides) and loop state (interval + prompt file presence)
+- 8 loop prompt files in `.worktrees/<role>/loops/` for polling roles: master, triager, reviewer, merger, chk1, chk2, fixer, implementer
+- `env` section in PROJECT_CONFIG.json with `env.project` (project-level vars) and `env.sessions` (per-role overrides)
+- `scripts/validate-config.sh` validates env section (project object with string values, sessions with valid role keys)
+
+### Changed
+- `/project:launch` step numbering updated: env export (Step 7), Claude launch (Step 8), loop invocation (Step 9), report (Step 10)
+
 ## [1.3.0] - 2026-04-14
 
 ### Added

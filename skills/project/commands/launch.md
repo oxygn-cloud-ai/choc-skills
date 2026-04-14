@@ -112,7 +112,7 @@ If `--max-turns` is selected, follow up: "Maximum turns per session? (e.g., 10, 
 
 ## Step 6: Create tmux session and windows
 
-If `--dry-run` selected, skip execution and show the plan instead (jump to Step 8 reporting).
+If `--dry-run` selected, skip execution and show the plan instead (jump to Step 10 reporting).
 
 ### Create session with first window
 
@@ -127,7 +127,38 @@ For each role (excluding master, already created):
 tmux new-window -t "$PROJECT_SLUG" -n "$ROLE" -c "$REPO_ROOT/.worktrees/$ROLE"
 ```
 
-## Step 7: Launch Claude in each window
+## Step 7: Export environment variables
+
+For each role/window, export environment variables from `PROJECT_CONFIG.json` before launching Claude.
+
+### Read env vars from config
+
+```bash
+# Read project-level env vars
+PROJECT_ENVS=$(jq -r '.env.project // {} | to_entries[] | "\(.key)=\(.value)"' "$REPO_ROOT/PROJECT_CONFIG.json" 2>/dev/null)
+
+# Read per-session env vars (merged on top of project-level; session values win)
+SESSION_ENVS=$(jq -r --arg r "$ROLE" '.env.sessions[$r] // {} | to_entries[] | "\(.key)=\(.value)"' "$REPO_ROOT/PROJECT_CONFIG.json" 2>/dev/null)
+```
+
+### Export via tmux send-keys
+
+For each env var, send an export command to the tmux window:
+```bash
+# Export project-level vars
+while IFS='=' read -r key value; do
+  [ -z "$key" ] && continue
+  tmux send-keys -t "$PROJECT_SLUG:$ROLE" "export $key=\"$value\"" Enter
+done <<< "$PROJECT_ENVS"
+
+# Export per-session vars (overrides project-level if same key)
+while IFS='=' read -r key value; do
+  [ -z "$key" ] && continue
+  tmux send-keys -t "$PROJECT_SLUG:$ROLE" "export $key=\"$value\"" Enter
+done <<< "$SESSION_ENVS"
+```
+
+## Step 8: Launch Claude in each window
 
 For each role/window, build and send the Claude command:
 
@@ -149,6 +180,35 @@ Send the assembled command to the tmux window:
 tmux send-keys -t "$PROJECT_SLUG:$ROLE" "$CMD" Enter
 ```
 
+## Step 9: Send /loop command to polling sessions
+
+For polling sessions (role appears in `loops` config with `intervalMinutes > 0`), send the `/loop` command after Claude initializes.
+
+### Determine loop interval
+
+```bash
+INTERVAL=$(jq -r --arg r "$ROLE" '.loops[$r].intervalMinutes // 0' "$REPO_ROOT/PROJECT_CONFIG.json" 2>/dev/null)
+```
+
+### Send /loop command
+
+If `INTERVAL > 0` and a loop prompt file exists at `.worktrees/$ROLE/loops/$ROLE.md`:
+
+```bash
+# Wait for Claude to initialize (allow startup time)
+sleep 8
+
+# Read the project path env var name from config
+PROJECT_PATH_VAR=$(jq -r '.env.project | keys[] | select(endswith("_PATH"))' "$REPO_ROOT/PROJECT_CONFIG.json" | head -1)
+PROJECT_PATH_VALUE=$(jq -r --arg k "$PROJECT_PATH_VAR" '.env.project[$k]' "$REPO_ROOT/PROJECT_CONFIG.json")
+
+# Send loop command referencing the loop prompt file
+LOOP_PROMPT="$PROJECT_PATH_VALUE/.worktrees/$ROLE/loops/$ROLE.md"
+tmux send-keys -t "$PROJECT_SLUG:$ROLE" "/loop ${INTERVAL}m $LOOP_PROMPT" Enter
+```
+
+If `INTERVAL == 0` or no loop prompt file exists: skip (non-polling session).
+
 ### Skip idle roles (if selected)
 
 Before launching Claude in a role, check for activity:
@@ -161,7 +221,7 @@ AHEAD=$(git rev-list --count main.."$BRANCH" 2>/dev/null || echo 0)
 ```
 If `DIRTY == 0` and `AHEAD == 0` and no Jira tasks assigned to this role: skip launching Claude in this window (but still create the window for manual use later).
 
-## Step 8: Select master and report
+## Step 10: Select master and report
 
 ```bash
 tmux select-window -t "$PROJECT_SLUG:master"
@@ -198,7 +258,7 @@ project launch — $PROJECT_NAME
 ## `--all` mode
 
 For each project found in `$REPOS_DIR` with `.worktrees/`:
-1. Run Steps 2-8 for each project
+1. Run Steps 2-10 for each project
 2. Present a combined summary at the end:
 
 ```

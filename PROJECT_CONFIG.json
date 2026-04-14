@@ -57,6 +57,24 @@
     "fixer":       { "intervalMinutes": 15 },
     "implementer": { "intervalMinutes": 15 }
   },
+  "env": {
+    "project": {
+      "CHOC-SKILLS_PATH": "/Volumes/TB8/OxygnAI/Repos/choc-skills"
+    },
+    "sessions": {
+      "master": {},
+      "planner": {},
+      "implementer": {},
+      "fixer": {},
+      "merger": {},
+      "chk1": {},
+      "chk2": {},
+      "performance": {},
+      "playtester": {},
+      "reviewer": {},
+      "triager": {}
+    }
+  },
   "coverage": {
     "enabled": false,
     "thresholds": {}

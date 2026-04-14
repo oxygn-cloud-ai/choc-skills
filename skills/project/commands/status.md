@@ -100,6 +100,20 @@ gh issue list --state open --json number,labels --jq '[.[] | {label: (.labels[0]
 
 # Tests
 python3 -m pytest --co -q 2>/dev/null | tail -1 || npm test --dry-run 2>/dev/null || echo "n/a"
+
+# Env vars (from PROJECT_CONFIG.json)
+jq -r '.env.project // {} | to_entries[] | "  \(.key) = \(.value)"' PROJECT_CONFIG.json 2>/dev/null
+jq -r '.env.sessions // {} | to_entries[] | select(.value | length > 0) | "  \(.key): \(.value | to_entries | map("\(.key)=\(.value)") | join(", "))"' PROJECT_CONFIG.json 2>/dev/null
+
+# Loop state
+jq -r '.loops // {} | to_entries[] | "  \(.key): \(.value.intervalMinutes)m"' PROJECT_CONFIG.json 2>/dev/null
+for role in $(jq -r '.loops // {} | to_entries[] | select(.value.intervalMinutes > 0) | .key' PROJECT_CONFIG.json 2>/dev/null); do
+  if [ -f ".worktrees/$role/loops/$role.md" ]; then
+    echo "  $role: prompt file exists"
+  else
+    echo "  $role: prompt file MISSING"
+  fi
+done
 ```
 
 ## Step 4: Display status
@@ -135,6 +149,27 @@ Labels: <count> (<list P1-P4 presence>)
 Open Issues: <count by priority>
 Tests: <count or n/a>
 Memory: <file count in ~/.claude/projects/*/memory/>
+
+Env Vars:
+  Project:
+    CHOC-SKILLS_PATH = /Volumes/TB8/OxygnAI/Repos/choc-skills
+  Session overrides:
+    <role>: <key>=<value>, ... (or "none" if empty)
+
+Loops:
+  | Role         | Interval | Prompt File |
+  |--------------|----------|-------------|
+  | master       | 5m       | ✓           |
+  | triager      | 10m      | ✓           |
+  | reviewer     | 10m      | ✓           |
+  | merger       | 10m      | ✓           |
+  | chk1         | 15m      | ✓           |
+  | chk2         | 30m      | ✓           |
+  | fixer        | 15m      | ✓           |
+  | implementer  | 15m      | ✓           |
+  | planner      | 0 (off)  | —           |
+  | performance  | 0 (off)  | —           |
+  | playtester   | 0 (off)  | —           |
 ```
 
 </process>

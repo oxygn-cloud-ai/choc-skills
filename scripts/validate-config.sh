@@ -119,6 +119,46 @@ for lk in $loop_keys; do
   fi
 done
 
+# --- env section (optional but validated if present) ---
+
+if jq -e 'has("env")' "$CONFIG" >/dev/null 2>&1; then
+  pass "Top-level key: env"
+
+  # env.project must be an object
+  if jq -e '.env.project | type == "object"' "$CONFIG" >/dev/null 2>&1; then
+    pass "env.project is an object"
+  else
+    fail "env.project must be an object"
+  fi
+
+  # env.project values must be strings
+  bad_types=$(jq '[.env.project | to_entries[] | select(.value | type != "string")] | length' "$CONFIG")
+  if [ "$bad_types" = "0" ]; then
+    pass "env.project values are all strings"
+  else
+    fail "env.project has $bad_types non-string values"
+  fi
+
+  # env.sessions must be an object with valid role keys
+  if jq -e '.env.sessions | type == "object"' "$CONFIG" >/dev/null 2>&1; then
+    pass "env.sessions is an object"
+    env_session_keys=$(jq -r '.env.sessions | keys[]' "$CONFIG" 2>/dev/null)
+    for esk in $env_session_keys; do
+      found=0
+      for vr in $VALID_ROLES; do
+        if [ "$esk" = "$vr" ]; then found=1; break; fi
+      done
+      if [ "$found" -eq 1 ]; then
+        pass "env.sessions.$esk is a valid role"
+      else
+        fail "env.sessions.$esk is not a valid role name"
+      fi
+    done
+  else
+    fail "env.sessions must be an object"
+  fi
+fi
+
 # --- Summary ---
 
 echo ""

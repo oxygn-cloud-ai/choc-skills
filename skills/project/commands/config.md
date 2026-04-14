@@ -1,6 +1,6 @@
 ---
 name: project-config
-description: Change project configuration — type, worktrees, labels, Jira, CI, protection
+description: Change project configuration — type, worktrees, labels, Jira, CI, protection, env vars, loops
 allowed-tools:
   - Bash
   - Read
@@ -43,6 +43,7 @@ Options:
 - **Add/remove labels** — manage GitHub labels
 - **Enable/disable branch protection** — toggle branch protection on main
 - **Enable/disable CI workflow** — add or remove .github/workflows/test.yml
+- **Configure environment variables** — manage project-level and per-session env vars exported before Claude launches
 - **Configure loop intervals** — show current per-role intervals, edit any role's `intervalMinutes`
 - **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and PROJECT_CONFIG.json
 - **Update deviations** — document a deviation from global standards in PROJECT_CONFIG.json
@@ -117,6 +118,36 @@ done
 
 ### Enable/disable CI
 - Create or remove `.github/workflows/test.yml`
+
+### Configure environment variables
+1. Read `PROJECT_CONFIG.json` and display current `env` section:
+   ```
+   Project-level vars:
+     CHOC-SKILLS_PATH = /Volumes/TB8/OxygnAI/Repos/choc-skills
+
+   Per-session overrides:
+     master:      (none)
+     planner:     (none)
+     implementer: (none)
+     ...
+   ```
+2. Ask: "What do you want to do?"
+   - **Add/edit project-level var** — ask for key and value, update `env.project`
+   - **Remove project-level var** — show current vars, ask which to remove
+   - **Add/edit per-session var** — ask for role and key/value, update `env.sessions.<role>`
+   - **Remove per-session var** — ask for role, show its vars, ask which to remove
+3. Apply changes via jq:
+   ```bash
+   # Add/edit project-level var
+   jq --arg k "$KEY" --arg v "$VALUE" '.env.project[$k] = $v' "$CONFIG" > tmp && mv tmp "$CONFIG"
+   # Remove project-level var
+   jq --arg k "$KEY" 'del(.env.project[$k])' "$CONFIG" > tmp && mv tmp "$CONFIG"
+   # Add/edit per-session var
+   jq --arg r "$ROLE" --arg k "$KEY" --arg v "$VALUE" '.env.sessions[$r][$k] = $v' "$CONFIG" > tmp && mv tmp "$CONFIG"
+   # Remove per-session var
+   jq --arg r "$ROLE" --arg k "$KEY" 'del(.env.sessions[$r][$k])' "$CONFIG" > tmp && mv tmp "$CONFIG"
+   ```
+4. Run `scripts/validate-config.sh` to confirm the change is valid
 
 ### Configure loop intervals
 1. Read `PROJECT_CONFIG.json` and display current `loops` section as a table:
