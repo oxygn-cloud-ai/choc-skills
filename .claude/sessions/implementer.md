@@ -14,8 +14,10 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 5 for your full protocol.
 **All Jira queries and issue creation must be scoped to epic CPT-3.** Never search or operate on the full CPT project — other epics belong to other projects.
 
 ## Quick Reference
-- Pick highest-priority feature in `Ready for Coding` state from CPT-3
-- Create branch: `feature/CPT-<n>-<slug>`
+- **Rework first:** Check for issues in `Changes Requested` state with your branch. These take priority.
+- Then pick highest-priority feature in `Ready for Coding` state from CPT-3
+- Create branch: `feature/CPT-<n>-<slug>`. If reworking, check out the existing branch.
+- Read Reviewer's Jira comments before reworking to understand what needs to change.
 - Strict red-green TDD — failing test first, then implement
 - Update README.md and ARCHITECTURE.md if change affects documented features
 - Push branch, update Jira to `In Review`. Never merge.
