@@ -169,7 +169,7 @@ cat > "${HOME}/.claude/commands/project.md" <<'ROUTER'
 
 Parse the argument from: $ARGUMENTS
 
-Route to the appropriate sub-command:
+Route to the appropriate sub-command. Every subcommand is a colon-command file under `~/.claude/commands/project/` — there is no inline dispatch:
 
 | Argument | Action |
 |----------|--------|
@@ -179,9 +179,9 @@ Route to the appropriate sub-command:
 | `config` | Run `/project:config` |
 | `launch` (with optional flags) | Run `/project:launch` passing flags |
 | `update`, `--update`, `upgrade` | Run `/project:update` |
-| `help`, `--help`, `-h` | Run `/project help` (the main skill) |
-| `doctor` | Run `/project doctor` (the main skill) |
-| `version` | Run `/project version` (the main skill) |
+| `help`, `--help`, `-h` | Run `/project:help` |
+| `doctor`, `--doctor`, `check` | Run `/project:doctor` |
+| `version`, `--version`, `-v` | Run `/project:version` |
 | anything else | Show: "Unknown command. Run `/project help` for usage." |
 
 Invoke the matching skill using the Skill tool.
