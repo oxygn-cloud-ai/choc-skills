@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.2.1] - 2026-04-14
+
+### Fixed
+- All 30 category commands now skip the per-category fix prompt when invoked from `/chk2:all` batch mode. The fix prompt only appears once at the end of the full run. (CPT-12)
+
 ## [2.2.0] - 2026-04-09
 
 ### Changed

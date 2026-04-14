@@ -50,4 +50,6 @@ Append to `SECURITY_CHECK.md`:
 
 ## After
 
+**Skip this section when invoked from `/chk2:all` (batch mode).** Only ask when run as a standalone category check.
+
 Ask the user: **Do you want help fixing the cookie issues found?** If yes, invoke `/chk2:fix` with context about which cookie tests failed.
