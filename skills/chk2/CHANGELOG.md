@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.2.1] - 2026-04-14
+
+### Added
+- Session-level circuit breaker: aborts remaining categories after 3 consecutive rate-limited tests instead of allowing unbounded 65s retries per category. (CPT-11)
+
 ## [2.2.0] - 2026-04-09
 
 ### Changed
