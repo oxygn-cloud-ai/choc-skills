@@ -389,3 +389,91 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"Result: PASS"* ]]
 }
+
+# --- CPT-41 v2.0.2 follow-up semantic checks ---
+
+@test "validate-config: env.sessions key not in sessions.roles fails" {
+  cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "project": { "name": "test", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "test" },
+  "sessions": { "roles": ["master"] },
+  "env": {
+    "project": {},
+    "sessions": {
+      "chk2": { "FOO": "bar" }
+    }
+  }
+}
+EOF
+  run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"env.sessions.chk2"* ]]
+  [[ "$output" == *"not in sessions.roles"* ]]
+}
+
+@test "validate-config: env var with invalid identifier key fails" {
+  cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "project": { "name": "test", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "test" },
+  "sessions": { "roles": ["master"] },
+  "env": {
+    "project": { "CHOC-SKILLS_PATH": "/some/path" },
+    "sessions": {}
+  }
+}
+EOF
+  run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not a valid shell identifier"* ]]
+}
+
+@test "validate-config: env var with valid identifier key passes" {
+  cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "project": { "name": "test", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "test" },
+  "sessions": { "roles": ["master", "chk2"] },
+  "env": {
+    "project": { "CHOC_SKILLS_PATH": "/some/path" },
+    "sessions": {
+      "chk2": { "CHK2_TARGET": "staging.example.com" }
+    }
+  }
+}
+EOF
+  run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Result: PASS"* ]]
+  [[ "$output" == *"All env var names are valid shell identifiers"* ]]
+}
+
+@test "validate-config: loop-capable role without loop entry warns but passes" {
+  cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "project": { "name": "test", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "test" },
+  "sessions": {
+    "roles": ["master", "triager", "fixer"],
+    "loops": {
+      "master": { "intervalMinutes": 5 }
+    }
+  }
+}
+EOF
+  run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Result: PASS"* ]]
+  [[ "$output" == *"[WARN]"* ]]
+  [[ "$output" == *"'triager'"* ]]
+  [[ "$output" == *"'fixer'"* ]]
+}

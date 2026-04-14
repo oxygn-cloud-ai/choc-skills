@@ -135,9 +135,10 @@ done
 - Show current `env.project` and `env.sessions` from PROJECT_CONFIG.json
 - Ask: add / remove / edit; project-level or per-session
 - If per-session, ask which role
+- **Validate key** against `^[A-Za-z_][A-Za-z0-9_]*$`. Reject hyphens, dots, or any non-identifier characters — `/project:launch` would be unable to `export` them.
 - **Never write secrets here** — warn if value looks like a secret (starts with `sk-`, `ghp_`, contains "password", "token", "key" with long random value). Direct user to future secrets manager integration.
 - Update PROJECT_CONFIG.json
-- Note: `<DIRNAME_UPPER>_PATH` is auto-set by `/project:launch` and does not need to be declared.
+- Note: the auto-set project-path var is `<DIRNAME_SANITIZED>_PATH` — directory name uppercased with non-[A-Z0-9_] chars replaced by underscore, then `_PATH` appended. For `choc-skills` this is `CHOC_SKILLS_PATH` (not `CHOC-SKILLS_PATH` — bash rejects hyphens in identifiers). Auto-set by `/project:launch`; do not declare it here.
 
 ### Update deviations
 - Ask: "What deviation are you documenting?"

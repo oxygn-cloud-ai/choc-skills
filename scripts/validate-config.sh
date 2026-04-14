@@ -158,6 +158,52 @@ for role in $LOOP_ROLES; do
   fi
 done
 
+# Check every loop-capable role in sessions.roles has a loops entry (or warn).
+# Loop-capable roles are the 8 polling roles: master, triager, reviewer,
+# merger, chk1, chk2, fixer, implementer. A missing entry isn't an error —
+# the launcher will just skip dispatch — but it's almost always a config
+# mistake worth surfacing.
+LOOP_CAPABLE="master triager reviewer merger chk1 chk2 fixer implementer"
+for role in $LOOP_CAPABLE; do
+  if echo "$ROLES" | grep -qx "$role"; then
+    if echo "$LOOP_ROLES" | grep -qx "$role"; then
+      :
+    else
+      warn "Loop-capable role '$role' is in sessions.roles but has no sessions.loops entry (launcher will skip /loop for this role)"
+    fi
+  fi
+done
+
+# env.sessions.<role> keys must appear in sessions.roles (schema pattern
+# allows any of the 11 role names, but declaring env for a role that isn't
+# active is almost certainly a bug).
+ENV_SESSION_ROLES=$(jq -r '.env.sessions // {} | keys[]' "$CONFIG_FILE" 2>/dev/null)
+for role in $ENV_SESSION_ROLES; do
+  if echo "$ROLES" | grep -qx "$role"; then
+    pass "env.sessions.$role role is active in sessions.roles"
+  else
+    err "env.sessions.$role declares env vars for a role not in sessions.roles"
+  fi
+done
+
+# env keys must be valid shell identifiers — schema doesn't enforce this and
+# the launcher's `export $KEY=…` would fail if the key contains hyphens, dots,
+# spaces, or starts with a digit.
+INVALID_ENV_KEYS=$(jq -r '
+  [(.env.project // {} | to_entries[] | .key),
+   (.env.sessions // {} | to_entries[] | .value | to_entries[] | .key)]
+  | .[]
+' "$CONFIG_FILE" 2>/dev/null | awk '!/^[A-Za-z_][A-Za-z0-9_]*$/ {print}')
+if [[ -n "$INVALID_ENV_KEYS" ]]; then
+  while IFS= read -r bad; do
+    err "env var name is not a valid shell identifier: '$bad' (must match ^[A-Za-z_][A-Za-z0-9_]*\$)"
+  done <<< "$INVALID_ENV_KEYS"
+else
+  if [[ -n "$(jq -r '.env // empty' "$CONFIG_FILE" 2>/dev/null)" ]]; then
+    pass "All env var names are valid shell identifiers"
+  fi
+fi
+
 # Check github.owner/repo are non-empty
 GH_OWNER=$(jq -r '.github.owner' "$CONFIG_FILE")
 GH_REPO=$(jq -r '.github.repo' "$CONFIG_FILE")

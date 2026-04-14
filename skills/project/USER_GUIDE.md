@@ -2,7 +2,7 @@
 
 A comprehensive guide to the `/project` skill — project repository administration for multi-session Claude Code workflows.
 
-**Skill version:** 2.0.0
+**Skill version:** 2.0.2
 
 ---
 
@@ -415,7 +415,7 @@ Runs 9 health checks:
 /project -v
 ```
 
-Outputs: `project v2.0.0`
+Outputs: `project v2.0.2`
 
 ## Key Concepts
 
@@ -519,13 +519,13 @@ Loop prompts are recurring task instructions — separate from session identity 
 - `intervalMinutes: 0` = loop disabled for this role
 - `prompt` path is relative to the worktree root (default: `loops/loop.md`)
 
-**Dispatch:** `/project:launch` sends `/loop <N>m loops/loop.md` to each loop-capable session after it initializes. The command runs inside the role's worktree so the relative path resolves.
+**Dispatch:** `/project:launch` reads each role's `loops/loop.md`, inlines the contents into the `/loop` command, and pastes it as a single bracketed-paste block after Claude reaches a stable state (polled, no blind `sleep`). The `/loop` skill takes "a prompt or a slash command" — a file path would be treated as literal text, so the text is inlined rather than passed as a path.
 
 ### Environment Variables
 
 Every launched session gets env vars exported automatically:
 
-**Auto-set:** `<DIRNAME_UPPER>_PATH` — e.g., `CHOC-SKILLS_PATH=/path/to/repo`. Directory name uppercased, special chars preserved, `_PATH` suffix. Used by loop prompts and scripts to reference the project root portably.
+**Auto-set:** `<DIRNAME_SANITIZED>_PATH` — e.g., `CHOC_SKILLS_PATH=/path/to/repo`. Directory name uppercased with any non-`[A-Z0-9_]` characters replaced by underscore, `_PATH` suffix. (Bash identifiers can't contain hyphens, so `choc-skills` becomes `CHOC_SKILLS_PATH`, not `CHOC-SKILLS_PATH`.) Used by loop prompts and scripts to reference the project root portably.
 
 **From `PROJECT_CONFIG.json` `env` section:**
 ```json
@@ -678,4 +678,4 @@ When all gates pass, Master notifies you:
 
 ---
 
-*This guide covers /project v2.0.0. Run `/project version` to check your installed version.*
+*This guide covers /project v2.0.2. Run `/project version` to check your installed version.*

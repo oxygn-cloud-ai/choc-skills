@@ -2,6 +2,47 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.0.2] - 2026-04-14
+
+### Fixed (CPT-41 logic-review follow-up — dual audit by self + Codex)
+
+- **P1/BLOCKER**: Sanitize the auto-exported project-path env var. Previous
+  `basename | tr upper` produced invalid shell identifiers for any repo with
+  a hyphen or dot in its name (e.g., `CHOC-SKILLS_PATH`). `export` rejects
+  those with "not a valid identifier." Now the name is uppercased with
+  non-`[A-Z0-9_]` chars replaced by underscore, yielding e.g.
+  `CHOC_SKILLS_PATH`. Schema docstring, launch.md, config.md, USER_GUIDE.md
+  all updated.
+- **P1/BLOCKER**: Don't launch Claude with `cat prompt | claude …`. Piped
+  stdin closes at EOF; subsequent `tmux send-keys "/loop …"` would either
+  land in the shell (Claude having exited) or hit a process with closed
+  stdin. Now Claude is launched attached to the pane TTY, identity prompt is
+  pasted as a single bracketed-paste block, then `/loop` is pasted the same
+  way. All via new helpers `_paste_file_and_submit` and `_send_loop_command`.
+- **P2/HIGH**: Inline the loop prompt text into the `/loop` command. The
+  `/loop` skill accepts "a prompt or a slash command" — passing a path
+  argument like `loops/loop.md` would schedule the literal string, not the
+  file contents. `_send_loop_command` now reads the file and inlines the
+  text after `/loop <N>m ` as a single pasted block.
+- **P2/HIGH**: Replace `sleep 3` with `_wait_pane_stable` — poll the pane
+  for output stability (no changes for N consecutive 1-second samples, up
+  to a timeout). Used both before identity-prompt paste (Claude+MCP init)
+  and before `/loop` dispatch (identity-prompt processing).
+- **P2/HIGH**: Validate env var keys as legal shell identifiers
+  (`^[A-Za-z_][A-Za-z0-9_]*$`) and quote values with `printf '%q'` before
+  `tmux send-keys "export KEY=…"`. Previous single-quote templating broke
+  on values containing single quotes or unescaped dollar signs, and no key
+  validation meant `export` could fail silently mid-launch.
+- **P3/LOW**: Expand `scripts/validate-config.sh` semantic checks beyond
+  schema validation — now also errors on env var keys that aren't valid
+  shell identifiers, errors on `env.sessions.<role>` where the role isn't
+  in `sessions.roles`, and warns on loop-capable roles in `sessions.roles`
+  that have no `sessions.loops` entry. 4 new BATS tests (24 total).
+
+### Credits
+Dual review by self + Codex CLI 0.118.0 against commit 0f0ea4b before
+session restart. Both reviews converged on the same blockers.
+
 ## [2.0.1] - 2026-04-14
 
 ### Removed

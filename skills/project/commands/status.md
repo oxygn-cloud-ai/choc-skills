@@ -142,7 +142,7 @@ Loops (from PROJECT_CONFIG.json sessions.loops):
   ...
 
 Env vars:
-  project:   <count>   (e.g., CHOC-SKILLS_PATH auto-set at launch)
+  project:   <count>   (e.g., CHOC_SKILLS_PATH auto-set at launch — sanitized dir name)
   sessions:  <count>   (keyed by role)
 
 Open Jira Issues: <count by priority from Atlassian MCP>

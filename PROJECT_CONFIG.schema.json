@@ -160,7 +160,7 @@
         "project": {
           "type": "object",
           "additionalProperties": { "type": "string" },
-          "description": "Project-level env vars exported into every session. The variable <DIRNAME_UPPER>_PATH (directory name uppercased, special chars preserved, _PATH suffix) is auto-set to the project root and does not need to be declared here."
+          "description": "Project-level env vars exported into every session. The variable <DIRNAME_SANITIZED>_PATH (directory name uppercased with any non-[A-Z0-9_] chars replaced by underscore, then _PATH appended; e.g. 'choc-skills' → 'CHOC_SKILLS_PATH') is auto-set to the project root and does not need to be declared here. Keys declared here must match ^[A-Za-z_][A-Za-z0-9_]*$."
         },
         "sessions": {
           "type": "object",
