@@ -25,7 +25,7 @@ If not in a git repo, say "Not in a git repository. Navigate to a project and tr
 
 Verify dependencies exist before reading:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: WARN and continue (skip label/CI standard comparison)
+- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: WARN and continue (skip CI standard comparison)
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role list and expected worktree layout (if available).
 Read the project's `CLAUDE.md` and `PROJECT_CONFIG.json` if they exist.
@@ -91,12 +91,8 @@ gh api "repos/$OWNER_REPO/branches/main/protection" --jq '.required_status_check
 # Worktrees
 git worktree list
 
-# Labels
-gh label list --json name --jq '.[].name' 2>/dev/null | sort
-
-# Open issues (Jira — via Atlassian MCP if available, otherwise note)
-# Fallback: check GitHub issues
-gh issue list --state open --json number,labels --jq '[.[] | {label: (.labels[0].name // "unlabeled")}] | group_by(.label) | map({key: .[0].label, count: length}) | .[]' 2>/dev/null
+# Open Jira issues for this project epic (via Atlassian MCP when available)
+# GitHub labels and issues are intentionally not queried — Jira is source of truth.
 
 # Tests (detect test framework without running tests)
 if [ -f "pyproject.toml" ] || [ -d "tests" ]; then
@@ -139,8 +135,7 @@ Branch: <branch> (protected: <yes/no>, force-push: <blocked/allowed>)
 Worktrees:
   <for each worktree from git worktree list, show branch, path, ahead/behind main>
 
-Labels: <count> (<list P1-P4 presence>)
-Open Issues: <count by priority>
+Open Jira Issues: <count by priority from Atlassian MCP>
 Tests: <count or n/a>
 Memory: <file count in ~/.claude/projects/*/memory/>
 ```

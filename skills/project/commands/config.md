@@ -1,6 +1,6 @@
 ---
 name: project-config
-description: Change project configuration — type, worktrees, labels, Jira, CI, protection
+description: Change project configuration — type, worktrees, Jira, CI, protection, loops
 allowed-tools:
   - Bash
   - Read
@@ -42,7 +42,6 @@ Options:
 - **Add worktree session** — create a new session worktree (asks: role name, purpose)
 - **Remove worktree session** — remove a session worktree and optionally delete its branch
 - **List worktrees** — show all active worktrees with branch, path, and status
-- **Add/remove labels** — manage GitHub labels
 - **Enable/disable branch protection** — toggle branch protection on main
 - **Enable/disable CI workflow** — add or remove .github/workflows/test.yml
 - **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and PROJECT_CONFIG.json
@@ -53,7 +52,7 @@ Options:
 
 ### Change project type
 1. Ask: "Switch to Software or Non-Software?"
-2. If switching to Software: add missing worktrees (chk1, chk2, playtester), create CI, set protection, add full label set
+2. If switching to Software: add missing worktrees (chk1, chk2, playtester), create CI, set protection
 3. If switching to Non-Software: warn about removing CI/protection, remove extra worktrees if user confirms
 4. Update PROJECT_CONFIG.json
 
@@ -106,11 +105,6 @@ for wt in $(git worktree list --porcelain | grep '^worktree ' | sed 's/worktree 
   echo "$branch  $wt  ($ahead ahead, $last)"
 done
 ```
-
-### Add/remove labels
-- Show current labels
-- Ask which to add or remove
-- Execute `gh label create` or `gh label delete`
 
 ### Enable/disable branch protection
 - Toggle via `gh api repos/{owner}/{repo}/branches/main/protection`

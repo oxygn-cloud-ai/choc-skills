@@ -118,33 +118,23 @@ Create these files at the repo root:
 - Go: `go.mod`, `main.go`, `.gitignore`
 - Other: `.gitignore`
 
-## Step 6: Create GitHub labels
+## Step 6: Delete GitHub labels
 
-Read label definitions from `~/.claude/PROJECT_STANDARDS.md` section 2.
+GitHub Issues are disabled project-wide (Jira is the single source of truth per
+`~/.claude/PROJECT_STANDARDS.md`). GitHub labels serve no purpose and must be
+removed so they don't appear on any accidental PRs or stray issues.
 
-For Software projects — full set:
 ```bash
-gh label create "P1" --color "b60205" --description "Critical — blocks progress, fix immediately" 2>/dev/null || true
-gh label create "P2" --color "d93f0b" --description "High — fix soon, before next release" 2>/dev/null || true
-gh label create "P3" --color "fbca04" --description "Medium — fix when touching related code" 2>/dev/null || true
-gh label create "P4" --color "c5def5" --description "Low — cosmetic, infra, or nice-to-have" 2>/dev/null || true
-gh label create "bug" --color "d73a4a" --description "Something isn't working" 2>/dev/null || true
-gh label create "enhancement" --color "a2eeef" --description "New feature or improvement" 2>/dev/null || true
-gh label create "security" --color "ee0701" --description "Security vulnerability or hardening" 2>/dev/null || true
-gh label create "performance" --color "f9d0c4" --description "Performance issue or optimization" 2>/dev/null || true
-gh label create "code-quality" --color "bfdadc" --description "Code quality, maintainability, or correctness" 2>/dev/null || true
-gh label create "documentation" --color "0075ca" --description "Documentation update needed" 2>/dev/null || true
-gh label create "ci-failure" --color "b60205" --description "Automated CI failure report" 2>/dev/null || true
-```
+# Disable GitHub Issues on the repo
+gh repo edit --enable-issues=false 2>/dev/null || true
 
-For Non-Software — reduced set (P1-P4 + bug, enhancement, documentation only).
-
-Delete GitHub's default labels that aren't in our set:
-```bash
-for label in "good first issue" "help wanted" "invalid" "wontfix" "question" "duplicate"; do
+# Delete all default GitHub labels
+for label in "good first issue" "help wanted" "invalid" "wontfix" "question" "duplicate" "bug" "documentation" "enhancement"; do
   gh label delete "$label" --yes 2>/dev/null || true
 done
 ```
+
+Do not create any labels. All priority/category information lives on Jira issues.
 
 ## Step 7: Jira epic
 
@@ -270,7 +260,6 @@ Project <name> created successfully.
   Jira Epic:  <epic-key>
   Branch:     main (protected: <yes/no>)
   CI:         <.github/workflows/test.yml | n/a>
-  Labels:     <count> created
   Docs:       PHILOSOPHY.md, README.md, ARCHITECTURE.md, CLAUDE.md, PROJECT_CONFIG.json
   Worktrees:  <count> sessions in .worktrees/
   Prompts:    .claude/sessions/*.md
@@ -285,7 +274,7 @@ Project <name> created successfully.
 <success_criteria>
 - [ ] GitHub repo created with correct visibility
 - [ ] All required docs present at repo root
-- [ ] Labels match PROJECT_STANDARDS.md spec for project type
+- [ ] GitHub Issues disabled and all default labels deleted
 - [ ] Jira epic key documented in CLAUDE.md and PROJECT_CONFIG.json
 - [ ] All session worktrees created with correct branch names
 - [ ] Session startup prompts created in .claude/sessions/
