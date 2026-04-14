@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.2] - 2026-04-13
+
+### Fixed
+- Added MAX_TOTAL_AGENTS (50) hard cap on total agent dispatches in Agent Orchestrator Mode
+- Added cumulative agent count tracking with wave abort when cap is reached
+- Added MAX_TOTAL_RETRIES (10) global retry budget across all failed batches
+- Added finalization gating: finalization runs exactly once after all retries complete, preventing duplicate Jira publications
+
 ## [5.2.1] - 2026-04-12
 
 ### Fixed

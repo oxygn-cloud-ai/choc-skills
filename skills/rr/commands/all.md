@@ -67,6 +67,19 @@ Capture the batch count from the last line of stdout. If 0, report "No risks to 
 
 ### Phase 4: Agent Dispatch
 
+#### Resource Limits
+
+| Limit | Value | Purpose |
+|-------|-------|---------|
+| MAX_TOTAL_AGENTS | 50 | Hard cap on total agents dispatched regardless of register size |
+| Wave size | 5 | Maximum concurrent agents per wave |
+| MAX_TOTAL_RETRIES | 10 | Global retry budget across all failed batches |
+
+If the number of batch files exceeds MAX_TOTAL_AGENTS, only the first 50 batches are dispatched. Log a warning for any skipped batches:
+```
+[WARNING] Agent cap reached (50). Skipping remaining N batches. Run /rr all again to process the rest.
+```
+
 #### Setup
 
 1. Write a phase marker to the batch log:
@@ -86,7 +99,11 @@ Capture the batch count from the last line of stdout. If 0, report "No risks to 
 
 #### Dispatch in Waves
 
-Process batches in waves of up to 5 concurrent agents.
+Process batches in waves of up to 5 concurrent agents. Track cumulative agent count (`agents_dispatched`) across all waves. Before dispatching each wave, check: if `agents_dispatched` would exceed MAX_TOTAL_AGENTS (50), skip remaining waves and log:
+```bash
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] AGENT CAP REACHED: $agents_dispatched agents dispatched, skipping remaining batches" >> ${RR_WORK_DIR:-~/rr-work}/batch.log
+```
+Mark all skipped batches as `SKIPPED — agent cap reached` in the batch log.
 
 For each wave of batches:
 
@@ -140,7 +157,12 @@ ls ${RR_WORK_DIR:-~/rr-work}/extracts/batch_*.json | while read f; do
 done
 ```
 
-For any failed batches (up to 3), retry once by re-spawning an Agent with the same prompt. Log retry outcomes.
+Retry failed batches with a global retry budget of MAX_TOTAL_RETRIES (10). Track `total_retries` across all batches. For each failed batch, retry once — but stop retrying if `total_retries` reaches MAX_TOTAL_RETRIES, even if individual batches have retries remaining. Log retry outcomes, including if the budget was exhausted:
+```bash
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] RETRY BUDGET EXHAUSTED: $total_retries retries used, N failed batches remaining" >> ${RR_WORK_DIR:-~/rr-work}/batch.log
+```
+
+**Finalization gating:** Do NOT invoke finalization after individual retries. Finalization runs exactly once after all retries complete (see Phase 5-7 below). This prevents duplicate Jira publications from concurrent or sequential retry successes.
 
 #### Dispatch Summary
 
