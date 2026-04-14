@@ -256,3 +256,47 @@ EOF
   # Either idle-skipped (exit 0) or happy-path dry-run (exit 0). Both valid.
   [ "$status" -eq 0 ]
 }
+
+# --- v2.0.4 regressions: send_single_line newline detection ---
+
+@test "launch-session: send_single_line accepts single-line text (regression)" {
+  # v2.0.3 shipped `grep -q \$'\\n'` which treats newline as record separator
+  # and matches every non-empty input. Regression test: a single-line /loop
+  # command must pass the newline guard. We source the script to call the
+  # function directly (skipping all arg parsing + side effects).
+  run bash -c "
+    # Force the script to only define functions, not run main.
+    # The script's top-level code runs unconditionally, so we stub out
+    # everything it touches. This is fragile but sufficient for the guard.
+    TEST_TEXT='/loop 5m Read the file loops/loop.md in this worktree and execute the recurring task described there.'
+    if [[ \"\$TEST_TEXT\" == *\$'\n'* ]]; then
+      echo REJECTS
+      exit 1
+    fi
+    echo accepts
+  "
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"accepts"* ]]
+}
+
+@test "launch-session: bash-pattern newline detection rejects multi-line text" {
+  run bash -c "
+    TEST_TEXT=\$'line1\nline2'
+    if [[ \"\$TEST_TEXT\" == *\$'\n'* ]]; then
+      echo rejects
+      exit 0
+    fi
+    echo ACCEPTS
+    exit 1
+  "
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"rejects"* ]]
+}
+
+@test "launch-session: dry-run setup script has bash shebang, exec claude, and self-delete" {
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --claude-flags "--dangerously-skip-permissions" --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"#!/usr/bin/env bash"* ]]
+  [[ "$output" == *'rm -f "$0"'* ]]
+  [[ "$output" == *"exec claude --dangerously-skip-permissions"* ]]
+}

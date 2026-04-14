@@ -132,14 +132,30 @@ fi
 # Check project.name matches directory name. In a git worktree the directory
 # basename is the ROLE (e.g., "master"), not the project. Resolve to the main
 # repo name via `git rev-parse --git-common-dir` so the check stays meaningful.
+#
+# CRITICAL: `git rev-parse --git-common-dir` can return a path relative to
+# the git invocation cwd (`.git`) or absolute (when in a worktree). Without
+# `--path-format=absolute` we'd `cd` relative to the process cwd, not
+# CONFIG_DIR, resolving the wrong repo when the validator is invoked with a
+# path arg from elsewhere. The flag is git 2.31+ (Mar 2021) — safe to require.
 PROJ_NAME=$(jq -r '.project.name' "$CONFIG_FILE")
 DIR_NAME=$(basename "$CONFIG_DIR")
 if command -v git &>/dev/null && git -C "$CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
-  # Get the main repo root (works in both worktrees and the main repo)
-  COMMON_DIR=$(git -C "$CONFIG_DIR" rev-parse --git-common-dir 2>/dev/null)
+  COMMON_DIR=$(git -C "$CONFIG_DIR" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+  # Fallback for old git (<2.31) — resolve relative path against CONFIG_DIR.
+  if [[ -z "$COMMON_DIR" ]]; then
+    REL_COMMON=$(git -C "$CONFIG_DIR" rev-parse --git-common-dir 2>/dev/null || true)
+    if [[ -n "$REL_COMMON" ]]; then
+      if [[ "$REL_COMMON" = /* ]]; then
+        COMMON_DIR="$REL_COMMON"
+      else
+        COMMON_DIR=$(cd "$CONFIG_DIR" && cd "$REL_COMMON" && pwd 2>/dev/null || true)
+      fi
+    fi
+  fi
   if [[ -n "$COMMON_DIR" && -d "$COMMON_DIR" ]]; then
-    # COMMON_DIR is usually .git — its parent is the main repo
-    MAIN_REPO=$(cd "$COMMON_DIR/.." && pwd 2>/dev/null)
+    # COMMON_DIR is <main-repo>/.git — its parent is the main repo.
+    MAIN_REPO=$(cd "$COMMON_DIR/.." && pwd 2>/dev/null || true)
     [[ -n "$MAIN_REPO" ]] && DIR_NAME=$(basename "$MAIN_REPO")
   fi
 fi

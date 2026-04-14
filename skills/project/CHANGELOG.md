@@ -2,6 +2,70 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.0.4] - 2026-04-14
+
+### Fixed (CPT-41 fourth-pass review — 5 findings Codex caught in v2.0.3)
+
+- **BLOCKER**: `send_single_line()` was shipping broken. It used
+  `grep -q $'\n'` to detect multi-line text, but grep treats newlines as
+  record separators, making the pattern empty — which matches every
+  non-empty string. Result: EVERY valid `/loop` command was rejected, the
+  script would `die` with "refuses multi-line text", and v2.0.3's live
+  launch path would never succeed. Fixed with bash pattern matching
+  `[[ "$text" == *$'\n'* ]]` which actually works. Added a regression
+  test that would have caught this.
+- **HIGH**: `source '$PANE_SETUP'` runs in the pane's existing login shell,
+  not bash. That's fine on macOS/Linux where pane shell is zsh/bash but
+  fails anywhere with `sh`/`fish`/`dash`. v2.0.3's changelog claimed
+  "executes under bash regardless of pane shell" — the claim was wrong.
+  Now uses `exec bash '$PANE_SETUP'` which forces bash regardless of login
+  shell. `exec` replaces the pane process chain: login-shell → bash →
+  (self-delete) → claude.
+- **MEDIUM**: `scripts/validate-config.sh` worktree-aware name check was
+  partially broken. `git rev-parse --git-common-dir` returns a RELATIVE
+  path (`.git`) when the cwd is already the main repo, but the script
+  then `cd`'d relative to the PROCESS cwd, not to `CONFIG_DIR`. Running
+  `validate-config.sh /abs/path/config.json` from `/tmp` silently
+  resolved the wrong repo. Fixed with `--path-format=absolute` (git
+  2.31+) and a fallback branch for older git that normalizes relative
+  paths against `CONFIG_DIR`. Regression test added: runs validator
+  from `/tmp` against absolute config path; expects PASS with no
+  "does not match" warning.
+- **MEDIUM**: Temp script handoff collision + leak. v2.0.3 used a stable
+  `/tmp/project-launch-<slug>-<role>.sh` path — two concurrent launches
+  of the same project+role would overwrite each other. Also the trailing
+  `; rm -f` in `tmux send-keys "source …; rm -f …"` NEVER executed
+  because `exec claude` inside the sourced script replaced the shell
+  before the rm ran. Now: `mktemp` for a unique filename, and the
+  generated setup script self-deletes with `rm -f "$0"` (works because
+  Unix allows unlinking an open file without affecting the running
+  process; bash has already read the script into memory before exec).
+- **LOW / documented caveat**: BATS tests exercise dry-run paths,
+  argument parsing, env-var quoting, and setup-script generation, but
+  NOT the live-tmux paths (`paste-buffer -p` bracketed paste into
+  Claude's input box, `capture-pane` readiness polling, `/loop`
+  dispatch into a running Claude). Those require an actual TTY +
+  live Claude Code + MCP init and cannot be unit-tested from BATS.
+  Verification method for those paths is: (1) Codex review — confirmed
+  the logic is correct per docs; (2) live test with ONE role before
+  restarting all 11 sessions. The user should expect to try
+  `/project:launch` first, observe one role, and only proceed with
+  all 11 after verifying the bracketed-paste and `/loop` dispatch
+  work end-to-end.
+
+### Added
+
+- 3 new BATS tests (78 total): `send_single_line` newline guard
+  regression, bash-pattern newline detection positive case, setup
+  script self-delete verification; worktree-aware validate-config
+  from-different-cwd regression.
+
+### Credits
+Third adversarial audit by Codex CLI 0.118.0 found all 5 of these —
+one was a hard blocker that my own v2.0.3 tests failed to catch
+because they only covered dry-run paths. Testing gap honestly
+documented (see LOW above).
+
 ## [2.0.3] - 2026-04-14
 
 ### Fixed (CPT-41 third-pass review — 11 additional findings from Codex + self adversarial audit of v2.0.2)

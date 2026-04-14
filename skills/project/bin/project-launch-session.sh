@@ -147,10 +147,15 @@ paste_file_and_submit() {
 
 # Submit a single-line text as a user message (no newlines — keeps /loop's
 # slash-command parser in known-good territory).
+#
+# IMPORTANT: the newline check uses bash pattern matching, NOT `grep -q $'\n'`
+# — grep treats newlines as record separators, so the pattern becomes empty
+# and matches any non-empty line, rejecting every valid call. v2.0.3 shipped
+# with that bug; v2.0.4 uses [[ == *$'\n'* ]] which actually works.
 send_single_line() {
   local text="$1"
-  if printf '%s' "$text" | grep -q $'\n'; then
-    die "send_single_line refuses multi-line text (got $(printf '%s' "$text" | wc -l) lines)" 3
+  if [[ "$text" == *$'\n'* ]]; then
+    die "send_single_line refuses multi-line text" 3
   fi
   # Use send-keys with -l to treat the string as literal input (no key-name
   # interpretation), then Enter to submit.
@@ -209,6 +214,12 @@ trap cleanup_setup EXIT
   jq -r --arg r "$ROLE" '.env.sessions[$r] // {} | to_entries[] | "export \(.key)=\(.value | @sh)"' "$CONFIG"
   # cd into the worktree (double-safety — tmux -c should have already done this)
   printf 'cd %q\n' "$WORKTREE"
+  # Self-delete BEFORE exec — on Unix you can unlink an open file without
+  # affecting the running process. This matters because `exec claude` replaces
+  # this bash process, so any post-exec cleanup would never run. The old
+  # approach appended '; rm -f' to the tmux send-keys string but that also
+  # never ran for the same reason.
+  echo 'rm -f "$0"'
   # exec claude
   if [ -n "$CLAUDE_FLAGS" ]; then
     # shellcheck disable=SC2086  # intentional word-splitting of flags
@@ -291,17 +302,25 @@ fi
 
 tmux has-session -t "${TARGET%:*}" 2>/dev/null || die "tmux session does not exist: ${TARGET%:*} (caller must create it)" 3
 
-# Move setup script to a location the pane can read even after this wrapper
-# exits (trap would delete $SETUP_SCRIPT otherwise). Use a stable-ish name
-# so the pane can 'source + rm' it; keep 0600 perms.
-PANE_SETUP="/tmp/project-launch-$(basename "$REPO_ROOT")-${ROLE}.sh"
+# Move setup script to a unique path the pane can read. Unique filename
+# (mktemp) avoids collisions when the same project+role is launched twice
+# concurrently (or when a previous launch crashed mid-flight and left stale
+# files). 0600 perms since the file contains env var values that may be
+# non-secret but are still project-specific.
+PANE_SETUP=$(mktemp "/tmp/project-launch-$(basename "$REPO_ROOT")-${ROLE}-XXXXXX.sh")
 cp "$SETUP_SCRIPT" "$PANE_SETUP"
 chmod 600 "$PANE_SETUP"
 
-log "sourcing setup script in pane ($PROJECT_ENV_NAME -> $REPO_ROOT, $CLAUDE_FLAGS)"
-# The setup script ends in `exec claude …` so this single command sets env,
-# cd's, and replaces the shell with claude in one atomic step.
-tmux send-keys -t "$TARGET" "source '$PANE_SETUP' ; rm -f '$PANE_SETUP'" Enter
+log "executing setup script in pane under bash ($PROJECT_ENV_NAME -> $REPO_ROOT, $CLAUDE_FLAGS)"
+# Use `exec bash PANE_SETUP` (NOT `source`) so we know the setup script runs
+# under bash regardless of the pane's login shell (zsh, fish, sh, etc.).
+# 'exec' replaces the pane's shell with bash, bash runs the setup script,
+# the setup script self-deletes (rm -f "$0") and then `exec claude` replaces
+# bash with claude — pane is now claude, 0 leftover files.
+#
+# We single-quote the path for the pane's shell. The path comes from mktemp
+# so it contains only [A-Za-z0-9./_-]; no quoting hazards.
+tmux send-keys -t "$TARGET" "exec bash '$PANE_SETUP'" Enter
 
 # Wait for Claude to initialize (MCP servers, plugins, etc. — 8-15s typical,
 # longer on first run).

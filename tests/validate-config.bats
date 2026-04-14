@@ -455,6 +455,19 @@ EOF
   [[ "$output" == *"All env var names are valid shell identifiers"* ]]
 }
 
+@test "validate-config: worktree-aware name check works from a different cwd" {
+  # Regression for v2.0.4: when invoked with an absolute config path from a
+  # different cwd than the repo, the worktree name check must still resolve
+  # the MAIN repo via --path-format=absolute instead of cd'ing relative to
+  # process cwd. We run validator from /tmp against the real choc-skills
+  # config. Must PASS without a 'does not match' warning.
+  cd /tmp
+  run "$VALIDATOR" "${REPO_DIR}/PROJECT_CONFIG.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Result: PASS"* ]]
+  [[ ! "$output" == *"does not match"* ]]
+}
+
 @test "validate-config: loop-capable role without loop entry warns but passes" {
   cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
 {
