@@ -50,8 +50,11 @@ mcp__plugin_atlassian_atlassian__createJiraIssue
     labels: ["<Qn-Risk-Assessment>"]
 ```
 
-### 5. Create Finding Tasks
-For each finding in assessment_final.json:
+### 5. Create Finding Tasks (Wave 2 — parallel)
+
+Create ALL finding tasks in a single message with parallel MCP tool calls. All findings are independent and share the same parent (the Epic key from step 4).
+
+For each finding in assessment_final.json, call in parallel:
 ```
 mcp__plugin_atlassian_atlassian__createJiraIssue
   projectKey: "RA"
@@ -61,8 +64,13 @@ mcp__plugin_atlassian_atlassian__createJiraIssue
   description: <rendered markdown of finding details including inherent risk, projected residual, epistemic basis>
 ```
 
-### 6. Create Mitigation Sub-tasks
-For each mitigation under each finding:
+Collect all returned finding keys and map them to their findings for step 6.
+
+### 6. Create Mitigation Sub-tasks (Wave 3 — parallel)
+
+Create ALL mitigation sub-tasks across ALL findings in a single message with parallel MCP tool calls. Each mitigation needs its parent finding key (from step 5) but mitigations are independent of each other.
+
+For each mitigation under each finding, call in parallel:
 ```
 mcp__plugin_atlassian_atlassian__createJiraIssue
   projectKey: "RA"
@@ -71,6 +79,11 @@ mcp__plugin_atlassian_atlassian__createJiraIssue
   summary: "Mitigation: <mitigation-title>"
   description: <rendered markdown with priority, owner, steps, assumptions, expected effect, confidence>
 ```
+
+**Wave summary:** The full publication uses 3 sequential waves instead of 41+ sequential calls:
+- Wave 1: Create Epic (1 call)
+- Wave 2: Create all Finding Tasks in parallel (N calls)
+- Wave 3: Create all Mitigation Sub-tasks in parallel (M calls)
 
 ### 7. Attach Files
 Attach all 6 JSON files (01_interview, 02_ingest, 03_assessment, 04_discussion, assessment_final, jira_publication) to the Epic via curl.

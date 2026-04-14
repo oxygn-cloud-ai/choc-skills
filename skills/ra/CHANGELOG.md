@@ -2,6 +2,11 @@
 
 All notable changes to the ra skill will be documented in this file.
 
+## [1.0.1] - 2026-04-13
+
+### Changed
+- **Performance**: `ra:publish` now creates finding tasks and mitigation sub-tasks in parallel MCP calls (3 sequential waves instead of 41+ sequential calls)
+
 ## [1.0.0] - 2026-04-11
 
 ### Added
