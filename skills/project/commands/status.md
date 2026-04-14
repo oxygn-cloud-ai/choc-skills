@@ -135,6 +135,16 @@ Branch: <branch> (protected: <yes/no>, force-push: <blocked/allowed>)
 Worktrees:
   <for each worktree from git worktree list, show branch, path, ahead/behind main>
 
+Loops (from PROJECT_CONFIG.json sessions.loops):
+  <role>     <intervalMinutes>m   <prompt-path>   [file exists?]
+  master     5m                   loops/loop.md   [x]
+  triager    10m                  loops/loop.md   [x]
+  ...
+
+Env vars:
+  project:   <count>   (e.g., CHOC-SKILLS_PATH auto-set at launch)
+  sessions:  <count>   (keyed by role)
+
 Open Jira Issues: <count by priority from Atlassian MCP>
 Tests: <count or n/a>
 Memory: <file count in ~/.claude/projects/*/memory/>

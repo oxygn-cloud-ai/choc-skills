@@ -60,13 +60,28 @@ for dir in "$REPOS_DIR"/*/; do
 done
 ```
 
-## Step 3: Read architecture
+## Step 3: Read architecture and config
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the role list.
 
-Detect project type from `PROJECT_CONFIG.json` or infer:
+Read `$REPO_ROOT/PROJECT_CONFIG.json` for:
+- Project type (`project.type`)
+- Role list (`sessions.roles`)
+- Loop intervals and prompts (`sessions.loops.<role>.intervalMinutes` and `.prompt`)
+- Env vars (`env.project` and `env.sessions.<role>`)
+
+Detect project type from `PROJECT_CONFIG.json` or infer if absent:
 - **Software** (11 roles): master, planner, implementer, fixer, merger, chk1, chk2, performance, playtester, reviewer, triager
 - **Non-Software** (8 roles): master, planner, implementer, fixer, merger, performance, reviewer, triager
+
+**Loop-capable roles** (8): master, triager, reviewer, merger, chk1, chk2, fixer, implementer. Other roles never loop — they are on-demand only (planner, performance, playtester).
+
+**Project path env var:**
+```bash
+PROJECT_ENV_NAME="$(basename "$REPO_ROOT" | tr '[:lower:]' '[:upper:]')_PATH"
+# e.g., choc-skills → CHOC-SKILLS_PATH
+```
+This is auto-exported into every launched session so loop prompts and env-dependent scripts can reference the project root portably.
 
 Build the actual role list by checking which `.worktrees/<role>` directories exist:
 ```bash
@@ -124,7 +139,23 @@ tmux new-window -t "$PROJECT_SLUG" -n "$ROLE" -c "$REPO_ROOT/.worktrees/$ROLE"
 
 ## Step 7: Launch Claude in each window
 
-For each role/window, build and send the Claude command:
+For each role/window:
+
+### 7a. Export env vars
+
+Before launching Claude, export env vars into the tmux window. Always set the project path var. Then apply `env.project` (project-level) followed by `env.sessions.<role>` (role-specific, wins on conflict):
+
+```bash
+tmux send-keys -t "$PROJECT_SLUG:$ROLE" "export ${PROJECT_ENV_NAME}='${REPO_ROOT}'" Enter
+# For each key/value in env.project:
+tmux send-keys -t "$PROJECT_SLUG:$ROLE" "export <KEY>='<VALUE>'" Enter
+# For each key/value in env.sessions.<role>:
+tmux send-keys -t "$PROJECT_SLUG:$ROLE" "export <KEY>='<VALUE>'" Enter
+```
+
+Do NOT inject secrets via this path — env section should contain only non-sensitive config. A future BWS/AWS Secrets Manager integration will handle secrets separately.
+
+### 7b. Build and send the Claude command
 
 Build the claude command string based on which options the user selected in Step 5:
 
@@ -143,6 +174,23 @@ Send the assembled command to the tmux window:
 ```bash
 tmux send-keys -t "$PROJECT_SLUG:$ROLE" "$CMD" Enter
 ```
+
+### 7c. Dispatch loop prompt (if configured)
+
+If the role is one of the 8 loop-capable roles AND has a `sessions.loops.<role>` entry in PROJECT_CONFIG.json with `intervalMinutes > 0`:
+
+1. Resolve the loop prompt path: `${sessions.loops.<role>.prompt}` (defaults to `loops/loop.md` if unset). Relative to the worktree root (which is cwd for this tmux window).
+2. Verify the file exists at `$REPO_ROOT/.worktrees/$ROLE/$PROMPT_PATH`. If not, log a warning and skip loop dispatch for this role.
+3. Wait for Claude to initialize. The tmux window was created with `-c "$REPO_ROOT/.worktrees/$ROLE"` so relative paths resolve correctly.
+4. Send the loop command as a user prompt. Because Claude is reading stdin after the piped session prompt finished, we send via tmux keys after a short delay:
+   ```bash
+   # After Claude has initialized (wait for prompt readiness — use a sleep buffer)
+   sleep 3
+   tmux send-keys -t "$PROJECT_SLUG:$ROLE" "/loop ${INTERVAL_MINUTES}m $PROMPT_PATH" Enter
+   ```
+5. If `intervalMinutes == 0` or the role is not in `sessions.loops`, skip loop dispatch entirely.
+
+**Never dispatch loops to:** planner, performance, playtester (on-demand roles).
 
 ### Skip idle roles (if selected)
 
@@ -171,19 +219,19 @@ project launch — $PROJECT_NAME
   Windows: $N_LAUNCHED / $N_TOTAL
   Claude:  $N_WITH_CLAUDE running
 
-  | # | Role        | Status  | Claude | Prompt |
-  |---|-------------|---------|--------|--------|
-  | a | master      | created | ●      | ✓      |
-  | b | planner     | created | ●      | ✓      |
-  | c | implementer | created | ○ idle | —      |
-  | d | fixer       | created | ○ idle | —      |
-  | e | merger      | created | ●      | ✓      |
-  | f | chk1        | created | ●      | ✓      |
-  | g | chk2        | created | ●      | ✓      |
-  | h | performance | created | ○ idle | —      |
-  | i | playtester  | created | ○ idle | —      |
-  | j | reviewer    | created | ●      | ✓      |
-  | k | triager     | created | ●      | ✓      |
+  | # | Role        | Status  | Claude | Prompt | Loop  |
+  |---|-------------|---------|--------|--------|-------|
+  | a | master      | created | ●      | ✓      | 5m    |
+  | b | planner     | created | ●      | ✓      | —     |
+  | c | implementer | created | ○ idle | —      | 10m   |
+  | d | fixer       | created | ○ idle | —      | 10m   |
+  | e | merger      | created | ●      | ✓      | 10m   |
+  | f | chk1        | created | ●      | ✓      | 15m   |
+  | g | chk2        | created | ●      | ✓      | 15m   |
+  | h | performance | created | ○ idle | —      | —     |
+  | i | playtester  | created | ○ idle | —      | —     |
+  | j | reviewer    | created | ●      | ✓      | 10m   |
+  | k | triager     | created | ●      | ✓      | 10m   |
 
   To attach: tmux attach -t $PROJECT_SLUG
   To navigate: Prefix+P for project picker, or tmux select-window -t $PROJECT_SLUG:<role>
@@ -216,8 +264,11 @@ project launch --all — $N projects launched
 - [ ] All worktree roles have named windows
 - [ ] Claude launched in each non-idle window with correct flags
 - [ ] Session prompts piped when available
+- [ ] Env vars exported (<PROJECT>_PATH + env.project + env.sessions.<role>)
+- [ ] Loop prompts dispatched for loop-capable roles with intervalMinutes > 0
+- [ ] On-demand roles (planner/performance/playtester) never get /loop
 - [ ] Existing sessions handled gracefully (resume/recreate)
 - [ ] Dry run shows plan without side effects
 - [ ] --all mode launches all projects in TMUX_REPOS_DIR
-- [ ] Report shows accurate status table
+- [ ] Report shows accurate status table with loop intervals
 </success_criteria>

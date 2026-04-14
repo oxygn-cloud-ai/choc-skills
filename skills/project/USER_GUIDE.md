@@ -501,9 +501,45 @@ cat .claude/sessions/fixer.md | claude --dangerously-skip-permissions
 
 ### Loop Prompts
 
-Loop prompts are recurring task instructions — separate from session identity prompts. They tell a session what to do on each polling cycle (e.g., "check Jira for new issues", "scan for branches to review"). Loop intervals are configured in `PROJECT_CONFIG.json` under `sessions.loops`.
+Loop prompts are recurring task instructions — separate from session identity prompts. They tell a session what to do on each polling cycle (e.g., "check Jira for new issues", "scan for branches to review").
 
-**Note:** Loop integration into `/project:launch` is planned (CPT-41) but not yet implemented. The `sessions.loops` config section defines intervals, but `/project:launch` does not currently use them.
+**Location:** Each role's loop prompt lives in its own worktree at `.worktrees/<role>/loops/loop.md`. Because each worktree is on its own `session/<role>` branch, each role owns its loop prompt on its branch.
+
+**Loop-capable roles (8):** master, triager, reviewer, merger, chk1, chk2, fixer, implementer. The on-demand roles (planner, performance, playtester) never loop.
+
+**Configuration** in `PROJECT_CONFIG.json`:
+```json
+"sessions": {
+  "loops": {
+    "master":  { "intervalMinutes": 5,  "prompt": "loops/loop.md" },
+    "triager": { "intervalMinutes": 10, "prompt": "loops/loop.md" }
+  }
+}
+```
+- `intervalMinutes: 0` = loop disabled for this role
+- `prompt` path is relative to the worktree root (default: `loops/loop.md`)
+
+**Dispatch:** `/project:launch` sends `/loop <N>m loops/loop.md` to each loop-capable session after it initializes. The command runs inside the role's worktree so the relative path resolves.
+
+### Environment Variables
+
+Every launched session gets env vars exported automatically:
+
+**Auto-set:** `<DIRNAME_UPPER>_PATH` — e.g., `CHOC-SKILLS_PATH=/path/to/repo`. Directory name uppercased, special chars preserved, `_PATH` suffix. Used by loop prompts and scripts to reference the project root portably.
+
+**From `PROJECT_CONFIG.json` `env` section:**
+```json
+"env": {
+  "project": { "JIRA_PROJECT": "CPT" },
+  "sessions": {
+    "chk2": { "CHK2_TARGET": "staging.example.com" }
+  }
+}
+```
+- `env.project` — exported into every session
+- `env.sessions.<role>` — exported into that role only (overrides project-level)
+
+**Never put secrets here.** Future BWS/AWS Secrets Manager integration will handle those separately. Use `/project:config` → Manage env vars to edit.
 
 ### PROJECT_CONFIG.json
 

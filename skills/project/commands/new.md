@@ -107,7 +107,28 @@ Create these files at the repo root:
 
 **CLAUDE.md** — project name, type, description, Jira epic (placeholder until step 7), key files, development commands (language-specific).
 
-**PROJECT_CONFIG.json** — structured project configuration (schemaVersion, project, jira, github, sessions, coverage, deviations). Generate from the schema template.
+**PROJECT_CONFIG.json** — structured project configuration. Generate from the schema template. Include:
+- `schemaVersion: 1`
+- `project`: name, type, description
+- `jira`: projectKey, cloudId, epicKey (filled in Step 7), boardUrl
+- `github`: owner, repo, defaultBranch, `issuesEnabled: false`, branchProtection (Software only)
+- `sessions.roles`: 11 for Software, 8 for Non-Software
+- `sessions.loops`: default intervals for 8 loop-capable roles with `prompt: "loops/loop.md"`:
+  ```json
+  "loops": {
+    "master":      { "intervalMinutes": 5,  "prompt": "loops/loop.md" },
+    "triager":     { "intervalMinutes": 10, "prompt": "loops/loop.md" },
+    "reviewer":    { "intervalMinutes": 10, "prompt": "loops/loop.md" },
+    "merger":      { "intervalMinutes": 10, "prompt": "loops/loop.md" },
+    "chk1":        { "intervalMinutes": 15, "prompt": "loops/loop.md" },
+    "chk2":        { "intervalMinutes": 15, "prompt": "loops/loop.md" },
+    "fixer":       { "intervalMinutes": 10, "prompt": "loops/loop.md" },
+    "implementer": { "intervalMinutes": 10, "prompt": "loops/loop.md" }
+  }
+  ```
+  For Non-Software, omit chk1/chk2.
+- `env`: `{ "project": {}, "sessions": {} }` — empty by default, populated via `/project:config`
+- `coverage`, `sandbox`, `servers`, `deviations`: as applicable
 
 **PROJECT_CONFIG.schema.json** — copy from `~/.claude/skills/project/PROJECT_CONFIG.schema.json` (installed with the skill). This enables `scripts/validate-config.sh` for the new project.
 
@@ -151,6 +172,7 @@ Stage only the files created by the scaffold — do NOT use `git add -A` (risks 
 
 ```bash
 git add README.md CLAUDE.md PROJECT_CONFIG.json PROJECT_CONFIG.schema.json PHILOSOPHY.md .gitignore
+# Loop prompts are created later (Step 10.5) per worktree — not added to the initial commit on main
 # Software only — add language-specific scaffolding:
 # Python: git add pyproject.toml src/ tests/
 # Node: git add package.json src/ tsconfig.json
@@ -214,6 +236,58 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
 
 Add a brief quick-reference section specific to each role (3-5 bullet points summarizing the protocol steps).
 
+## Step 10.5: Create loop prompts (8 loop-capable roles)
+
+Loop prompts live at `.worktrees/<role>/loops/loop.md` — each worktree owns its own loop config. Create one for each of the 8 loop-capable roles (master, triager, reviewer, merger, chk1, chk2, fixer, implementer). Skip planner, performance, playtester — they are on-demand only.
+
+Each role's loop file lives on that role's branch (`session/<role>`). Commit + push from within the role's worktree so the file is on the right branch:
+
+```bash
+for role in master triager reviewer merger chk1 chk2 fixer implementer; do
+  # Skip chk1/chk2 for Non-Software
+  WT=".worktrees/$role"
+  [ -d "$WT" ] || continue
+  mkdir -p "$WT/loops"
+  # Write role-specific loop prompt (see templates below) to "$WT/loops/loop.md"
+  git -C "$WT" add loops/loop.md
+  git -C "$WT" commit -m "feat: add loop prompt for $role"
+  git -C "$WT" push
+done
+```
+
+Example template for triager:
+
+```markdown
+# Triager Loop — <project-name>
+
+Recurring task: scan Jira for issues needing triage.
+
+1. Query CPT epic <epic-key> for issues in "Needs Triage" status
+2. For each issue:
+   - Verify priority (P1-P4), description depth, reproduction steps
+   - If missing: comment requesting info, leave in Needs Triage
+   - If complete: transition to "Ready for Coding"
+3. Check "Ready for Coding" queue: flag aging issues (>7 days) to Master
+4. Escalate anything P1 directly to Master
+
+Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 11 for full triager protocol.
+```
+
+Tailor the loop content per role:
+- **master**: scan for release-gate state, blocked issues, 3-strikes escalations
+- **triager**: as above
+- **reviewer**: scan `session/*` branches for new commits since last review, post structured review comments to Jira
+- **merger**: scan for approved branches in "Ready to Merge" state, squash-merge to main
+- **chk1**: run `/chk1:all` if new commits landed on main since last run
+- **chk2**: run `/chk2:all` against test/staging/production servers on schedule
+- **fixer**: check Changes Requested first; if none, pick highest-priority bug in Ready for Coding
+- **implementer**: check Changes Requested first; if none, pick highest-priority Feature Request in Ready for Coding
+
+Default loop intervals (written to PROJECT_CONFIG.json in Step 5):
+- master: 5m
+- triager, reviewer, merger, fixer, implementer: 10m
+- chk1, chk2: 15m
+
 ## Step 11: CI workflow (Software only)
 
 Create `.github/workflows/test.yml` with:
@@ -263,6 +337,7 @@ Project <name> created successfully.
   Docs:       PHILOSOPHY.md, README.md, ARCHITECTURE.md, CLAUDE.md, PROJECT_CONFIG.json
   Worktrees:  <count> sessions in .worktrees/
   Prompts:    .claude/sessions/*.md
+  Loops:      <count> loop-capable roles with loops/loop.md configured
 
   To start working:
     cd <path>/.worktrees/master && claude
@@ -278,6 +353,7 @@ Project <name> created successfully.
 - [ ] Jira epic key documented in CLAUDE.md and PROJECT_CONFIG.json
 - [ ] All session worktrees created with correct branch names
 - [ ] Session startup prompts created in .claude/sessions/
+- [ ] Loop prompts created in .worktrees/<role>/loops/loop.md for 8 (Software) or 6 (Non-Software) loop-capable roles
 - [ ] CI workflow present (Software only) with notify-failure/recovery
 - [ ] Branch protection set (Software only)
 - [ ] Project memory initialized

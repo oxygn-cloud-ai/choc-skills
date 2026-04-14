@@ -47,15 +47,19 @@
       "triager"
     ],
     "loops": {
-      "master": { "intervalMinutes": 5 },
-      "triager": { "intervalMinutes": 10 },
-      "reviewer": { "intervalMinutes": 10 },
-      "merger": { "intervalMinutes": 10 },
-      "chk1": { "intervalMinutes": 15 },
-      "chk2": { "intervalMinutes": 15 },
-      "fixer": { "intervalMinutes": 10 },
-      "implementer": { "intervalMinutes": 10 }
+      "master": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
+      "triager": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
+      "reviewer": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
+      "merger": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
+      "chk1": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
+      "chk2": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
+      "fixer": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
+      "implementer": { "intervalMinutes": 10, "prompt": "loops/loop.md" }
     }
+  },
+  "env": {
+    "project": {},
+    "sessions": {}
   },
   "coverage": {
     "tool": "bashcov",

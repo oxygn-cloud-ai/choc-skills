@@ -2,6 +2,59 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.0.0] - 2026-04-14
+
+### Breaking
+
+- **Router refactor (Option C)**: `doctor`, `help`, `version` are now
+  proper colon-command files (`commands/doctor.md`, `commands/help.md`,
+  `commands/version.md`) instead of inline sections in `SKILL.md`.
+  Router owns ALL alias routing. Fixes silent `--doctor`, `check`,
+  `--version`, `-v` aliases that never worked through the router.
+- **GitHub labels stripped**: `/project:new` no longer creates labels;
+  it disables GitHub Issues (`gh repo edit --enable-issues=false`) and
+  deletes all default labels. `/project:audit` replaces 4 label checks
+  with "GitHub Issues disabled" and "No labels present" checks.
+  `/project:config` no longer offers label management. Rationale:
+  PROJECT_STANDARDS.md already required no-labels/no-Issues; the skill
+  was contradicting its own standard.
+- **PROJECT_CONFIG schema v1 extended**: `sessions.loops` now restricted
+  to 8 loop-capable roles (master, triager, reviewer, merger, chk1,
+  chk2, fixer, implementer). planner/performance/playtester can no
+  longer have loop entries. Each loop entry accepts an optional
+  `prompt` field (default `loops/loop.md`).
+
+### Added
+
+- **CPT-41: Loop integration**. `/project:launch` now dispatches
+  `/loop <N>m loops/loop.md` to each loop-capable session after init.
+  Intervals and prompt paths read from `PROJECT_CONFIG.json
+  sessions.loops`.
+- **Env vars at launch**. `/project:launch` exports
+  `<DIRNAME_UPPER>_PATH` into every session (e.g.,
+  `CHOC-SKILLS_PATH`). Plus `env.project` (project-level) and
+  `env.sessions.<role>` (per-role) from PROJECT_CONFIG.json.
+- **New schema section `env`** with `project` and `sessions` maps.
+  Additional properties prohibited. Secrets NOT stored here —
+  future BWS/AWS Secrets Manager integration planned.
+- **Loop prompt scaffolding**. `/project:new` Step 10.5 creates
+  `.worktrees/<role>/loops/loop.md` for each loop-capable role with
+  role-specific recurring-task templates, committed on each role's
+  `session/<role>` branch.
+- **`/project:config` gains "Configure loops"** (edit intervals +
+  prompt paths) and **"Manage env vars"** actions.
+- **`/project:audit` gains loop checks**: loop configuration validity
+  (all loop-capable roles configured, no loops on on-demand roles)
+  and loop prompt file existence.
+- **USER_GUIDE.md documents loops, env vars, and the two config
+  layers** with concrete examples.
+
+### Changed
+
+- `SKILL.md` reduced to a pure fallback — invokes `/project:help` if
+  Claude self-invokes the skill without a matching subcommand.
+- Doctor check 4 now expects 9 subcommand files (was 6).
+
 ## [1.3.0] - 2026-04-14
 
 ### Changed

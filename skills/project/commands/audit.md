@@ -53,8 +53,10 @@ For each check, report PASS, FAIL, WARN, or SKIP with details.
 9. **notify-recovery job** (Software only): grep for `notify-recovery` in workflow files.
 10. **GitHub Issues disabled**: `gh repo view --json hasIssuesEnabled --jq .hasIssuesEnabled` returns `false` (Jira is source of truth).
 11. **No GitHub labels**: `gh label list --json name --jq 'length'` returns 0 (labels are vestigial — Jira handles priority/category).
-12. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
-13. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.
+12. **Loop configuration**: for every role in `sessions.roles` that is loop-capable (master, triager, reviewer, merger, chk1, chk2, fixer, implementer), `sessions.loops.<role>` exists in PROJECT_CONFIG.json with a non-negative `intervalMinutes`. On-demand roles (planner, performance, playtester) must NOT have loop entries.
+13. **Loop prompt files**: for every role with `intervalMinutes > 0`, the prompt file exists at `.worktrees/<role>/<prompt-path>` (default `loops/loop.md`).
+14. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
+15. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.
 
 ## Step 5: Display report
 
@@ -73,10 +75,12 @@ Type: <Software|Non-Software>
   [PASS] notify-recovery job present
   [PASS] GitHub Issues disabled
   [PASS] No GitHub labels present
+  [PASS] Loop configuration: 8/8 roles configured
+  [FAIL] Loop prompt missing: .worktrees/chk2/loops/loop.md
   [WARN] Stale worktree: session/playtester (no commits in 5 days)
   [SKIP] Coverage thresholds (not configured)
 
-  Result: 7 passed, 2 warnings, 3 failed, 1 skipped
+  Result: 8 passed, 2 warnings, 4 failed, 1 skipped
 
   To fix gaps, run /project:config or address manually.
 ```

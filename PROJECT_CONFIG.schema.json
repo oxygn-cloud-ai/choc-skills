@@ -132,7 +132,7 @@
           "type": "object",
           "additionalProperties": false,
           "patternProperties": {
-            "^(master|planner|implementer|fixer|merger|chk1|chk2|performance|playtester|reviewer|triager)$": {
+            "^(master|triager|reviewer|merger|chk1|chk2|fixer|implementer)$": {
               "type": "object",
               "required": ["intervalMinutes"],
               "additionalProperties": false,
@@ -141,13 +141,41 @@
                   "type": "integer",
                   "minimum": 0,
                   "description": "Loop interval in minutes. 0 = no loop (on-demand only)."
+                },
+                "prompt": {
+                  "type": "string",
+                  "description": "Path to the loop prompt file, relative to the worktree root. Defaults to 'loops/loop.md'."
                 }
               }
             }
           },
-          "description": "Per-role loop intervals. Roles not listed here default to intervalMinutes: 0."
+          "description": "Per-role loop intervals and prompt files. Only the 8 polling roles are valid (master, triager, reviewer, merger, chk1, chk2, fixer, implementer). planner/performance/playtester never loop — they are on-demand only."
         }
       }
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "project": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Project-level env vars exported into every session. The variable <DIRNAME_UPPER>_PATH (directory name uppercased, special chars preserved, _PATH suffix) is auto-set to the project root and does not need to be declared here."
+        },
+        "sessions": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^(master|planner|implementer|fixer|merger|chk1|chk2|performance|playtester|reviewer|triager)$": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Per-session env vars. Merged over project-level vars; session wins on conflict."
+            }
+          },
+          "description": "Per-session env vars keyed by role name."
+        }
+      },
+      "description": "Environment variables for launched Claude sessions. Secrets should NOT be stored here — future integration with BWS/AWS Secrets Manager is planned."
     },
     "coverage": {
       "type": "object",

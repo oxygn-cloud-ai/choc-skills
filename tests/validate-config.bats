@@ -313,3 +313,79 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *"Schema validation failed"* ]]
 }
+
+@test "validate-config: loop on non-loop-capable role (planner) fails" {
+  cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "project": { "name": "test", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "test" },
+  "sessions": {
+    "roles": ["master", "planner"],
+    "loops": { "planner": { "intervalMinutes": 5 } }
+  }
+}
+EOF
+  run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Schema validation failed"* ]]
+}
+
+@test "validate-config: env section with project and session vars accepted" {
+  cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "project": { "name": "test", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "test" },
+  "sessions": { "roles": ["master", "chk2"] },
+  "env": {
+    "project": { "JIRA_PROJECT": "TST" },
+    "sessions": {
+      "chk2": { "TARGET_HOST": "staging.example.com" }
+    }
+  }
+}
+EOF
+  run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Result: PASS"* ]]
+}
+
+@test "validate-config: env with additional top-level property fails" {
+  cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "project": { "name": "test", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "test" },
+  "sessions": { "roles": ["master"] },
+  "env": { "globals": { "FOO": "bar" } }
+}
+EOF
+  run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Schema validation failed"* ]]
+}
+
+@test "validate-config: loop with prompt path accepted" {
+  cat > "$TEST_DIR/PROJECT_CONFIG.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "project": { "name": "test", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "test" },
+  "sessions": {
+    "roles": ["master", "fixer"],
+    "loops": {
+      "master": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
+      "fixer": { "intervalMinutes": 10, "prompt": "loops/custom.md" }
+    }
+  }
+}
+EOF
+  run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Result: PASS"* ]]
+}

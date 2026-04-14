@@ -45,6 +45,8 @@ Options:
 - **Enable/disable branch protection** — toggle branch protection on main
 - **Enable/disable CI workflow** — add or remove .github/workflows/test.yml
 - **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and PROJECT_CONFIG.json
+- **Configure loops** — set loop intervals and prompt paths per role (8 loop-capable roles only)
+- **Manage env vars** — add/remove project-level and per-session env vars
 - **Update deviations** — document a deviation from global standards in PROJECT_CONFIG.json
 - **Done — no changes**
 
@@ -117,6 +119,25 @@ done
 ### Set Jira epic key
 - Ask for the key (e.g., CPT-42)
 - Update CLAUDE.md and PROJECT_CONFIG.json
+
+### Configure loops
+- Loop-capable roles: master, triager, reviewer, merger, chk1, chk2, fixer, implementer. Never offer planner/performance/playtester — they're on-demand only.
+- Show current `sessions.loops` from PROJECT_CONFIG.json with intervals and prompt paths
+- Ask which role to edit (multi-select OK)
+- For each selected role, ask:
+  - Interval in minutes (integer, 0 = disable loop)
+  - Prompt path relative to worktree root (default `loops/loop.md`)
+- Verify the prompt file exists at `.worktrees/<role>/<prompt-path>`. If missing, offer to create it with a role-appropriate template (same templates as `/project:new` Step 10.5).
+- Update `sessions.loops.<role>` in PROJECT_CONFIG.json
+- Remind user: changes take effect on next `/project:launch`. Currently-looping sessions must be sent `/loop` again to pick up new intervals.
+
+### Manage env vars
+- Show current `env.project` and `env.sessions` from PROJECT_CONFIG.json
+- Ask: add / remove / edit; project-level or per-session
+- If per-session, ask which role
+- **Never write secrets here** — warn if value looks like a secret (starts with `sk-`, `ghp_`, contains "password", "token", "key" with long random value). Direct user to future secrets manager integration.
+- Update PROJECT_CONFIG.json
+- Note: `<DIRNAME_UPPER>_PATH` is auto-set by `/project:launch` and does not need to be declared.
 
 ### Update deviations
 - Ask: "What deviation are you documenting?"
