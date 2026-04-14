@@ -2,6 +2,12 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.1] - 2026-04-13
+
+### Fixed
+- `project:new` step 11: embedded correct `notify-failure` and `notify-recovery` CI job YAML with `actions/checkout@v4` and `contents: read` permission — previously referenced defunct `GITHUB_CONFIG.md` section 3 which no longer contains the YAML snippet
+- New projects scaffolded via `/project:new` will now have working CI recovery jobs out of the box
+
 ## [1.2.0] - 2026-04-12
 
 ### Added

@@ -224,12 +224,56 @@ Add a brief quick-reference section specific to each role (3-5 bullet points sum
 
 ## Step 11: CI workflow (Software only)
 
-Create `.github/workflows/test.yml` with:
-- Language-appropriate test job
-- `notify-failure` job from `~/.claude/GITHUB_CONFIG.md` section 3 reference implementation
-- `notify-recovery` job
+Create `.github/workflows/test.yml` with a language-appropriate test job, plus the following `notify-failure` and `notify-recovery` jobs. Adapt the `needs:` list to match the actual test job name(s).
 
-Adapt the `needs:` list to match the actual test job name(s).
+```yaml
+  notify-failure:
+    needs: [test]
+    if: failure() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: File CI failure issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          EXISTING=$(gh issue list --label ci-failure --state open --json number --jq '.[0].number')
+          if [ -z "$EXISTING" ]; then
+            gh issue create \
+              --title "CI failure on main ($SHA)" \
+              --label ci-failure,P1 \
+              --body "CI failed on \`$SHA\`.\n\nRun: $RUN_URL"
+          else
+            gh issue comment "$EXISTING" \
+              --body "Still failing on \`$SHA\` — $RUN_URL"
+          fi
+
+  notify-recovery:
+    needs: [test]
+    if: success() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Close open CI failure issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          EXISTING=$(gh issue list --label ci-failure --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            COMMENT="CI recovered on \`$SHA\` — $RUN_URL"
+            gh issue close "$EXISTING" --comment "$COMMENT"
+          fi
+```
 
 ## Step 12: Branch protection (Software)
 
