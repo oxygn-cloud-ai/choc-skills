@@ -2,6 +2,28 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.0.5] - 2026-04-15
+
+### Fixed (Codex consolidation review — P1)
+
+- **P1**: `/loop` dispatch was silently skipping for every role when
+  `PROJECT_CONFIG.json` used the default `loops/loop.md` path. The
+  launcher resolved the prompt as `$WORKTREE/loops/loop.md`, but the
+  file ships at the main repo root; worktrees don't carry it. Result:
+  every loop-capable role (master, triager, reviewer, merger, chk1,
+  chk2, fixer, implementer) hit "loop prompt file missing — skipping
+  /loop dispatch" and never started its recurring task. Fix: cascade
+  resolution now tries `$WORKTREE/`, then `.worktrees/master/`, then
+  `$REPO_ROOT/` (same pattern already used for session prompts). The
+  dispatched `/loop` command also passes the resolved absolute path so
+  Claude reads the correct file regardless of cwd.
+
+### Added
+
+- `.worktrees/` added to root `.gitignore` — was missing on
+  session/master baseline, caused `git status` noise after
+  `/project:launch` creates worktree trees.
+
 ## [2.0.4] - 2026-04-14
 
 ### Fixed (CPT-41 fourth-pass review — 5 findings Codex caught in v2.0.3)

@@ -2,7 +2,7 @@
 
 A comprehensive guide to the `/project` skill — project repository administration for multi-session Claude Code workflows.
 
-**Skill version:** 2.0.4
+**Skill version:** 2.0.5
 
 ---
 
@@ -419,7 +419,7 @@ Runs 9 health checks:
 /project -v
 ```
 
-Outputs: `project v2.0.4`
+Outputs: `project v2.0.5`
 
 ## Key Concepts
 
@@ -685,4 +685,4 @@ When all gates pass, Master notifies you:
 
 ---
 
-*This guide covers /project v2.0.4. Run `/project version` to check your installed version.*
+*This guide covers /project v2.0.5. Run `/project version` to check your installed version.*
