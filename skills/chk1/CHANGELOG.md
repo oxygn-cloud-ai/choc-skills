@@ -2,6 +2,21 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.5.1] - 2026-04-15
+
+### Changed
+- Dropped the Co-Authored-By heuristic from session-boundary detection (aligns with repo-wide no-AI-attribution policy). Remaining signals (merge commit, author change, >4h gap, task-shift commit message) are sufficient.
+
+## [2.5.0] - 2026-04-13
+
+### Added
+- **Codex cross-validation** (Section 9): when the Codex CLI is available, chk1 invokes `codex exec review` as an independent second auditor on the same scope, then reconciles findings into Corroborated / chk1-only / Codex-only categories
+- Codex availability check in pre-flight (soft — WARN, not blocking)
+- Codex CLI check in `/chk1 doctor` (check #9)
+- `Bash(codex *)` added to allowed-tools
+- Codex Cross-Validation section in output format with agreement rate metric
+- Audit Metadata now reports Codex availability status
+
 ## [2.4.0] - 2026-04-09
 
 ### Changed
