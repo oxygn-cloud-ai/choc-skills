@@ -32,6 +32,8 @@ fi
 
 for dir in "$REPOS_DIR"/*/; do
   [[ -d "$dir" ]] || continue
+  # Skip worktree projects — handled by /project:launch with per-role sessions
+  [[ -d "$dir/.worktrees" ]] && continue
   name="$(basename "$dir")"
   safe_name="$(sanitize_name "$name")"
   if ! tmux has-session -t "=$safe_name" 2>/dev/null; then
