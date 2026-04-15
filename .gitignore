@@ -8,3 +8,4 @@
 *.key
 credentials.json
 __pycache__/
+.worktrees/
