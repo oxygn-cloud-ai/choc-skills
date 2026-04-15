@@ -1,6 +1,6 @@
 ---
 name: project
-version: 2.1.0
+version: 2.1.1
 description: Project repository administration — create new, audit, configure, status check. Multi-session workflow scaffolding per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/PROJECT_STANDARDS.md.
 user-invocable: true
 disable-model-invocation: true

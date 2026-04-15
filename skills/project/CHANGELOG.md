@@ -2,6 +2,41 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.1] - 2026-04-16
+
+### Added (cave-inversion protection — behavioural layer)
+
+This repo is the home of the `/project` skill; editing `~/.claude/`
+directly (instead of `skills/project/` + reinstall) produces hidden
+drift. Session 2026-04-16 hit this twice in ~2 hours. The v2.1.0
+commit fixed the immediate instance; this patch adds the behavioural
+layer that prevents recurrence before the tool-layer (CPT-58) and
+CI-layer (CPT-60) defences land.
+
+- `CLAUDE.md` — new top-level section **"Skill-is-product rule
+  (choc-skills-specific, non-negotiable)"** with the 3-question check
+  operators must run before editing `~/.claude/<anything>`, the
+  failure-mode narrative from 2026-04-16, and cross-refs to CPT-58 /
+  CPT-59 / CPT-60 for the planned verification mechanisms.
+- `.claude/sessions/*.md` × 11 — each role's startup prompt gains a
+  **"Cave rule"** section so sessions load the reminder at launch.
+
+### Tickets filed for the code-layer protection
+
+- **CPT-58** (Bug, High) — upgrade `install.sh --check` to byte-parity
+  + orphan detection. Closes the diagnostic gap that let the 2026-04-16
+  drift persist unnoticed.
+- **CPT-59** (Feature, Medium) — `/project:self-audit` subcommand for
+  bidirectional rules ↔ mechanisms audit of the skill itself.
+- **CPT-60** (Feature, Medium) — CI bats test that runs `install.sh`
+  in a temp HOME and asserts the installed tree matches the skill
+  source. PR-time gate.
+
+No code changes in v2.1.1 — docs + session prompts only. Install is
+idempotent: re-running `install.sh --force` after this update only
+propagates the updated session prompts; existing hook registrations
+and bin scripts stay put.
+
 ## [2.1.0] - 2026-04-16
 
 ### Added (hooks ship with skill — closes gap identified mid-session)
