@@ -7,7 +7,7 @@
 3. Edit `skills/my-skill/README.md` — document usage
 4. Validate: `./scripts/validate-skills.sh`
 5. Test: `./install.sh my-skill && /my-skill help && /my-skill doctor`
-6. Submit a PR
+6. Push your branch for review
 
 ## Skill Requirements
 
@@ -72,14 +72,14 @@ chore: maintenance (CI, deps, etc.)
 
 Keep the first line under 72 characters. Add a body for context when the change is non-trivial.
 
-## Pull Request Process
+## Pre-Merge Checklist
 
 1. Ensure `./scripts/validate-skills.sh` passes
 2. Ensure `shellcheck` passes on any `.sh` files you changed
 3. Update the **per-skill** `CHANGELOG.md` (e.g., `skills/chk1/CHANGELOG.md`) under `## [Unreleased]`
 4. Update root `README.md` if adding a new skill (add to the skills table)
 5. Regenerate checksums: `./scripts/generate-checksums.sh`
-6. One approval required to merge
+6. Reviewer approval required before Merger squash-merges to main
 
 ## Security Review Checklist
 
@@ -116,7 +116,7 @@ For new skills or significant changes, reviewers will check:
 
 ### CI
 
-All PRs run the CI pipeline automatically (`.github/workflows/ci.yml`):
+All branches run the CI pipeline automatically (`.github/workflows/ci.yml`):
 - ShellCheck on all `.sh` files
 - Skill validation
 - Installer smoke test

@@ -88,7 +88,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Quick version:
 2. Edit `SKILL.md` and `README.md`
 3. Create `CHANGELOG.md` in the skill directory
 4. Run `./scripts/validate-skills.sh`
-5. Submit a PR
+5. Push your branch for review
 
 ## License
 
