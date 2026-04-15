@@ -1,6 +1,6 @@
 ---
 name: chk1
-version: 2.5.0
+version: 2.5.1
 description: Adversarial Implementation Audit Mandate. Use when auditing recently implemented changes for bugs, risks, omissions, deviations, and unintended modifications. Fault-finding audit, not validation.
 user-invocable: true
 disable-model-invocation: true
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk1 v2.5.0 — Adversarial Implementation Audit
+chk1 v2.5.1 — Adversarial Implementation Audit
 
 USAGE
   /chk1                     Full audit (auto-detects recent changes)
@@ -97,7 +97,7 @@ chk1 doctor — Environment Health Check
   [PASS] Has recent commits: N commits found
   [PASS] Branch: main
   [PASS] Installed: ~/.claude/skills/chk1/SKILL.md
-  [PASS] Version: 2.5.0
+  [PASS] Version: 2.5.1
   [PASS] Codex CLI: codex v0.118.0
 
   Result: N passed, N warnings, N failed
@@ -110,7 +110,7 @@ If any check is FAIL, advise the user on how to fix it. End of doctor output. Do
 If $ARGUMENTS equals "version", "--version", or "-v", output:
 
 ```
-chk1 v2.5.0
+chk1 v2.5.1
 ```
 
 End of version output. Do not continue.

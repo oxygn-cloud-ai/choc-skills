@@ -2,6 +2,18 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.4.1] - 2026-04-15
+
+### Changed
+- `/project:new` scaffolded initial commit template no longer injects `Co-Authored-By: Claude` — aligns with global no-AI-attribution policy.
+
+## [1.4.0] - 2026-04-13
+
+### Added
+- Per-role tmux sessions (one tmux session per role: master, planner, implementer, fixer, merger, chk1, chk2, performance, playtester, reviewer, triager) grouped under a `PROJECT` env var.
+- `/project:launch` opens one iTerm2 tab per role and attaches each tab to its own tmux session.
+- `project-picker.sh` two-level TUI (project → role) for clients without iTerm2 tabs (Blink, Moshi, Prompt 3, SSH).
+
 ## [1.3.0] - 2026-04-12
 
 ### Changed
@@ -38,6 +50,7 @@ All notable changes to the project skill will be documented in this file.
 ### Fixed
 - **P1**: `config.md` worktree removal now checks uncommitted changes, unpushed commits, and stashed work before `git branch -D` — was only checking unmerged commits vs main
 - `new.md` Step 8: replaced `git add -A` (risks staging sensitive files) with explicit file list per scaffolded files
+- `new.md` Co-Authored-By format aligned to global CLAUDE.md standard
 - `status.md` Python version detection: `tomllib` fallback for Python <3.11 via `tomli` or regex
 - `status.md` cross-platform `stat` for file dates (macOS + Linux)
 - `status.md` jq issue grouping handles unlabeled issues without crashing

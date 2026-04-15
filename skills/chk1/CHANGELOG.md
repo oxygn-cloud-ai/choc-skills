@@ -2,6 +2,11 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.5.1] - 2026-04-15
+
+### Changed
+- Dropped the Co-Authored-By heuristic from session-boundary detection (aligns with repo-wide no-AI-attribution policy). Remaining signals (merge commit, author change, >4h gap, task-shift commit message) are sufficient.
+
 ## [2.5.0] - 2026-04-13
 
 ### Added
