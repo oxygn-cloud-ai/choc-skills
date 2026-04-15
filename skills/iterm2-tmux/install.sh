@@ -118,6 +118,12 @@ check_health() {
       warn "tmux.conf missing required settings (set-titles off, allow-rename off)"
       issues=$((issues + 1))
     fi
+    if grep -q 'project-picker\.sh' "$TMUX_CONF" 2>/dev/null; then
+      ok "tmux.conf has project-picker keybind (Prefix+P)"
+    else
+      warn "tmux.conf missing project-picker keybind — Blink/iOS role-switching will fall back to raw Ctrl-b s"
+      issues=$((issues + 1))
+    fi
   else
     warn "File ~/.tmux.conf does not exist"
     issues=$((issues + 1))
@@ -258,19 +264,25 @@ printf "\n${BOLD}tmux configuration${RESET}\n\n"
 
 needs_set_titles=true
 needs_allow_rename=true
+needs_picker_bind=true
 
 if [ -f "$TMUX_CONF" ]; then
   grep -q 'set-option.*set-titles.*off' "$TMUX_CONF" 2>/dev/null && needs_set_titles=false
   grep -q 'set-option.*allow-rename.*off' "$TMUX_CONF" 2>/dev/null && needs_allow_rename=false
+  grep -q 'project-picker\.sh' "$TMUX_CONF" 2>/dev/null && needs_picker_bind=false
 fi
 
-if "$needs_set_titles" || "$needs_allow_rename"; then
+if "$needs_set_titles" || "$needs_allow_rename" || "$needs_picker_bind"; then
   if [ -f "$TMUX_CONF" ]; then
     info "Appending required settings to ${TMUX_CONF}"
     echo "" >> "$TMUX_CONF"
     echo "# iterm2-tmux: required settings for tab title persistence" >> "$TMUX_CONF"
     "$needs_set_titles" && echo "set-option -g set-titles off" >> "$TMUX_CONF"
     "$needs_allow_rename" && echo "set-option -g allow-rename off" >> "$TMUX_CONF"
+    if "$needs_picker_bind"; then
+      echo "# iterm2-tmux: project picker popup (primary role-switcher on Blink/iOS)" >> "$TMUX_CONF"
+      echo 'bind-key P display-popup -E -w 60 -h 20 "~/.local/bin/project-picker.sh"' >> "$TMUX_CONF"
+    fi
   else
     info "Creating ${TMUX_CONF} with required settings"
     cp "$TMUX_RECOMMENDED" "$TMUX_CONF"

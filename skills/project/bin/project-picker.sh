@@ -9,7 +9,7 @@ set -euo pipefail
 #   - Standalone sessions: legacy single-session-per-repo (backward compatible)
 #
 # Usage: project-picker.sh
-# Bind in tmux: bind-key P display-popup -E -w 60 -h 20 "~/.local/bin/project-picker.sh"
+# Bound to Prefix+P by skills/iterm2-tmux/install.sh (primary role-switcher on Blink/iOS).
 
 # --- Colors (ANSI, universally supported) ---
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then

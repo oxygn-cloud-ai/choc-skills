@@ -2,6 +2,12 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.2.0] - 2026-04-15
+
+### Added
+- Installer now wires `bind-key P` → `project-picker.sh` popup into `~/.tmux.conf`. This is the primary role-switcher on Blink/iOS where iTerm2 tabs don't exist; previously it was only documented, never installed.
+- `doctor` check flags missing picker keybind.
+
 ## [1.1.0] - 2026-04-13
 
 ### Fixed
