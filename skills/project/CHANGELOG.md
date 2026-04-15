@@ -2,6 +2,49 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.0] - 2026-04-16
+
+### Added (hooks ship with skill — closes gap identified mid-session)
+
+The skill now bundles its PreToolUse enforcement hooks as first-class
+artefacts under `skills/project/hooks/` and installs them automatically.
+Previously the hooks lived only in `~/.claude/hooks/` as one-off per-machine
+additions — meaning a fresh install on a new machine had **zero** enforcement
+until the operator manually replicated the hook files and settings.json
+entries. This breaks the skill-install-is-sufficient contract.
+
+- `skills/project/hooks/block-worktree-add.sh` — blocks
+  `git worktree add` per MULTI_SESSION_ARCHITECTURE.md §7.1. Bypass:
+  inline `GIT_WORKTREE_OVERRIDE=1` prefix per invocation.
+- `skills/project/hooks/verify-jira-parent.sh` — blocks
+  `mcp__claude_ai_Atlassian__createJiraIssue` and `editJiraIssue` when
+  the proposed parent doesn't match `PROJECT_CONFIG.json` `.jira.epicKey`
+  in the current project. Bypass: `JIRA_PARENT_OVERRIDE=1` env var (for
+  deliberate cross-cutting tickets that span multiple projects).
+
+### Changed (installer)
+
+- `install.sh` grew a `hooks/` install step that:
+  - Copies every `skills/project/hooks/*.sh` to `~/.claude/hooks/` with
+    executable bit set.
+  - Registers each hook in `~/.claude/settings.json` `hooks.PreToolUse[]`
+    idempotently via `jq`. Mapping of hook basename → matcher(s) lives
+    in a single `hook_matcher_for()` function — adding a new hook only
+    requires dropping it into `hooks/` and extending that map.
+  - Re-running `install.sh --force` does NOT duplicate settings.json
+    entries — the (matcher, command) tuple is the idempotency key.
+- `install.sh --check` now verifies each hook file exists AND is
+  registered in settings.json; flags the "installed but not registered"
+  edge case.
+- `install.sh --uninstall` removes the skill's hook entries from
+  settings.json but leaves the hook files in place at
+  `~/.claude/hooks/` (they may be used by other tools; operator can
+  delete manually). Prints a clear note to that effect.
+- `install.sh --help` documents the new install targets and the
+  `jq` dependency.
+- Health-check output adds a `jq: …` line (jq is now a hard dependency
+  for registration).
+
 ## [2.0.6] - 2026-04-16
 
 ### Added (worktree-creation protection, per session audit finding)
