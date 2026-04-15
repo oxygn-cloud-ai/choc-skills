@@ -1,6 +1,6 @@
 # project — Project Repository Administration
 
-A Claude Code skill that creates, audits, configures, and reports on project repositories using the multi-session workflow defined in `~/.claude/MULTI_SESSION_ARCHITECTURE.md` and `~/.claude/GITHUB_CONFIG.md`.
+A Claude Code skill that creates, audits, configures, and reports on project repositories using the multi-session workflow defined in `~/.claude/MULTI_SESSION_ARCHITECTURE.md` and `~/.claude/PROJECT_STANDARDS.md`.
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ A Claude Code skill that creates, audits, configures, and reports on project rep
 - `git` installed and available in PATH
 - `gh` installed and authenticated (`gh auth status` succeeds)
 - `~/.claude/MULTI_SESSION_ARCHITECTURE.md` present (authoritative role/worktree/Jira definitions)
-- `~/.claude/GITHUB_CONFIG.md` present (authoritative label/CI/branch-protection spec)
+- `~/.claude/PROJECT_STANDARDS.md` present (authoritative CI/branch-protection/docs spec)
 
 ## Installation
 
@@ -40,8 +40,10 @@ In Claude Code:
 /project                  Show status for current project (same as /project status)
 /project status           Show project config, worktrees, Jira, CI, docs
 /project new              Create a new project with full multi-session setup
+/project launch           Launch tmux sessions with Claude in each worktree
 /project audit            Audit against global standards, report gaps
-/project config           Change project config: worktrees, labels, Jira, CI
+/project config           Change project config: worktrees, Jira, CI, loops
+/project update           Update to latest version from source repo
 /project help             Display full usage guide
 /project doctor           Check skill installation health
 /project version          Show installed version
@@ -51,10 +53,12 @@ In Claude Code:
 
 The `project` skill administers project repositories that follow the Oxygn multi-session workflow:
 
-- **`new`** — Scaffolds a brand-new repo with GitHub remote, labels, Jira epic reference, docs (README/ARCHITECTURE/PHILOSOPHY/CLAUDE/GITHUB_CONFIG), session worktrees (11 for Software, 8 for Non-Software), startup prompts, CI workflow with `notify-failure`/`notify-recovery`, and branch protection.
-- **`status`** — Reports the current project's config, worktrees, CI state, label set, Jira epic key, open issues by priority, and docs completeness.
-- **`audit`** — Runs the compliance audit against global standards. Reports per-check verdicts (`PASS`/`FAIL`/`WARN`/`SKIP`) for 15 checks across docs, worktrees, CI, labels, branch protection, and coverage.
-- **`config`** — Interactively modifies project configuration: toggle project type, add/remove worktrees, manage labels, enable/disable CI or branch protection, set Jira epic key, document deviations.
+- **`new`** — Scaffolds a brand-new repo with GitHub remote (Issues disabled, labels deleted — Jira is source of truth), Jira epic reference, docs (README/ARCHITECTURE/PHILOSOPHY/CLAUDE/PROJECT_CONFIG.json), session worktrees (11 for Software, 8 for Non-Software), startup prompts, loop prompts, CI workflow with `notify-failure`/`notify-recovery`, and branch protection.
+- **`status`** — Reports the current project's config, worktrees, CI state, Jira epic key, loop configuration, open Jira issues by priority, and docs completeness.
+- **`audit`** — Runs the compliance audit against global standards. Reports per-check verdicts (`PASS`/`FAIL`/`WARN`/`SKIP`) across docs, worktrees, CI, branch protection, loops, and coverage.
+- **`config`** — Interactively modifies project configuration: toggle project type, add/remove worktrees, enable/disable CI or branch protection, set Jira epic key, configure loop intervals, manage env vars, document deviations.
+- **`launch`** — Creates tmux session per project with named windows per worktree role, launches Claude Code in each with configurable options (prompt pipe, model override, max-turns, skip idle).
+- **`update`** — Pulls latest from source repo and re-installs the skill.
 
 ## Subcommand reference
 
@@ -64,16 +68,18 @@ The `project` skill administers project repositories that follow the Oxygn multi
 | `status` | Show project status | `commands/status.md` |
 | `audit` | Compliance audit | `commands/audit.md` |
 | `config` | Modify configuration | `commands/config.md` |
-| `help` | Usage guide | inline in `SKILL.md` |
-| `doctor` | Skill health check | inline in `SKILL.md` |
-| `version` | Version string | inline in `SKILL.md` |
+| `launch` | Launch tmux sessions | `commands/launch.md` |
+| `update` | Update from source | `commands/update.md` |
+| `help` | Usage guide | `commands/help.md` |
+| `doctor` | Skill health check | `commands/doctor.md` |
+| `version` | Version string | `commands/version.md` |
 
 ## Runtime dependencies
 
 The skill's subcommands read these files at runtime and will fail without them:
 
 - `~/.claude/MULTI_SESSION_ARCHITECTURE.md` — role definitions, worktree layout, Jira structure, 11-session protocol
-- `~/.claude/GITHUB_CONFIG.md` — label definitions, CI templates, branch protection spec
+- `~/.claude/PROJECT_STANDARDS.md` — CI templates, branch protection spec, docs requirements, label/issue deletion policy
 - `~/.claude/CLAUDE.md` — global rules (referenced, not required)
 
 These files are NOT installed by this skill — they're expected to exist as part of the user's Claude Code configuration. Run `/project doctor` to verify.
@@ -113,7 +119,7 @@ rm -f  ~/.claude/commands/project.md
 
 ## Version
 
-Current: **1.0.0**
+Current: **2.0.0**
 
 ## License
 
