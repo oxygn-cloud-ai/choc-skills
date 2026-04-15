@@ -1,3 +1,8 @@
 # Required by iterm2-tmux scripts — prevents tmux from overwriting tab titles
 set-option -g set-titles off
 set-option -g allow-rename off
+
+# Picker popup (Prefix+P) — primary role-switcher for Blink/iOS and any client
+# without iTerm2 tabs. Prefers project-picker.sh (project skill) when installed;
+# falls back to iterm2-tmux's own tmux-picker.sh.
+bind-key P display-popup -E -w 60 -h 20 "if [ -x ~/.local/bin/project-picker.sh ]; then ~/.local/bin/project-picker.sh; else ~/.local/bin/tmux-picker.sh; fi"
