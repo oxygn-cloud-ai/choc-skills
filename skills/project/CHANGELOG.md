@@ -38,7 +38,6 @@ All notable changes to the project skill will be documented in this file.
 ### Fixed
 - **P1**: `config.md` worktree removal now checks uncommitted changes, unpushed commits, and stashed work before `git branch -D` — was only checking unmerged commits vs main
 - `new.md` Step 8: replaced `git add -A` (risks staging sensitive files) with explicit file list per scaffolded files
-- `new.md` Co-Authored-By format aligned to global CLAUDE.md standard
 - `status.md` Python version detection: `tomllib` fallback for Python <3.11 via `tomli` or regex
 - `status.md` cross-platform `stat` for file dates (macOS + Linux)
 - `status.md` jq issue grouping handles unlabeled issues without crashing

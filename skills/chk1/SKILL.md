@@ -214,7 +214,6 @@ If $ARGUMENTS is provided and is not a subcommand (help/doctor/version):
 1. Run `git log --oneline -20` to see recent commits.
 2. Identify the boundary of the most recent implementation session:
    - Look for a natural boundary: a merge commit, a commit from a different author, a large time gap (>4 hours) between commits, or a commit message indicating a different task.
-   - If using Co-Authored-By tags, treat consecutive commits with the same co-author as one session.
    - If no clear boundary is found, default to the most recent commit only and note:
      > **chk1 note**: Could not auto-detect implementation boundary. Auditing only the most recent commit. Use `/chk1 <commit>..<commit>` to specify a wider range.
 3. Run `git diff <base>..<head> --stat` to list all modified files.

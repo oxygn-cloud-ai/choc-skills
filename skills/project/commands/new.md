@@ -160,12 +160,7 @@ git add README.md CLAUDE.md GITHUB_CONFIG.md PHILOSOPHY.md .gitignore
 # Rust: git add Cargo.toml src/
 # Go: git add go.mod main.go
 # If ARCHITECTURE.md was created: git add ARCHITECTURE.md
-git commit -m "$(cat <<'EOF'
-chore: initial project scaffold
-
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
-EOF
-)"
+git commit -m "chore: initial project scaffold"
 git push -u origin main
 ```
 
