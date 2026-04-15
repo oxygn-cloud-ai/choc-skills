@@ -276,6 +276,8 @@ if [ "$ROLE_IS_LOOP_CAPABLE" = "true" ]; then
 fi
 
 LOOP_PROMPT_ABS="$WORKTREE/$LOOP_PROMPT_REL"
+[ -f "$LOOP_PROMPT_ABS" ] || LOOP_PROMPT_ABS="$REPO_ROOT/.worktrees/master/$LOOP_PROMPT_REL"
+[ -f "$LOOP_PROMPT_ABS" ] || LOOP_PROMPT_ABS="$REPO_ROOT/$LOOP_PROMPT_REL"
 
 #-----------------------------------------------------------------------------
 # Dry run — print plan and exit
@@ -350,7 +352,7 @@ fi
 # effect next tick.
 if [ "$ROLE_IS_LOOP_CAPABLE" = "true" ] && [ "$LOOP_INTERVAL" -gt 0 ] 2>/dev/null; then
   if [ -f "$LOOP_PROMPT_ABS" ]; then
-    loop_cmd="/loop ${LOOP_INTERVAL}m Read the file ${LOOP_PROMPT_REL} in this worktree and execute the recurring task described there."
+    loop_cmd="/loop ${LOOP_INTERVAL}m Read the file ${LOOP_PROMPT_ABS} and execute the recurring task described there."
     log "dispatching: $loop_cmd"
     send_single_line "$loop_cmd"
   else

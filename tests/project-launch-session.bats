@@ -231,10 +231,38 @@ EOF
 }
 
 @test "launch-session: dry-run reports missing loop prompt file" {
+  # Remove loop.md from fixer's worktree AND master's worktree AND repo root
+  # so the 3-tier fallback ($WORKTREE → .worktrees/master → $REPO_ROOT) all fail.
+  rm "$TEST_REPO/.worktrees/fixer/loops/loop.md"
+  rm "$TEST_REPO/.worktrees/master/loops/loop.md"
+  rm -f "$TEST_REPO/loops/loop.md"
+  run "$SCRIPT" --target fake:fixer --role fixer --repo "$TEST_REPO" --dry-run
+  [ "$status" -eq 0 ]
+  # Match the specific "loop prompt: ... MISSING" line, not any MISSING
+  # (prompt-pipe file MISSING would cause a false positive).
+  [[ "$output" == *"loop prompt:"*"MISSING"* ]]
+}
+
+@test "launch-session: loop prompt falls back to .worktrees/master/ when role worktree lacks it" {
+  # Remove only fixer's copy — master's stays. Fallback should resolve there.
   rm "$TEST_REPO/.worktrees/fixer/loops/loop.md"
   run "$SCRIPT" --target fake:fixer --role fixer --repo "$TEST_REPO" --dry-run
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MISSING"* ]]
+  [[ "$output" == *".worktrees/master/loops/loop.md"* ]]
+  [[ "$output" != *"loop prompt:"*"MISSING"* ]]
+}
+
+@test "launch-session: loop prompt falls back to repo root when no worktree has it" {
+  # Remove from both worktrees, create at repo root instead
+  rm "$TEST_REPO/.worktrees/fixer/loops/loop.md"
+  rm "$TEST_REPO/.worktrees/master/loops/loop.md"
+  mkdir -p "$TEST_REPO/loops"
+  echo "shared repo-root loop prompt" > "$TEST_REPO/loops/loop.md"
+  run "$SCRIPT" --target fake:fixer --role fixer --repo "$TEST_REPO" --dry-run
+  [ "$status" -eq 0 ]
+  # Must be repo-root path, not the worktree or master-worktree path
+  [[ "$output" == *"$TEST_REPO/loops/loop.md"* ]]
+  [[ "$output" != *"loop prompt:"*"MISSING"* ]]
 }
 
 # --- Config fallback: main repo root vs .worktrees/master/ ---

@@ -2,6 +2,130 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.1] - 2026-04-16
+
+### Added (cave-inversion protection — behavioural layer)
+
+This repo is the home of the `/project` skill; editing `~/.claude/`
+directly (instead of `skills/project/` + reinstall) produces hidden
+drift. Session 2026-04-16 hit this twice in ~2 hours. The v2.1.0
+commit fixed the immediate instance; this patch adds the behavioural
+layer that prevents recurrence before the tool-layer (CPT-58) and
+CI-layer (CPT-60) defences land.
+
+- `CLAUDE.md` — new top-level section **"Skill-is-product rule
+  (choc-skills-specific, non-negotiable)"** with the 3-question check
+  operators must run before editing `~/.claude/<anything>`, the
+  failure-mode narrative from 2026-04-16, and cross-refs to CPT-58 /
+  CPT-59 / CPT-60 for the planned verification mechanisms.
+- `.claude/sessions/*.md` × 11 — each role's startup prompt gains a
+  **"Cave rule"** section so sessions load the reminder at launch.
+
+### Tickets filed for the code-layer protection
+
+- **CPT-58** (Bug, High) — upgrade `install.sh --check` to byte-parity
+  + orphan detection. Closes the diagnostic gap that let the 2026-04-16
+  drift persist unnoticed.
+- **CPT-59** (Feature, Medium) — `/project:self-audit` subcommand for
+  bidirectional rules ↔ mechanisms audit of the skill itself.
+- **CPT-60** (Feature, Medium) — CI bats test that runs `install.sh`
+  in a temp HOME and asserts the installed tree matches the skill
+  source. PR-time gate.
+
+No code changes in v2.1.1 — docs + session prompts only. Install is
+idempotent: re-running `install.sh --force` after this update only
+propagates the updated session prompts; existing hook registrations
+and bin scripts stay put.
+
+## [2.1.0] - 2026-04-16
+
+### Added (hooks ship with skill — closes gap identified mid-session)
+
+The skill now bundles its PreToolUse enforcement hooks as first-class
+artefacts under `skills/project/hooks/` and installs them automatically.
+Previously the hooks lived only in `~/.claude/hooks/` as one-off per-machine
+additions — meaning a fresh install on a new machine had **zero** enforcement
+until the operator manually replicated the hook files and settings.json
+entries. This breaks the skill-install-is-sufficient contract.
+
+- `skills/project/hooks/block-worktree-add.sh` — blocks
+  `git worktree add` per MULTI_SESSION_ARCHITECTURE.md §7.1. Bypass:
+  inline `GIT_WORKTREE_OVERRIDE=1` prefix per invocation.
+- `skills/project/hooks/verify-jira-parent.sh` — blocks
+  `mcp__claude_ai_Atlassian__createJiraIssue` and `editJiraIssue` when
+  the proposed parent doesn't match `PROJECT_CONFIG.json` `.jira.epicKey`
+  in the current project. Bypass: `JIRA_PARENT_OVERRIDE=1` env var (for
+  deliberate cross-cutting tickets that span multiple projects).
+
+### Changed (installer)
+
+- `install.sh` grew a `hooks/` install step that:
+  - Copies every `skills/project/hooks/*.sh` to `~/.claude/hooks/` with
+    executable bit set.
+  - Registers each hook in `~/.claude/settings.json` `hooks.PreToolUse[]`
+    idempotently via `jq`. Mapping of hook basename → matcher(s) lives
+    in a single `hook_matcher_for()` function — adding a new hook only
+    requires dropping it into `hooks/` and extending that map.
+  - Re-running `install.sh --force` does NOT duplicate settings.json
+    entries — the (matcher, command) tuple is the idempotency key.
+- `install.sh --check` now verifies each hook file exists AND is
+  registered in settings.json; flags the "installed but not registered"
+  edge case.
+- `install.sh --uninstall` removes the skill's hook entries from
+  settings.json but leaves the hook files in place at
+  `~/.claude/hooks/` (they may be used by other tools; operator can
+  delete manually). Prints a clear note to that effect.
+- `install.sh --help` documents the new install targets and the
+  `jq` dependency.
+- Health-check output adds a `jq: …` line (jq is now a hard dependency
+  for registration).
+
+## [2.0.6] - 2026-04-16
+
+### Added (worktree-creation protection, per session audit finding)
+
+- `audit` check #16: **No unauthorised worktrees** — `/project:audit`
+  now FAILs on any `.worktrees/<name>/` whose `<name>` is not a member
+  of `PROJECT_CONFIG.json` `sessions.roles`, and on any role worktree
+  whose HEAD branch is not `session/<role>`. Previously the audit only
+  verified expected worktrees existed; it silently tolerated
+  unauthorised extras and wrong-branch parking. This closes the gap
+  that let `.worktrees/implementer` drift onto
+  `feature/CPT-42-shell-loop-polling` undetected for a day.
+- Companion pieces shipped outside the skill (all required for full
+  enforcement):
+  - `~/.claude/hooks/block-worktree-add.sh` — `PreToolUse` hook that
+    exits 2 on any Bash tool call matching `git worktree add` unless
+    the command inlines `GIT_WORKTREE_OVERRIDE=1`.
+  - `~/.claude/settings.json` `hooks.PreToolUse` registration for the
+    above.
+  - `~/.claude/MULTI_SESSION_ARCHITECTURE.md` §7.1 — explicit
+    prohibition + three-layer enforcement description.
+  - `.claude/sessions/<role>.md` × 11 — each role's startup prompt
+    gained a "Worktree rule" section.
+
+## [2.0.5] - 2026-04-15
+
+### Fixed (Codex consolidation review — P1)
+
+- **P1**: `/loop` dispatch was silently skipping for every role when
+  `PROJECT_CONFIG.json` used the default `loops/loop.md` path. The
+  launcher resolved the prompt as `$WORKTREE/loops/loop.md`, but the
+  file ships at the main repo root; worktrees don't carry it. Result:
+  every loop-capable role (master, triager, reviewer, merger, chk1,
+  chk2, fixer, implementer) hit "loop prompt file missing — skipping
+  /loop dispatch" and never started its recurring task. Fix: cascade
+  resolution now tries `$WORKTREE/`, then `.worktrees/master/`, then
+  `$REPO_ROOT/` (same pattern already used for session prompts). The
+  dispatched `/loop` command also passes the resolved absolute path so
+  Claude reads the correct file regardless of cwd.
+
+### Added
+
+- `.worktrees/` added to root `.gitignore` — was missing on
+  session/master baseline, caused `git status` noise after
+  `/project:launch` creates worktree trees.
+
 ## [2.0.4] - 2026-04-14
 
 ### Fixed (CPT-41 fourth-pass review — 5 findings Codex caught in v2.0.3)
