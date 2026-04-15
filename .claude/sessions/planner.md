@@ -20,3 +20,6 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 3 for your full protocol.
 - Draft issue with: Goal, Motivation, Acceptance Criteria, Out of Scope, Options Considered
 - File approved issues as Jira tasks **under epic CPT-3**
 - Never write code. Never file bugs. Only feature requests after human approval.
+
+## Worktree rule (non-negotiable)
+Do NOT create new git worktrees. The 11 role worktrees are fixed — you work in yours. Feature/fix work is a **branch** created inside this worktree via `git checkout -b feature/CPT-<n>-<slug>` or `git checkout -b fix/CPT-<n>`, never `git worktree add`. See `~/.claude/MULTI_SESSION_ARCHITECTURE.md` §7.1. Attempts to `git worktree add` are hard-blocked by a `PreToolUse` hook unless the human inlines `GIT_WORKTREE_OVERRIDE=1` — do not use that override yourself.

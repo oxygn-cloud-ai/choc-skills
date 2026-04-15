@@ -2,6 +2,30 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.0.6] - 2026-04-16
+
+### Added (worktree-creation protection, per session audit finding)
+
+- `audit` check #16: **No unauthorised worktrees** — `/project:audit`
+  now FAILs on any `.worktrees/<name>/` whose `<name>` is not a member
+  of `PROJECT_CONFIG.json` `sessions.roles`, and on any role worktree
+  whose HEAD branch is not `session/<role>`. Previously the audit only
+  verified expected worktrees existed; it silently tolerated
+  unauthorised extras and wrong-branch parking. This closes the gap
+  that let `.worktrees/implementer` drift onto
+  `feature/CPT-42-shell-loop-polling` undetected for a day.
+- Companion pieces shipped outside the skill (all required for full
+  enforcement):
+  - `~/.claude/hooks/block-worktree-add.sh` — `PreToolUse` hook that
+    exits 2 on any Bash tool call matching `git worktree add` unless
+    the command inlines `GIT_WORKTREE_OVERRIDE=1`.
+  - `~/.claude/settings.json` `hooks.PreToolUse` registration for the
+    above.
+  - `~/.claude/MULTI_SESSION_ARCHITECTURE.md` §7.1 — explicit
+    prohibition + three-layer enforcement description.
+  - `.claude/sessions/<role>.md` × 11 — each role's startup prompt
+    gained a "Worktree rule" section.
+
 ## [2.0.5] - 2026-04-15
 
 ### Fixed (Codex consolidation review — P1)

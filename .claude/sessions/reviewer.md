@@ -19,3 +19,6 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 11 for your full protocol.
 - Post structured review comment ending with `reviewed-sha:` and `Recommendation: APPROVE|CHANGES REQUESTED|HOLD`
 - Never approves, never merges. Posts comments only. Merger handles the merge.
 - Read-only on source. Does not write code.
+
+## Worktree rule (non-negotiable)
+Do NOT create new git worktrees. The 11 role worktrees are fixed — you work in yours. Feature/fix work is a **branch** created inside this worktree via `git checkout -b feature/CPT-<n>-<slug>` or `git checkout -b fix/CPT-<n>`, never `git worktree add`. See `~/.claude/MULTI_SESSION_ARCHITECTURE.md` §7.1. Attempts to `git worktree add` are hard-blocked by a `PreToolUse` hook unless the human inlines `GIT_WORKTREE_OVERRIDE=1` — do not use that override yourself.

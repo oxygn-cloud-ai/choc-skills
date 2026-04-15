@@ -57,6 +57,7 @@ For each check, report PASS, FAIL, WARN, or SKIP with details.
 13. **Loop prompt files**: for every role with `intervalMinutes > 0`, the prompt file exists at `.worktrees/<role>/<prompt-path>` (default `loops/loop.md`).
 14. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
 15. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.
+16. **No unauthorised worktrees**: per MULTI_SESSION_ARCHITECTURE.md §7.1, the only worktrees permitted are the role worktrees named in `sessions.roles` (plus the main repo). Iterate `git worktree list --porcelain`, extract each worktree's `worktree <path>` line, and for each one under `.worktrees/<name>/`, assert `<name>` is a member of `sessions.roles`. FAIL on any `<name>` not in the role list. Also FAIL on any role worktree whose HEAD branch is not `session/<role>` (feature/fix work must be a branch INSIDE the role worktree, never as a new or re-pointed worktree).
 
 ## Step 5: Display report
 
