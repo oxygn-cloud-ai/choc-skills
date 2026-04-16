@@ -1,13 +1,13 @@
 #!/bin/bash
-# Set up iTerm2 tab color, then attach tmux.
-# Usage: tmux-attach-session.sh <session> <label> <color_index> [window_title]
+# Set up iTerm2 tab color, background image, title, then attach tmux.
+# Usage: tmux-attach-session.sh <session> <label> <color_index>
 set -euo pipefail
 
 SESSION="${1:?session required}"
-# $2 (label) — tab title is set via AppleScript, not here
+LABEL="${2:?label required}"
 INDEX="${3:-0}"
-# $4 accepted for compatibility; window title is set at the iTerm2 level
-: "${4:-}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BG_DIR="$SCRIPT_DIR/.session-backgrounds"
 
 # Tab color palette (R G B)
 TAB_COLORS=(
@@ -28,14 +28,20 @@ TAB_COLORS=(
 color_entry="${TAB_COLORS[$((INDEX % ${#TAB_COLORS[@]}))]}"
 read -r r g b <<< "$color_entry"
 
+# Set tab title (persists because tmux has set-titles off + allow-rename off)
+printf '\033]0;%s\007' "$LABEL"
+
 # Set tab color
 printf '\033]6;1;bg;red;brightness;%s\a' "$r"
 printf '\033]6;1;bg;green;brightness;%s\a' "$g"
 printf '\033]6;1;bg;blue;brightness;%s\a' "$b"
 
-# Background image is set via AppleScript in tmux-iterm-tabs.sh (trusted path,
-# no confirmation dialog). The escape code SetBackgroundImageFile triggers an
-# iTerm2 security prompt, so we avoid it here.
+# Set background image if available
+bg_path="$BG_DIR/${SESSION}.png"
+if [[ -f "$bg_path" ]]; then
+  b64_path=$(printf '%s' "$bg_path" | base64)
+  printf '\033]1337;SetBackgroundImageFile=%s\a' "$b64_path"
+fi
 
 # Replace this process with tmux
 exec tmux attach -t "$SESSION"
