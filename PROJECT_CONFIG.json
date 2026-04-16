@@ -45,7 +45,15 @@
       "playtester",
       "reviewer",
       "triager"
-    ]
+    ],
+    "master":      { "allowedTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write", "mcp__claude_ai_Atlassian__*"] },
+    "triager":     { "allowedTools": ["Read", "Grep", "Glob", "Bash(git log:*)", "Bash(git status:*)", "Bash(git diff:*)", "mcp__claude_ai_Atlassian__*"] },
+    "reviewer":    { "allowedTools": ["Read", "Grep", "Glob", "Bash(git *)", "mcp__claude_ai_Atlassian__*"] },
+    "merger":      { "allowedTools": ["Read", "Grep", "Glob", "Bash(git *)", "Bash(gh *)", "mcp__claude_ai_Atlassian__*"] },
+    "fixer":       { "allowedTools": ["Read", "Write", "Edit", "Grep", "Glob", "Bash", "mcp__claude_ai_Atlassian__*"] },
+    "implementer": { "allowedTools": ["Read", "Write", "Edit", "Grep", "Glob", "Bash", "mcp__claude_ai_Atlassian__*"] },
+    "chk1":        { "allowedTools": ["Read", "Grep", "Glob", "Bash", "mcp__claude_ai_Atlassian__*"] },
+    "chk2":        { "allowedTools": ["Read", "Grep", "Glob", "Bash", "mcp__claude_ai_Atlassian__*"] }
   },
   "loops": {
     "master":      { "intervalMinutes": 5,  "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/master.md" },

@@ -26,9 +26,7 @@ log "$ROLE" "loop starting (interval=${INTERVAL_MINUTES}m, driver=shell)"
 
 while true; do
   log "$ROLE" "iteration start"
-  if claude --dangerously-skip-permissions \
-            --append-system-prompt "$(cat "$SESSION_PROMPT" 2>/dev/null || printf 'Role: %s' "$ROLE")" \
-            -p "$(render_prompt "$PROMPT_FILE" "$STATE_FILE")"; then
+  if run_iteration "$ROLE" "$PROMPT_FILE" "$STATE_FILE" "$SESSION_PROMPT"; then
     heartbeat "$ROLE" 0
     log "$ROLE" "iteration complete"
   else

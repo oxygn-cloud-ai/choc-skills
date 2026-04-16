@@ -33,26 +33,39 @@ log() {
   printf '%s\n' "$line" >> "$LOG_DIR/$role.log"
 }
 
-# acquire_lock — non-blocking flock on .claude/locks/<role>.lock.
-# Exits the process if another holder owns the lock (AC #2: refuses to start).
+# acquire_lock — atomic single-holder lock via mkdir (AC #2).
+# mkdir is atomic across Linux and macOS and requires no external deps (flock(1)
+# is not shipped with macOS; CPT-42 fleet runs on Darwin). Holder PID lives in
+# <lockdir>/pid so stale locks (previous holder died without releasing) are
+# detected via kill -0 and reclaimed automatically.
+# Exits 1 with a log line if a live holder already owns the lock.
 # Usage: acquire_lock <role>
 acquire_lock() {
   local role="$1"
-  local lockfile="$LOCK_DIR/$role.lock"
-  exec {LOCK_FD}>"$lockfile"
-  if ! flock -n "$LOCK_FD"; then
-    log "$role" "lock held by another process (pidfile: $lockfile.pid) — refusing to start"
-    exit 1
+  local lockdir="$LOCK_DIR/$role.lock"
+  if ! mkdir "$lockdir" 2>/dev/null; then
+    local holder_pid
+    holder_pid="$(cat "$lockdir/pid" 2>/dev/null || true)"
+    if [[ -n "$holder_pid" ]] && kill -0 "$holder_pid" 2>/dev/null; then
+      log "$role" "lock held by live PID $holder_pid — refusing to start"
+      exit 1
+    fi
+    rm -rf "$lockdir"
+    if ! mkdir "$lockdir" 2>/dev/null; then
+      log "$role" "lock held — refusing to start (race reclaiming stale lock)"
+      exit 1
+    fi
+    log "$role" "reclaimed stale lock from dead PID ${holder_pid:-unknown}"
   fi
-  echo "$$" > "$lockfile.pid"
+  echo "$$" > "$lockdir/pid"
 }
 
-# release_lock — best-effort cleanup of pid sidecar (flock itself releases on fd-close).
-# Intended to be wired via: trap 'release_lock <role>' EXIT.
+# release_lock — remove the lock directory. Trap EXIT wires this.
+# Safe to call when no lock is held.
 # Usage: release_lock <role>
 release_lock() {
   local role="$1"
-  rm -f "$LOCK_DIR/$role.lock.pid"
+  rm -rf "$LOCK_DIR/$role.lock" 2>/dev/null || true
 }
 
 # render_prompt — produce the prompt string passed to `claude -p`.
@@ -102,4 +115,22 @@ heartbeat() {
   "pid": $$
 }
 EOF
+}
+
+# run_iteration — invoke `claude -p` for one polling iteration (AC #8).
+# Reads the role's allowlist from .sessions.<role>.allowedTools in PROJECT_CONFIG
+# and passes it to claude via --allowed-tools. When the list is empty or missing,
+# the flag is omitted (claude falls back to its default allowlist).
+# Returns claude's exit code so the wrapper's if/else can record success/failure.
+# Usage: run_iteration <role> <prompt-file> <state-file> <session-prompt-file>
+run_iteration() {
+  local role="$1" prompt_file="$2" state_file="$3" session_prompt_file="$4"
+  local sys_prompt rendered allowed
+  sys_prompt="$(cat "$session_prompt_file" 2>/dev/null || printf 'Role: %s' "$role")"
+  rendered="$(render_prompt "$prompt_file" "$state_file")"
+  allowed="$(jq -r --arg r "$role" '(.sessions[$r].allowedTools // []) | join(",")' "$PROJECT_CONFIG" 2>/dev/null || true)"
+  local args=(--dangerously-skip-permissions --append-system-prompt "$sys_prompt")
+  [[ -n "$allowed" ]] && args+=(--allowed-tools "$allowed")
+  args+=(-p "$rendered")
+  claude "${args[@]}"
 }

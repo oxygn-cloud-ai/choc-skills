@@ -221,6 +221,36 @@ for role in $LOOP_ROLES; do
   fi
 done
 
+# CPT-42 AC #8: allowedTools per role. Array-of-strings shape is enforced by the
+# JSON Schema; here we check semantic consistency — shell-driver roles should
+# have a non-empty allowedTools list, and non-string entries (if any slipped
+# past the schema because a tool was run without --schema) get flagged.
+for role in $LOOP_ROLES; do
+  ROLE_DRIVER=$(jq -r --arg r "$role" '.loops[$r].driver // "session"' "$CONFIG_FILE" 2>/dev/null)
+  ALLOWED_TYPE=$(jq -r --arg r "$role" '.sessions[$r].allowedTools | type' "$CONFIG_FILE" 2>/dev/null)
+  case "$ALLOWED_TYPE" in
+    array)
+      ALLOWED_LEN=$(jq -r --arg r "$role" '.sessions[$r].allowedTools | length' "$CONFIG_FILE")
+      NON_STRING=$(jq -r --arg r "$role" '[.sessions[$r].allowedTools[] | select(type != "string")] | length' "$CONFIG_FILE" 2>/dev/null)
+      if [[ "$NON_STRING" -gt 0 ]]; then
+        err "sessions.$role.allowedTools contains $NON_STRING non-string entries (must be list of strings)"
+      elif [[ "$ALLOWED_LEN" -eq 0 && "$ROLE_DRIVER" == "shell" ]]; then
+        warn "sessions.$role.allowedTools is empty but driver is 'shell' — claude -p will run with its default allowlist"
+      else
+        pass "sessions.$role.allowedTools is a valid array ($ALLOWED_LEN entries)"
+      fi
+      ;;
+    null)
+      if [[ "$ROLE_DRIVER" == "shell" ]]; then
+        warn "sessions.$role.allowedTools not set but driver is 'shell' — claude -p will run with its default allowlist"
+      fi
+      ;;
+    *)
+      err "sessions.$role.allowedTools must be an array, got: $ALLOWED_TYPE"
+      ;;
+  esac
+done
+
 # env.sessions.<role> keys must appear in sessions.roles (schema pattern
 # allows any of the 11 role names, but declaring env for a role that isn't
 # active is almost certainly a bug).

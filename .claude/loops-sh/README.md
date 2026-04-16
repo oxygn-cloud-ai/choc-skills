@@ -39,10 +39,13 @@ In-session `/loop`s accumulate context every iteration. At ~95% they auto-compac
 Runtime artefacts (created on first run, not checked in):
 
 ```
-.claude/locks/<role>.lock         # flock file — prevents double-start
-.claude/locks/<role>.lock.pid     # current holder's PID
-.claude/logs/<role>.log            # structured per-iteration log
-.claude/state/<role>.md            # state handoff — the only durable memory
+.claude/locks/<role>.lock/          # atomic lock directory (mkdir-based — portable
+                                    # across Linux + macOS; flock(1) is not
+                                    # shipped with macOS)
+.claude/locks/<role>.lock/pid       # current holder's PID (stale locks auto-cleared
+                                    # via kill -0 when a fresh wrapper starts)
+.claude/logs/<role>.log             # structured per-iteration log
+.claude/state/<role>.md             # state handoff — the only durable memory
 .claude/state/<role>.heartbeat.json # {role,lastIteration,lastExitCode,pid} for /project:status
 ```
 
@@ -78,12 +81,13 @@ The loop prompt at `.claude/loops/<role>.md` gets the state-file path via the `{
 The wrapper:
 
 1. Reads `intervalMinutes` from `.loops.<role>.intervalMinutes` in `PROJECT_CONFIG.json`. If `0`, exits cleanly.
-2. Acquires `flock` on `.claude/locks/<role>.lock`. If held by another process, logs and exits with code 1 (AC #2).
-3. Traps EXIT to release the lock.
-4. Enters `while true` — each iteration:
-   - `claude --dangerously-skip-permissions --append-system-prompt <.claude/sessions/<role>.md> -p <rendered prompt>`.
+2. Acquires an atomic lock by `mkdir .claude/locks/<role>.lock`. If already held by a live PID, logs and exits with code 1 (AC #2); stale locks (holder dead) are auto-reclaimed.
+3. Traps EXIT to release the lock (`rm -rf` the directory).
+4. Enters `while true` — each iteration calls `run_iteration` (in `_lib.sh`):
+   - Reads `.sessions.<role>.allowedTools` from `PROJECT_CONFIG.json` and passes it to `claude` via `--allowed-tools` (AC #8). Empty / missing list → flag omitted.
+   - Invokes `claude --dangerously-skip-permissions --append-system-prompt <.claude/sessions/<role>.md> [--allowed-tools <list>] -p <rendered prompt>`.
    - Writes heartbeat JSON regardless of exit code.
-   - Logs success or failure; `|| continue` never drops out of the outer loop (AC #13).
+   - Logs success or failure; the if/else branches never `exit` so the outer loop survives (AC #13).
 5. Sleeps `intervalMinutes * 60` seconds between iterations.
 
 `/project:launch` does this automatically under tmux; manual invocation is for debugging.
@@ -92,8 +96,8 @@ The wrapper:
 
 ```bash
 # What's currently running?
-cat .claude/locks/triager.lock.pid
-ps -p "$(cat .claude/locks/triager.lock.pid)" -o pid,etime,command
+cat .claude/locks/triager.lock/pid
+ps -p "$(cat .claude/locks/triager.lock/pid)" -o pid,etime,command
 
 # Recent iteration activity
 tail -n 100 .claude/logs/triager.log
@@ -112,11 +116,25 @@ tmux attach -t "$(basename "$(git rev-parse --show-toplevel)")-triager-loop"
 - `claude` CLI update changed a flag — check `claude --help` and the command the wrapper builds.
 - `--append-system-prompt` file missing — fallback emits a minimal role string so the loop continues, but iterations won't have role identity.
 - `jq` missing from `PATH` — install via `brew install jq` / `apt install jq`.
-- Another holder of the flock — another tmux session, a crashed process that leaked the pidfile, or two `/project:launch` invocations racing. `rm .claude/locks/<role>.lock*` after verifying no live PID.
+- Another holder has the lock directory — another tmux session, a crashed process whose PID got reused, or two `/project:launch` invocations racing. The wrapper auto-reclaims locks whose PID is dead (`kill -0` check) on the next start; if a live PID still holds, investigate with `ps -p`. `rm -rf .claude/locks/<role>.lock` is the manual escape hatch after you've verified no live holder.
 
 ## Permissions & tool scoping
 
-`--dangerously-skip-permissions` is in use because the wrapper **is** the trust boundary. Per-role tool allowlisting must be enforced via `--allowed-tools` sourced from `.sessions.<role>.allowedTools` in `PROJECT_CONFIG.json` (AC #8). The `claude` invocation in each wrapper reads that list at launch time.
+`--dangerously-skip-permissions` is in use because the wrapper **is** the trust boundary. Per-role tool allowlisting is enforced via `--allowed-tools`, sourced from `.sessions.<role>.allowedTools` in `PROJECT_CONFIG.json` (AC #8). `run_iteration` in `_lib.sh` reads the list each iteration — changes to `PROJECT_CONFIG.json` take effect on the next iteration without restarting the wrapper.
+
+Tool-name syntax follows claude's own conventions — see `claude --help` for `--allowed-tools`. Examples currently shipped in `PROJECT_CONFIG.json`:
+
+| Role        | allowedTools (summary) |
+|-------------|------------------------|
+| triager     | Read, Grep, Glob, `Bash(git log:*)`, `Bash(git status:*)`, `Bash(git diff:*)`, `mcp__claude_ai_Atlassian__*` |
+| reviewer    | Read, Grep, Glob, `Bash(git *)`, `mcp__claude_ai_Atlassian__*` |
+| merger      | Read, Grep, Glob, `Bash(git *)`, `Bash(gh *)`, `mcp__claude_ai_Atlassian__*` |
+| implementer | Read, Write, Edit, Grep, Glob, Bash, `mcp__claude_ai_Atlassian__*` |
+| fixer       | Read, Write, Edit, Grep, Glob, Bash, `mcp__claude_ai_Atlassian__*` |
+| chk1 / chk2 | Read, Grep, Glob, Bash, `mcp__claude_ai_Atlassian__*` |
+| master      | Read, Grep, Glob, Bash, Edit, Write, `mcp__claude_ai_Atlassian__*` |
+
+An empty list or missing key omits `--allowed-tools` entirely, falling back to claude's default allowlist. `scripts/validate-config.sh` emits a WARN for shell-driver roles missing an explicit list.
 
 ## Rollout status
 

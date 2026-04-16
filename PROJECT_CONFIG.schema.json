@@ -128,6 +128,20 @@
           "uniqueItems": true,
           "description": "Active session roles for this project."
         }
+      },
+      "patternProperties": {
+        "^(master|planner|implementer|fixer|merger|chk1|chk2|performance|playtester|reviewer|triager)$": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allowedTools": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Tool allowlist passed to claude -p via --allowed-tools (CPT-42). Values follow claude's tool syntax — e.g. [\"Read\", \"Grep\", \"Bash(git *)\", \"mcp__claude_ai_Atlassian__*\"]. Applies when the role runs under driver: \"shell\"; ignored for other drivers. Empty list or missing key = omit --allowed-tools (claude's default allowlist applies)."
+            }
+          },
+          "description": "Per-role session overrides. Reserved for CPT-42 allowedTools today; future per-role session knobs go here."
+        }
       }
     },
     "loops": {
