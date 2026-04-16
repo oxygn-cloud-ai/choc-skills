@@ -1,5 +1,5 @@
 ---
-name: project-version
+name: project:version
 description: Show installed skill version
 allowed-tools:
   - Bash

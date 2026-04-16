@@ -1,5 +1,5 @@
 ---
-name: project-status
+name: project:status
 description: Show current project config, worktrees, Jira, CI, docs
 allowed-tools:
   - Bash

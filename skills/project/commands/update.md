@@ -1,5 +1,5 @@
 ---
-name: project-update
+name: project:update
 description: Update project skill to latest version
 allowed-tools:
   - Read

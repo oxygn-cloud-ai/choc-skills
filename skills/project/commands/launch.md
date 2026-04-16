@@ -1,5 +1,5 @@
 ---
-name: project-launch
+name: project:launch
 description: Launch multi-session terminal environment for project worktrees
 allowed-tools:
   - Bash

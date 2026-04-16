@@ -1,5 +1,5 @@
 ---
-name: project-new
+name: project:new
 description: Create a new project repository with full multi-session setup
 allowed-tools:
   - Bash

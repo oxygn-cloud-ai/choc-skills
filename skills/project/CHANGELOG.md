@@ -2,6 +2,16 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.2] - 2026-04-16
+
+### Fixed
+
+- All 9 `/project` subcommand files (`commands/*.md`) used `project-<cmd>`
+  in the `name:` frontmatter field instead of `project:<cmd>`, violating
+  the colon-command convention in CLAUDE.md (CPT-64).
+- Added `tests/command-frontmatter.bats` regression test to enforce
+  colon naming across all skill subcommand files.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

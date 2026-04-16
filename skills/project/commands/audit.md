@@ -1,5 +1,5 @@
 ---
-name: project-audit
+name: project:audit
 description: Audit current project against global standards, report gaps
 allowed-tools:
   - Bash

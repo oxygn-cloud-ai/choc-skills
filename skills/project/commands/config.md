@@ -1,5 +1,5 @@
 ---
-name: project-config
+name: project:config
 description: Change project configuration — type, worktrees, Jira, CI, protection, loops
 allowed-tools:
   - Bash

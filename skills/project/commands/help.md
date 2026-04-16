@@ -1,5 +1,5 @@
 ---
-name: project-help
+name: project:help
 description: Display full usage guide for the /project skill
 allowed-tools:
   - Read

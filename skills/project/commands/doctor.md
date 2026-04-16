@@ -1,5 +1,5 @@
 ---
-name: project-doctor
+name: project:doctor
 description: Check skill installation health
 allowed-tools:
   - Bash
