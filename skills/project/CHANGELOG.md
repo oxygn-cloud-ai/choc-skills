@@ -2,6 +2,33 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.3] - 2026-04-17
+
+### Added (CPT-74 Phase 1 — long-running session foundations)
+
+Phase 1 of the multi-phase CPT-74 long-running-session upgrade. Ticket §"Implementation phases" marks this as the "ship first to unblock everything else" unit; Phases 2 / 3 / 4 are filed as follow-up tickets.
+
+- `skills/project/bin/project-launch-session.sh` — setup-script generator now emits two new lines:
+  - `export ENABLE_PROMPT_CACHING_1H=1` (Claude Code v2.1.108+). Default prompt-cache TTL is 5 minutes; cyclic polling roles see a cache miss almost every iteration. 1 h keeps the role's identity + CLAUDE.md cached across every tick in a typical hour — large per-iteration token cost reduction.
+  - `exec claude --continue $CLAUDE_FLAGS 2>/dev/null || exec claude $CLAUDE_FLAGS` (Claude Code v2.1.110+). Try `--continue` first so unexpired scheduled `/loop` tasks plus the most recent conversation survive a pane restart; fall through to a plain launch when no prior session exists. `exec` only replaces the process on success, so the parent shell cleanly reaches the `||` fallback on error.
+  - Both additions are mirrored in the invalid-env-key regeneration branch of the script so both code paths stay byte-equivalent.
+- `skills/project/commands/launch.md` Step 7 responsibilities updated to document both knobs and the rationale.
+
+### Deferred to follow-up tickets (parent CPT-74)
+
+- **Phase 2** — three-tier context strategy preamble in per-role `loop.md` (`/compact` at >60%, `/clear` at >85% or post-discrete-unit, daily `--continue` relaunch at 04:00). Pure prompt-engineering; no code. Filed as CPT-74.2.
+- **Phase 3** — Jira-backed per-role progress registry: pinned registry task with JSON pointer map + 11 progress tickets + rollover at 300 comments / 500 KB + optimistic-locking concurrency. Filed as CPT-74.3.
+- **Phase 4** — Ralph-loop end-of-cycle verification for fixer + implementer `loop.md`. Depends on Phase 3's progress-ticket mechanism for "outstanding items" tracking. Filed as CPT-74.4.
+
+### Tests
+
+`tests/project-launch-session.bats` gains 4 new assertions (28 tests total, up from 24). Coverage: `export ENABLE_PROMPT_CACHING_1H=1` appears in `--dry-run` output; `exec claude --continue` + `|| exec claude` fallback appears with and without `--claude-flags`; both the primary and the invalid-env-key regeneration branch emit the new lines.
+
+### Notes
+
+- Existing host has `claude 2.1.112 (Claude Code)` — already ahead of the ticket's 2.1.111 target. No fleet upgrade action needed on this host; other hosts should `brew upgrade` Claude Code or equivalent.
+- `--tui fullscreen` (v2.1.110) is intentionally NOT added to default flags: ticket §3.4 marks it as "optional; controversial because it changes UX". Operators who want it can add it to `$CLAUDE_FLAGS` at launch time.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

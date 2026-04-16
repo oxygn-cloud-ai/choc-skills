@@ -207,6 +207,11 @@ trap cleanup_setup EXIT
   # Project-path var (known-good identifier; printf %q is safe here because
   # this file is executed by bash).
   printf 'export %s=%q\n' "$PROJECT_ENV_NAME" "$REPO_ROOT"
+  # CPT-74 Phase 1: opt into the 1-hour prompt cache (v2.1.108+). Default is
+  # 5 minutes — an unwanted cache miss per idle tick of a 5-minute polling loop.
+  # 1h means the role's system-prompt + CLAUDE.md stay cached across all its
+  # iterations in an hour, cutting per-iteration token spend dramatically.
+  echo 'export ENABLE_PROMPT_CACHING_1H=1'
   # env.project entries (@sh produces POSIX-compatible single-quoted strings;
   # lossless for tabs, newlines, single quotes, dollar signs).
   jq -r '.env.project // {} | to_entries[] | "export \(.key)=\(.value | @sh)"' "$CONFIG"
@@ -220,12 +225,18 @@ trap cleanup_setup EXIT
   # approach appended '; rm -f' to the tmux send-keys string but that also
   # never ran for the same reason.
   echo 'rm -f "$0"'
-  # exec claude
+  # CPT-74 Phase 1: try --continue first so any unexpired scheduled tasks
+  # (v2.1.110+) and the most recent conversation resurrect across a pane
+  # restart. If --continue errors (fresh worktree, no session found, flag
+  # dropped by a future claude version), fall through to a plain launch.
+  # Single-line: the || must be on the same shell statement as the primary
+  # exec so the fallback fires when the primary returns non-zero (exec only
+  # replaces the process on success; on error the parent shell continues).
+  # shellcheck disable=SC2086  # intentional word-splitting of flags
   if [ -n "$CLAUDE_FLAGS" ]; then
-    # shellcheck disable=SC2086  # intentional word-splitting of flags
-    printf 'exec claude %s\n' "$CLAUDE_FLAGS"
+    printf 'exec claude --continue %s 2>/dev/null || exec claude %s\n' "$CLAUDE_FLAGS" "$CLAUDE_FLAGS"
   else
-    echo 'exec claude'
+    printf 'exec claude --continue 2>/dev/null || exec claude\n'
   fi
 } > "$SETUP_SCRIPT"
 
@@ -245,17 +256,23 @@ if [ -n "$bad_keys" ]; then
     warn "ignoring env var with invalid identifier: '$bad' (must match ^[A-Za-z_][A-Za-z0-9_]*\$)"
   done <<< "$bad_keys"
   # Regenerate the setup script with the invalid keys filtered out.
+  # Must stay byte-for-byte equivalent to the primary generator above — CPT-74
+  # Phase 1 additions (ENABLE_PROMPT_CACHING_1H, --continue fallback, rm -f
+  # self-delete) apply in both branches.
   {
     echo "#!/usr/bin/env bash"
     echo ""
     printf 'export %s=%q\n' "$PROJECT_ENV_NAME" "$REPO_ROOT"
+    echo 'export ENABLE_PROMPT_CACHING_1H=1'
     jq -r '.env.project // {} | to_entries[] | select(.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) | "export \(.key)=\(.value | @sh)"' "$CONFIG"
     jq -r --arg r "$ROLE" '.env.sessions[$r] // {} | to_entries[] | select(.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) | "export \(.key)=\(.value | @sh)"' "$CONFIG"
     printf 'cd %q\n' "$WORKTREE"
+    echo 'rm -f "$0"'
+    # shellcheck disable=SC2086  # intentional word-splitting of flags
     if [ -n "$CLAUDE_FLAGS" ]; then
-      printf 'exec claude %s\n' "$CLAUDE_FLAGS"
+      printf 'exec claude --continue %s 2>/dev/null || exec claude %s\n' "$CLAUDE_FLAGS" "$CLAUDE_FLAGS"
     else
-      echo 'exec claude'
+      printf 'exec claude --continue 2>/dev/null || exec claude\n'
     fi
   } > "$SETUP_SCRIPT"
 fi

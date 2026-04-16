@@ -168,11 +168,12 @@ The script's responsibilities per role:
 1. **Validate env var keys** against `^[A-Za-z_][A-Za-z0-9_]*$`; skip any invalid.
 2. **Generate a setup script** at `/tmp/project-launch-<slug>-<role>.sh` that:
    - Exports the sanitized `<SANITIZED_DIRNAME>_PATH` (e.g., `CHOC_SKILLS_PATH`).
+   - Exports `ENABLE_PROMPT_CACHING_1H=1` (CPT-74 Phase 1, Claude Code v2.1.108+) so the 5-minute prompt-cache TTL default is bumped to 1 hour — large win for polling roles whose system prompt + CLAUDE.md context is identical across every iteration.
    - Exports `env.project` and `env.sessions.<role>` entries using `jq @sh`
      (POSIX-compatible single-quoted, lossless for tabs, newlines, single
      quotes, dollar signs — no `printf %q` portability traps).
    - `cd`'s into the worktree.
-   - `exec`s Claude with the requested flags (stdin = pane TTY, NOT a pipe).
+   - `exec`s Claude — `exec claude --continue $CLAUDE_FLAGS 2>/dev/null || exec claude $CLAUDE_FLAGS` (CPT-74 Phase 1, Claude Code v2.1.110+). Tries `--continue` first to resurrect the most recent conversation in the worktree (including any unexpired scheduled `/loop` tasks); falls through to a plain launch when no prior session exists or `--continue` errors. `exec` only replaces the process on success — on error the parent shell continues to the `||` branch. Stdin = pane TTY, NOT a pipe.
 3. **Source that script** in the pane via `tmux send-keys "source … ; rm -f …" Enter`.
 4. **Wait for Claude readiness** by polling `tmux capture-pane` for output
    stability (N consecutive 1s samples unchanged). No blind `sleep`.

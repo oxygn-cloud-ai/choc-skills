@@ -326,5 +326,65 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"#!/usr/bin/env bash"* ]]
   [[ "$output" == *'rm -f "$0"'* ]]
-  [[ "$output" == *"exec claude --dangerously-skip-permissions"* ]]
+  [[ "$output" == *"exec claude --continue --dangerously-skip-permissions"* ]]
+}
+
+# =============================================================================
+# CPT-74 Phase 1 — --continue fallback + ENABLE_PROMPT_CACHING_1H env
+# =============================================================================
+
+@test "launch-session (CPT-74 P1): dry-run exports ENABLE_PROMPT_CACHING_1H=1" {
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"export ENABLE_PROMPT_CACHING_1H=1"* ]] \
+    || { echo "info: setup script missing ENABLE_PROMPT_CACHING_1H export; output: $output"; return 1; }
+}
+
+@test "launch-session (CPT-74 P1): dry-run uses --continue fallback, with no flags" {
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --dry-run
+  [ "$status" -eq 0 ]
+  # Fallback form: `exec claude --continue 2>/dev/null || exec claude`
+  # Single-line so the shell parses the || correctly.
+  [[ "$output" == *"exec claude --continue"* ]] \
+    || { echo "info: setup script missing exec claude --continue; output: $output"; return 1; }
+  [[ "$output" == *"|| exec claude"* ]] \
+    || { echo "info: setup script missing fallback exec claude; output: $output"; return 1; }
+}
+
+@test "launch-session (CPT-74 P1): dry-run uses --continue fallback with claude flags passed through" {
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --claude-flags "--dangerously-skip-permissions --verbose" --dry-run
+  [ "$status" -eq 0 ]
+  # Both the primary and fallback invocations must receive the flag set.
+  [[ "$output" == *"exec claude --continue --dangerously-skip-permissions --verbose"* ]] \
+    || { echo "info: primary exec does not pass flags: $output"; return 1; }
+  [[ "$output" == *"|| exec claude --dangerously-skip-permissions --verbose"* ]] \
+    || { echo "info: fallback exec does not pass flags: $output"; return 1; }
+}
+
+@test "launch-session (CPT-74 P1): invalid env key still emits ENABLE_PROMPT_CACHING_1H in rewritten script" {
+  # The regenerated setup script (when bad keys are filtered out) must also
+  # carry the 1h-cache env and the --continue fallback — both paths are
+  # semantically equivalent to the operator.
+  cat > "$TEST_REPO/PROJECT_CONFIG.json" <<EOF
+{
+  "schemaVersion": 1,
+  "project": { "name": "testproj", "type": "software" },
+  "jira": { "projectKey": "TST", "epicKey": "TST-1" },
+  "github": { "owner": "org", "repo": "testproj" },
+  "sessions": { "roles": ["master"] },
+  "env": {
+    "project": { "BAD-KEY": "nope", "GOOD_KEY": "yep" },
+    "sessions": {}
+  }
+}
+EOF
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ignoring env var with invalid identifier"* ]]
+  [[ "$output" == *"export ENABLE_PROMPT_CACHING_1H=1"* ]] \
+    || { echo "info: rewritten script dropped the 1h-cache export: $output"; return 1; }
+  [[ "$output" == *"exec claude --continue"* ]] \
+    || { echo "info: rewritten script dropped --continue: $output"; return 1; }
+  [[ "$output" == *"|| exec claude"* ]] \
+    || { echo "info: rewritten script dropped fallback: $output"; return 1; }
 }
