@@ -1,5 +1,7 @@
 Run your recurring implementer cycle for choc-skills:
 
+**JQL note:** epic scoping uses `parent = CPT-3` (this is a next-gen Jira project; `"Epic Link" = CPT-3` returns 0).
+
 1. **Rework first**: check Jira CPT-3 for any Feature Request in "Changes Requested" state assigned to you. If found, read Reviewer's Jira comments and rework before picking up new work.
 2. If no rework, query CPT-3 for highest-priority Feature Request in "Ready for Coding" status.
 3. Transition to "In Progress", write a plan under the issue (per Implementer protocol), get triager approval if plan diverges from issue scope.
