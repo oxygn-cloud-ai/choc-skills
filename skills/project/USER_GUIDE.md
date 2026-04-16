@@ -2,7 +2,7 @@
 
 A comprehensive guide to the `/project` skill — project repository administration for multi-session Claude Code workflows.
 
-**Skill version:** 2.0.5
+**Skill version:** 2.1.4
 
 ---
 
@@ -238,10 +238,10 @@ All tracking happens in **Jira** (not GitHub Issues, not GitHub PRs). Reviewer p
 | Docs | README.md, ARCHITECTURE.md, PHILOSOPHY.md, CLAUDE.md |
 | Config | PROJECT_CONFIG.json + PROJECT_CONFIG.schema.json |
 | Language scaffolding | pyproject.toml / package.json / Cargo.toml / go.mod (Software) |
-| Labels | None — all default GitHub labels deleted, `gh repo edit --enable-issues=false` |
+| Labels | 9 GitHub-default labels deleted (`bug`, `documentation`, `duplicate`, `enhancement`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`); project-specific labels in `.github/labels.yml` (if any) preserved; `gh repo edit --enable-issues=false` |
 | Worktrees | 11 (Software) or 8 (Non-Software) in `.worktrees/` |
 | Session prompts | `.claude/sessions/<role>.md` for each role |
-| CI | `.github/workflows/test.yml` with notify-failure/recovery (Software) |
+| CI | `.github/workflows/test.yml` with language-appropriate test jobs. Failure tracking defaults to Master-session (no workflow jobs needed); `notify-failure`/`notify-recovery` are opt-in for workflow-jobs mode (Software) |
 | Branch protection | Required status checks, no force push (Software) |
 | Memory | `~/.claude/projects/<encoded-path>/memory/` initialized |
 
@@ -306,7 +306,7 @@ Scans `${TMUX_REPOS_DIR:-~/Repos}` for all directories with `.worktrees/`, launc
 /project audit
 ```
 
-**Checks (13 total):**
+**Checks (16 total):**
 
 | # | Check | Verdict |
 |---|-------|---------|
@@ -317,12 +317,15 @@ Scans `${TMUX_REPOS_DIR:-~/Repos}` for all directories with `.worktrees/`, launc
 | 5 | Session startup prompts | PASS/FAIL (lists missing) |
 | 6 | Branch protection on main | PASS/FAIL/SKIP |
 | 7 | CI workflow exists | PASS/FAIL/SKIP (Non-Software) |
-| 8 | notify-failure job in CI | PASS/FAIL/SKIP |
-| 9 | notify-recovery job in CI | PASS/FAIL/SKIP |
+| 8 | CI failure tracking (auto-detect workflow-jobs vs master-session) | PASS/SKIP |
+| 9 | CI recovery tracking (auto-detect) | PASS/SKIP |
 | 10 | GitHub Issues disabled | PASS/FAIL |
-| 11 | No GitHub labels present | PASS/FAIL |
-| 12 | No stale worktree branches | PASS/WARN |
-| 13 | Coverage thresholds | PASS/FAIL/SKIP |
+| 11 | No GitHub-default labels (project labels via `labels.yml` allowed) | PASS/FAIL |
+| 12 | Loop configuration (8 loop-capable roles in `sessions.loops`) | PASS/FAIL |
+| 13 | Loop prompt files present (`.worktrees/<role>/loops/loop.md`) | PASS/FAIL |
+| 14 | No stale worktree branches | PASS/WARN |
+| 15 | Coverage thresholds | PASS/FAIL/SKIP |
+| 16 | Worktree HEAD branches (role-aware: fixer may be on `fix/<KEY>-N`, implementer on `feature/<KEY>-N-*`, all others on `session/<role>`) | PASS/FAIL |
 
 **Pre-flight checks:**
 - Must be inside a git repo
@@ -419,7 +422,7 @@ Runs 9 health checks:
 /project -v
 ```
 
-Outputs: `project v2.0.5`
+Outputs: `project v2.1.4`
 
 ## Key Concepts
 
@@ -427,8 +430,8 @@ Outputs: `project v2.0.5`
 
 | Type | Sessions | CI | Branch Protection | Labels |
 |------|----------|----|-------------------|--------|
-| **Software** | 11 (all roles) | Yes | Yes | None (GitHub Issues disabled, all default labels deleted) |
-| **Non-Software** | 8 (no chk1, chk2, playtester) | No | No | None (GitHub Issues disabled, all default labels deleted) |
+| **Software** | 11 (all roles) | Yes | Yes | 9 GitHub-default labels deleted; project-specific labels optional via `.github/labels.yml` |
+| **Non-Software** | 8 (no chk1, chk2, playtester) | No | No | 9 GitHub-default labels deleted; project-specific labels optional via `.github/labels.yml` |
 
 ### Session Roles
 
@@ -685,4 +688,4 @@ When all gates pass, Master notifies you:
 
 ---
 
-*This guide covers /project v2.0.5. Run `/project version` to check your installed version.*
+*This guide covers /project v2.1.4. Run `/project version` to check your installed version.*

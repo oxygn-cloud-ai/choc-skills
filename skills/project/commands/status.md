@@ -128,7 +128,7 @@ Docs:
 CI:
   Workflow: <filename or "none">
   Last run: <status> (<date>)
-  notify-failure: <configured/missing>
+  CI failure tracking: <workflow-jobs (notify-failure/recovery jobs detected) | master-session (default — Master polls gh run list, no workflow jobs)>
 
 Branch: <branch> (protected: <yes/no>, force-push: <blocked/allowed>)
 

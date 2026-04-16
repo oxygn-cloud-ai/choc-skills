@@ -2,6 +2,103 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.4] - 2026-04-17
+
+**Supersedes 2.1.3.** 2.1.3 introduced three audit-check refinements; a Codex
+review on the same day identified a semantic inversion in the CI-tracking
+deviation mechanism, an over-permissive #16 regex, and drift across skill
+docs. 2.1.4 lands the corrected design and propagates it through every
+affected surface. 2.1.3 was never released outside the source repo.
+
+### Changed
+
+- **`/project:audit` check #8 (CI failure tracking) and #9 (CI recovery
+  tracking) now auto-detect mode by presence of `notify-failure` /
+  `notify-recovery` jobs in workflow files.** Present → PASS (workflow-jobs
+  mode: CI files to Jira directly using GitHub Actions secrets). Absent →
+  SKIP (Master-session mode: the default per PROJECT_STANDARDS.md §3 and
+  MULTI_SESSION_ARCHITECTURE.md §5 — Master polls `gh run list` on the host
+  machine and files Jira tasks; no Jira secrets in GitHub Actions). The
+  2.1.3 deviation-entry mechanism (which had inverted semantics between
+  global CLAUDE.md and this check) is removed — no deviation entry is
+  required to express either mode. `~/.claude/CLAUDE.md` rule updated to
+  match.
+
+- **`/project:audit` check #16 (worktree HEAD branches) is now role-aware.**
+  Per MULTI_SESSION_ARCHITECTURE.md §1, only the fixer and implementer roles
+  write code; all other roles are read-only. The check now permits: fixer
+  HEAD on `session/fixer` OR matching `^fix/<JIRA_KEY>-[0-9]+`; implementer
+  HEAD on `session/implementer` OR matching `^feature/<JIRA_KEY>-[0-9]+`;
+  all other role worktrees must be on `session/<role>` exactly. Any other
+  HEAD value FAILs (indicates a re-pointed worktree, forbidden). 2.1.3's
+  regex was too permissive — it would have silently blessed a reviewer or
+  chk1 worktree accidentally left on a feature branch. `<JIRA_KEY>` is read
+  from `jira.projectKey` in PROJECT_CONFIG.json.
+
+- **`/project:audit` check #11 softened.** The check now FAILs only when the
+  9 GitHub-default label names are present (`bug`, `documentation`,
+  `duplicate`, `enhancement`, `good first issue`, `help wanted`, `invalid`,
+  `question`, `wontfix`). Project-specific labels declared in
+  `.github/labels.yml` (scope labels like `skill:*`, category labels,
+  dependabot labels, etc.) are intentional PR-labelling taxonomy and do not
+  FAIL the check. Previously the check required `length == 0`, which was
+  incompatible with any repo using `labels.yml` to label PRs (dependabot,
+  scoped review workflows, etc.).
+
+- **`/project:new` Step 6 no longer claims to delete "all labels".** It now
+  deletes only the 9 GitHub-defaults, and guides the user to `.github/labels.yml`
+  + sync workflow for any project-specific PR-labelling taxonomy. The
+  Step 11 CI scaffolding no longer mandates `notify-failure` /
+  `notify-recovery` jobs — by default scaffolds a bare CI workflow and
+  documents the workflow-jobs alternative as opt-in.
+
+- **`/project:status` reports `CI failure tracking: <mode>`** instead of the
+  one-mode `notify-failure: configured/missing`, matching the two-mode model.
+
+- **Standards documents updated in lockstep:**
+  `~/.claude/MULTI_SESSION_ARCHITECTURE.md §7.1` and
+  `~/.claude/PROJECT_STANDARDS.md §7` now describe the role-aware #16 rule.
+  `~/.claude/PROJECT_STANDARDS.md §8` audit checklist now says "No default
+  GitHub labels present" and cross-references `.github/labels.yml` as the
+  acceptable taxonomy source.
+
+- **`USER_GUIDE.md` updated:** check count corrected from 13 to 16 and
+  re-synced with `commands/audit.md`; labels / CI rows reflect the new
+  two-mode / project-labels-allowed model; skill version stamps refreshed
+  to 2.1.4.
+
+- **`PHILOSOPHY.md` restored from commit `62c467c` and refreshed:** design
+  principle #3 updated — `GITHUB_CONFIG.md` reference replaced with
+  `PROJECT_CONFIG.json` (the config format has moved per schema description).
+
+- **`CLAUDE.md` (choc-skills, the cave rule) extended** with an explicit
+  "user-owned global config" exception category. Files that are never
+  copied by any skill's `install.sh` (the user's `~/.claude/CLAUDE.md`,
+  the standards docs, keybindings, memory, the non-hook sections of
+  `settings.json`) are editable in place because they have no skill
+  source-of-truth by design. The cave rule still forbids direct edits to
+  skill install outputs.
+
+### Fixed
+
+- Branch protection on `main` no longer carries a
+  `required_pull_request_reviews: {count: 1}` field (set null per
+  PROJECT_STANDARDS.md §1 — reviews happen via the Reviewer session + Jira,
+  not GitHub PR reviews).
+
+- `PHILOSOPHY.md` restored to the repo root (was missing — restored
+  content from commit `62c467c`; the file had been added and
+  subsequently reverted without restoration).
+
+## [2.1.3] - 2026-04-17 (superseded by 2.1.4)
+
+Initial attempt at the audit-check refinements that 2.1.4 delivers in
+corrected form. Introduced a CI-tracking deviation mechanism whose semantics
+contradicted `~/.claude/CLAUDE.md`; and a `#16` regex that accepted active-work
+branch patterns in any role worktree (including read-only roles, which
+should never carry such branches). Codex review caught both. 2.1.4 ships the
+corrected design. Do not pin to 2.1.3.
+
 ## [2.1.2] - 2026-04-17
 
 ### Fixed

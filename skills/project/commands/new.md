@@ -139,23 +139,29 @@ Create these files at the repo root:
 - Go: `go.mod`, `main.go`, `.gitignore`
 - Other: `.gitignore`
 
-## Step 6: Delete GitHub labels
+## Step 6: Delete GitHub-default labels
 
 GitHub Issues are disabled project-wide (Jira is the single source of truth per
-`~/.claude/PROJECT_STANDARDS.md`). GitHub labels serve no purpose and must be
-removed so they don't appear on any accidental PRs or stray issues.
+`~/.claude/PROJECT_STANDARDS.md`). The 9 GitHub-default labels serve no purpose
+with Issues off and must be removed. Project-specific labels for PR organisation
+(scope labels like `skill:*`, category labels for chk1/chk2 findings, dependabot
+labels `dependencies` / `ci`, etc.) may be declared in `.github/labels.yml` and
+kept — they are the repo's intentional labelling taxonomy.
 
 ```bash
 # Disable GitHub Issues on the repo
 gh repo edit --enable-issues=false 2>/dev/null || true
 
-# Delete all default GitHub labels
+# Delete the 9 GitHub-default labels
 for label in "good first issue" "help wanted" "invalid" "wontfix" "question" "duplicate" "bug" "documentation" "enhancement"; do
   gh label delete "$label" --yes 2>/dev/null || true
 done
 ```
 
-Do not create any labels. All priority/category information lives on Jira issues.
+If the project needs PR-labelling, write `.github/labels.yml` + a sync workflow
+(see the choc-skills repo for the `EndBug/label-sync` reference pattern). If
+not, skip creating `labels.yml` — no labels is valid. All Jira priority/category
+information lives on Jira issues, not GitHub labels.
 
 ## Step 7: Jira epic
 
@@ -285,12 +291,20 @@ Default loop intervals (written to PROJECT_CONFIG.json in Step 5):
 
 ## Step 11: CI workflow (Software only)
 
-Create `.github/workflows/test.yml` with:
-- Language-appropriate test job
-- `notify-failure` job from `~/.claude/PROJECT_STANDARDS.md` section 3 reference implementation
-- `notify-recovery` job
+Create `.github/workflows/test.yml` with a language-appropriate test job. **Do not
+add `notify-failure` / `notify-recovery` jobs by default** — the default CI
+failure tracking pattern is Master-session-handled per `~/.claude/PROJECT_STANDARDS.md`
+section 3 and `~/.claude/MULTI_SESSION_ARCHITECTURE.md` section 5: the Master
+session on the host machine polls `gh run list`, files Jira tasks on failure,
+and transitions them to Done on recovery. No Jira secrets in GitHub Actions
+are required.
 
-Adapt the `needs:` list to match the actual test job name(s).
+If the user explicitly opts into the **workflow-jobs** alternative (for example,
+the project operates without a continuously-live Master session, or wants
+redundant belt-and-braces tracking), add `notify-failure` and `notify-recovery`
+jobs that file to Jira directly using GitHub Actions secrets. `/project:audit`
+auto-detects the mode by presence of those job names — no deviation entry
+required either way.
 
 ## Step 12: Branch protection (Software)
 
@@ -344,12 +358,12 @@ Project <name> created successfully.
 <success_criteria>
 - [ ] GitHub repo created with correct visibility
 - [ ] All required docs present at repo root
-- [ ] GitHub Issues disabled and all default labels deleted
+- [ ] GitHub Issues disabled and all 9 GitHub-default labels deleted (project-specific labels in `.github/labels.yml`, if any, preserved)
 - [ ] Jira epic key documented in CLAUDE.md and PROJECT_CONFIG.json
 - [ ] All session worktrees created with correct branch names
 - [ ] Session startup prompts created in .claude/sessions/
 - [ ] Loop prompts created in .worktrees/<role>/loops/loop.md for 8 (Software) or 6 (Non-Software) loop-capable roles
-- [ ] CI workflow present (Software only) with notify-failure/recovery
+- [ ] CI workflow present (Software only); failure tracking mode decided (Master-session default — no jobs needed — or workflow-jobs opt-in with `notify-failure`/`notify-recovery`)
 - [ ] Branch protection set (Software only)
 - [ ] Project memory initialized
 - [ ] Initial commit pushed to main

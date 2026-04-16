@@ -12,13 +12,20 @@ Skills are discovered dynamically via `skills/*/SKILL.md` — adding a new skill
 
 **Any edit to `~/.claude/*` that isn't purely per-machine data MUST have a corresponding source-of-truth in `skills/<name>/` and an install path in that skill's `install.sh`. Never edit the install output directly.**
 
-Per-machine data = hostname-keyed config, login-specific env vars, machine-specific PATH overrides — content that *must* differ across machines. Everything else — hooks, commands, bin scripts, skill files, settings.json hook registrations that a skill owns — is skill product and ships from the skill source.
+Three exempt categories of `~/.claude/*` content may be edited directly:
+
+**Per-machine data** = hostname-keyed config, login-specific env vars, machine-specific PATH overrides — content that *must* differ across machines.
+
+**User-owned global config** = files the user writes and maintains directly, with no skill install path. These ARE the source-of-truth; there is no `skills/<name>/` source because the user's copy is authoritative. The set: `~/.claude/CLAUDE.md`, `~/.claude/MULTI_SESSION_ARCHITECTURE.md`, `~/.claude/PROJECT_STANDARDS.md`, `~/.claude/keybindings.json`, `~/.claude/statusline.json`, `~/.claude/memory/**`, `~/.claude/projects/**/memory/**`, and the `permissions` / `env` / `defaultMode` / theme sections of `~/.claude/settings.json` (anything a skill's `install.sh` does not touch — notably NOT the `hooks.PreToolUse[]` entries the `project` skill installs). Verify membership by grepping all `skills/*/install.sh` for the target path; if no installer references it, it is user-owned.
+
+**Skill product (the cave)** — everything else. Hooks, commands, bin scripts, skill files, and the `hooks.PreToolUse[]` entries in `~/.claude/settings.json` that a skill owns are skill product and ship from the skill source. Editing the install output directly is the forbidden move this rule exists to stop.
 
 ### Before editing `~/.claude/<anything>`, ask:
 
 1. **Is this purely per-machine data?** (hostname, login env, etc.) → OK to edit in place.
-2. **Is this a skill install output?** (`~/.claude/skills/<name>/`, `~/.claude/commands/<name>/`, `~/.local/bin/<name>-*.sh`, `~/.claude/hooks/<name>.sh` registered in `settings.json` by a skill's `install.sh`, etc.) → Edit the skill source under `skills/<name>/` instead, then re-run that skill's `install.sh --force` to propagate.
-3. **Is the answer unclear?** → Stop and work out which category it falls into before proceeding.
+2. **Is this user-owned global config?** (CLAUDE.md, standards docs, keybindings, memory, permissions in settings.json, etc. — see the list above, or grep `skills/*/install.sh` for the path) → OK to edit in place.
+3. **Is this a skill install output?** (`~/.claude/skills/<name>/`, `~/.claude/commands/<name>/`, `~/.local/bin/<name>-*.sh`, `~/.claude/hooks/<name>.sh` registered in `settings.json` by a skill's `install.sh`, etc.) → Edit the skill source under `skills/<name>/` instead, then re-run that skill's `install.sh --force` to propagate.
+4. **Is the answer unclear?** → Stop and work out which category it falls into before proceeding.
 
 ### Failure mode this rule exists to prevent
 

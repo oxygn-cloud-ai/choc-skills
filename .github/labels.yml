@@ -24,14 +24,6 @@
   description: "Performance, code dedup, test gaps, docs"
 
 # --- Category ---
-- name: bug
-  color: "d73a4a"
-  description: "Something is broken"
-
-- name: enhancement
-  color: "a2eeef"
-  description: "New feature or improvement"
-
 - name: security
   color: "e4e669"
   description: "Security concern"
@@ -43,10 +35,6 @@
 - name: code-quality
   color: "1d76db"
   description: "Code audit finding"
-
-- name: documentation
-  color: "0075ca"
-  description: "Documentation changes"
 
 - name: tests
   color: "5319e7"
@@ -142,19 +130,3 @@
 - name: needs-triage
   color: "e4e669"
   description: "Needs review and categorization"
-
-- name: question
-  color: "d876e3"
-  description: "Further information requested"
-
-- name: duplicate
-  color: "cfd3d7"
-  description: "Already exists"
-
-- name: wontfix
-  color: "ffffff"
-  description: "Will not be worked on"
-
-- name: "good first issue"
-  color: "7057ff"
-  description: "Good for newcomers"

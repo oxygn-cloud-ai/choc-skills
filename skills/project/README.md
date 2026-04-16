@@ -53,7 +53,7 @@ In Claude Code:
 
 The `project` skill administers project repositories that follow the Oxygn multi-session workflow:
 
-- **`new`** — Scaffolds a brand-new repo with GitHub remote (Issues disabled, labels deleted — Jira is source of truth), Jira epic reference, docs (README/ARCHITECTURE/PHILOSOPHY/CLAUDE/PROJECT_CONFIG.json), session worktrees (11 for Software, 8 for Non-Software), startup prompts, loop prompts, CI workflow with `notify-failure`/`notify-recovery`, and branch protection.
+- **`new`** — Scaffolds a brand-new repo with GitHub remote (Issues disabled, 9 GitHub-default labels deleted — Jira is source of truth; project-specific labels via `.github/labels.yml` optional), Jira epic reference, docs (README/ARCHITECTURE/PHILOSOPHY/CLAUDE/PROJECT_CONFIG.json), session worktrees (11 for Software, 8 for Non-Software), startup prompts, loop prompts, CI workflow (failure tracking defaults to Master-session; workflow-jobs `notify-failure`/`notify-recovery` are opt-in), and branch protection.
 - **`status`** — Reports the current project's config, worktrees, CI state, Jira epic key, loop configuration, open Jira issues by priority, and docs completeness.
 - **`audit`** — Runs the compliance audit against global standards. Reports per-check verdicts (`PASS`/`FAIL`/`WARN`/`SKIP`) across docs, worktrees, CI, branch protection, loops, and coverage.
 - **`config`** — Interactively modifies project configuration: toggle project type, add/remove worktrees, enable/disable CI or branch protection, set Jira epic key, configure loop intervals, manage env vars, document deviations.
@@ -119,7 +119,7 @@ rm -f  ~/.claude/commands/project.md
 
 ## Version
 
-Current: **2.0.0**
+Current: **2.1.4**
 
 ## License
 
