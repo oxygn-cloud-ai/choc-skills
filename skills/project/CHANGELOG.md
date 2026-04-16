@@ -2,6 +2,61 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.2.0] - 2026-04-17
+
+### Added (CPT-58 — cave-inversion protection, tool layer)
+
+`install.sh --check` is promoted from presence-only to a four-part
+read-only audit. This closes the diagnostic gap that let the
+2026-04-16 drift persist unnoticed for roughly two hours: the old
+check would have reported "All checks passed" even though two hooks
+had been shipped to `~/.claude/hooks/` with no backing source in
+`skills/project/hooks/`.
+
+1. **Byte-parity (source → target).** For every file under
+   `skills/project/{hooks,bin,commands}/`, `sha256` of the source is
+   compared to the installed target. Reports `ok byte-identical:
+   <file>`, `err DRIFT: <file>` (hash mismatch), or `err MISSING:
+   <file>` (source exists, no install target). Suggests
+   `install.sh --force` on any failure.
+2. **Orphan detection (target → source).** For every hook registered
+   in `~/.claude/settings.json` `hooks.PreToolUse[]` with a matcher
+   this skill owns (per `hook_matcher_for()`), the command path's
+   basename must appear in `skills/project/hooks/`. If not:
+   `err ORPHAN: ...`. Scope is limited to matchers we emit, so
+   other tools' hooks sharing `~/.claude/hooks/` under unrelated
+   matchers stay out of scope.
+3. **Per-matcher registration integrity.** Replaces the pre-v2.2.0
+   count-based registration check, which would have passed a hook
+   registered with only one of its required matchers. Now, for
+   every `(hook, matcher)` tuple emitted by `hook_matcher_for()`,
+   `settings.json` must contain an entry for that exact tuple
+   (matcher + absolute command path). If not: `err NOT REGISTERED:
+   <name> / <matcher>`.
+4. **Exit codes.** Previously `--check` always exited 0. Now:
+   `0` all OK, `1` any `DRIFT` / `MISSING` / `ORPHAN` / `NOT
+   REGISTERED`, `2` the check itself errored (missing `sha256`
+   tool, malformed `settings.json`, `jq` query failure). Existing
+   ok/err/warn/info output prefixes and the `All checks passed` /
+   `N issue(s) found` footer are preserved.
+
+Added `tests/project-install-check-parity.bats` — ten red→green
+regression tests covering each failure mode (DRIFT on all three
+managed dirs, MISSING, ORPHAN, NOT REGISTERED, malformed settings,
+idempotency, output-format preservation). Running
+`bats tests/project-install-check-parity.bats` against pre-v2.2.0
+would have produced seven failures; against v2.2.0 it is all green.
+
+### Out of scope (sibling tickets, not in this release)
+
+- `--fix` auto-repair mode that re-runs `install.sh --force` on
+  detected drift.
+- `/project:self-audit` subcommand for bidirectional rules ↔
+  mechanisms audit of the skill itself (CPT-59).
+- CI install-manifest regression test (CPT-60).
+- Cross-skill parity (this change only audits `/project` against
+  its own source; other skills would get their own similar check).
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

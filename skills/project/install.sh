@@ -93,6 +93,19 @@ for arg in "$@"; do
   esac
 done
 
+# sha256_of <path> — print sha256 hex of a file (portable between macOS & Linux).
+# Uses shasum if present (macOS default) else sha256sum (Linux default).
+# Returns empty on missing file or missing tool.
+sha256_of() {
+  local p="$1"
+  [ -f "$p" ] || return 0
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$p" 2>/dev/null | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$p" 2>/dev/null | awk '{print $1}'
+  fi
+}
+
 # --- Help ---
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   cat <<EOF
@@ -101,7 +114,7 @@ ${BOLD}project skill installer${RESET}
 ${BOLD}USAGE${RESET}
   ./install.sh              Install project (skill + sub-commands + hooks)
   ./install.sh --force      Install/overwrite without prompting
-  ./install.sh --check      Verify installation health
+  ./install.sh --check      Verify installation health (parity + orphan + registration)
   ./install.sh --uninstall  Remove project completely (keeps hook files)
   ./install.sh --version    Show version
   ./install.sh --help       Show this help
@@ -230,38 +243,166 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     err "Launch-session script: not installed (run install.sh --force) — /project:launch will fail without it"; issues=$((issues + 1))
   fi
 
-  # Hook file + registration check
-  if [ -d "$HOOKS_SOURCE" ]; then
+  # Cave-inversion drift gate (CPT-58). The previous check only verified
+  # presence. Three read-only verifications catch the drift failure mode:
+  #  1. byte-parity: every source file is byte-identical to its install target
+  #  2. orphan: no hook is registered in settings.json against one of OUR
+  #     matchers unless a source backs it
+  #  3. per-matcher registration: every (hook, matcher) pair emitted by
+  #     hook_matcher_for() is present in settings.json hooks.PreToolUse[].
+  # `fatal` distinguishes exit code 2 (tool failure / malformed settings) from
+  # exit code 1 (drift/missing/orphan/not-registered).
+  fatal=0
+
+  # Probe hashing tool once so we can emit a single fatal error if missing.
+  if ! command -v shasum >/dev/null 2>&1 && ! command -v sha256sum >/dev/null 2>&1; then
+    err "No sha256 tool available (need shasum or sha256sum) — cannot verify byte-parity"
+    fatal=1
+  fi
+
+  # Probe settings.json: if present but malformed, that is a fatal precondition
+  # for orphan + per-matcher checks (both use jq against this file).
+  settings_readable=1
+  if [ -f "$SETTINGS_FILE" ]; then
+    if ! jq empty "$SETTINGS_FILE" >/dev/null 2>&1; then
+      err "${SETTINGS_FILE} is not valid JSON — cannot audit hook registrations"
+      fatal=1
+      settings_readable=0
+    fi
+  fi
+
+  # Byte-parity: sources → targets.
+  # Each (source dir, target dir) pair is walked; shasum both sides; report
+  # ok byte-identical / err DRIFT / err MISSING per file.
+  check_parity_dir() {
+    local src_dir="$1" tgt_dir="$2" label="$3"
+    [ -d "$src_dir" ] || return 0
+    local f name tgt src_hash tgt_hash
+    for f in "$src_dir"/*; do
+      [ -f "$f" ] || continue
+      name=$(basename "$f")
+      tgt="${tgt_dir}/${name}"
+      if [ ! -f "$tgt" ]; then
+        err "MISSING: ${label}/${name} (source exists, no install target at ${tgt} — run install.sh --force)"
+        issues=$((issues + 1))
+        continue
+      fi
+      src_hash=$(sha256_of "$f")
+      tgt_hash=$(sha256_of "$tgt")
+      if [ -z "$src_hash" ] || [ -z "$tgt_hash" ]; then
+        err "Could not hash ${label}/${name} — sha256 tool unavailable"
+        fatal=1
+        continue
+      fi
+      if [ "$src_hash" = "$tgt_hash" ]; then
+        ok "byte-identical: ${label}/${name}"
+      else
+        err "DRIFT: ${label}/${name} — installed copy at ${tgt} differs from source (run install.sh --force)"
+        issues=$((issues + 1))
+      fi
+    done
+  }
+  check_parity_dir "$HOOKS_SOURCE"    "$HOOKS_TARGET"                  "hooks"
+  check_parity_dir "$SCRIPT_DIR/bin"  "${HOME}/.local/bin"             "bin"
+  check_parity_dir "$COMMANDS_SOURCE" "$COMMANDS_TARGET"               "commands"
+
+  # Per-matcher registration: every (hook, matcher) pair must appear in
+  # settings.json hooks.PreToolUse[] with the correct absolute command path.
+  # Replaces the pre-v2.2.0 count-based check, which would have green-lit a
+  # hook registered with only one of its required matchers.
+  #
+  # Also builds SKILL_MATCHERS for the orphan check below.
+  SKILL_MATCHERS=""
+  SKILL_HOOK_BASENAMES=""
+  if [ -d "$HOOKS_SOURCE" ] && [ "$settings_readable" = "1" ]; then
     for source in "${HOOKS_SOURCE}"/*.sh; do
       [ -f "$source" ] || continue
       name=$(basename "$source")
+      SKILL_HOOK_BASENAMES="${SKILL_HOOK_BASENAMES} ${name}"
       tgt="${HOOKS_TARGET}/${name}"
-      if [ -x "$tgt" ]; then
+      matchers=$(hook_matcher_for "$name")
+      if [ -z "$matchers" ]; then
+        warn "Hook ${name} has no matcher mapping in hook_matcher_for() — skipping registration check"
+        continue
+      fi
+      for m in $matchers; do
+        SKILL_MATCHERS="${SKILL_MATCHERS} ${m}"
         reg_count=0
         if [ -f "$SETTINGS_FILE" ]; then
-          reg_count=$(jq --arg c "$tgt" \
-            '[.hooks.PreToolUse[]? | .hooks[]? | select(.command == $c)] | length' \
-            "$SETTINGS_FILE" 2>/dev/null || echo 0)
+          reg_count=$(jq --arg m "$m" --arg c "$tgt" \
+            '[.hooks.PreToolUse[]? | select(.matcher == $m) | .hooks[]? | select(.command == $c)] | length' \
+            "$SETTINGS_FILE" 2>/dev/null)
+          if [ -z "$reg_count" ]; then
+            err "jq query failed against ${SETTINGS_FILE} for ${name}/${m}"
+            fatal=1
+            continue
+          fi
         fi
         if [ "$reg_count" -gt 0 ]; then
-          ok "Hook installed + registered: ${name} (${reg_count} matcher entry/entries)"
+          ok "registered: ${name} / ${m}"
         else
-          err "Hook file at ${tgt} but NOT registered in ${SETTINGS_FILE} (run install.sh --force)"
+          err "NOT REGISTERED: hook ${name} missing PreToolUse entry for matcher '${m}' (run install.sh --force)"
           issues=$((issues + 1))
         fi
-      else
-        err "Hook missing: ${tgt} (run install.sh --force)"; issues=$((issues + 1))
-      fi
+      done
     done
   fi
 
+  # Orphan detection. An orphan is a hook path registered in settings.json
+  # hooks.PreToolUse[] against one of OUR matchers but whose basename is not in
+  # skills/project/hooks/. This catches the 2026-04-16 failure mode — a hook
+  # shipped to ~/.claude/hooks/ without a backing source — which the previous
+  # presence-only --check reported as healthy for ~2h.
+  #
+  # Scope: limited to command paths under ~/.claude/hooks/ whose matcher
+  # intersects SKILL_MATCHERS. Other tools' hooks in the same shared directory
+  # (GSD, etc.) stay out of scope when they use matchers we do not own.
+  if [ "$settings_readable" = "1" ] && [ -f "$SETTINGS_FILE" ] && [ -n "$SKILL_MATCHERS" ]; then
+    # Emit tab-separated (matcher, command) tuples for every PreToolUse entry.
+    tuples=$(jq -r '
+      .hooks.PreToolUse[]? |
+      .matcher as $m |
+      .hooks[]? |
+      [$m, .command] | @tsv
+    ' "$SETTINGS_FILE" 2>/dev/null)
+    # Read line-by-line to handle tuples with spaces inside the command path.
+    while IFS=$'\t' read -r m cmd; do
+      [ -n "$m" ] || continue
+      [ -n "$cmd" ] || continue
+      # Only consider hooks living in the shared ~/.claude/hooks/ directory.
+      case "$cmd" in
+        "$HOOKS_TARGET"/*) : ;;
+        *) continue ;;
+      esac
+      # Only consider matchers this skill owns.
+      case " $SKILL_MATCHERS " in
+        *" $m "*) : ;;
+        *) continue ;;
+      esac
+      cmd_base=$(basename "$cmd")
+      case " $SKILL_HOOK_BASENAMES " in
+        *" $cmd_base "*)
+          # In our sources — not an orphan; parity/per-matcher checks cover it.
+          continue
+          ;;
+      esac
+      err "ORPHAN: ${cmd} registered in ${SETTINGS_FILE} with matcher '${m}' (one of ours) but no source at ${HOOKS_SOURCE}/${cmd_base} — add source + update install.sh or remove the registration"
+      issues=$((issues + 1))
+    done <<< "$tuples"
+  fi
+
   echo ""
+  if [ "$fatal" -ne 0 ]; then
+    printf "  ${RED}check aborted — tool/precondition failure${RESET}\n\n"
+    exit 2
+  fi
   if [ "$issues" -eq 0 ]; then
     printf "  ${GREEN}All checks passed${RESET}\n\n"
+    exit 0
   else
     printf "  ${YELLOW}${issues} issue(s) found${RESET}\n\n"
+    exit 1
   fi
-  exit 0
 fi
 
 # --- Install ---
