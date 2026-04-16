@@ -2,6 +2,24 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.5] - 2026-04-17
+
+### Changed
+
+- `/project:launch` now hardcodes `--effort max` into every Claude launch so
+  every role-session starts in maximum thinking-effort mode (suited to the
+  deep coordination, planning, and audit work role-sessions do). Seeded in the
+  Step 5 flag builder before any conditional flags; not a Step 5 UI checkbox.
+
+### Removed
+
+- `--max-turns` launch option (Step 5 item #5 and follow-up question) removed.
+  The `claude` CLI no longer accepts `--max-turns`; passing it would have
+  produced an "unknown option" error at launch — the option was dead code.
+  Step 5 UI now has 7 options (prompt pipe, skip-permissions, resume, model,
+  skip idle, verbose, dry run) instead of 8. `USER_GUIDE.md` and `README.md`
+  updated in lockstep.
+
 ## [2.1.4] - 2026-04-17
 
 **Supersedes 2.1.3.** 2.1.3 introduced three audit-check refinements; a Codex

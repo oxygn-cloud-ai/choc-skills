@@ -57,7 +57,7 @@ The `project` skill administers project repositories that follow the Oxygn multi
 - **`status`** — Reports the current project's config, worktrees, CI state, Jira epic key, loop configuration, open Jira issues by priority, and docs completeness.
 - **`audit`** — Runs the compliance audit against global standards. Reports per-check verdicts (`PASS`/`FAIL`/`WARN`/`SKIP`) across docs, worktrees, CI, branch protection, loops, and coverage.
 - **`config`** — Interactively modifies project configuration: toggle project type, add/remove worktrees, enable/disable CI or branch protection, set Jira epic key, configure loop intervals, manage env vars, document deviations.
-- **`launch`** — Creates tmux session per project with named windows per worktree role, launches Claude Code in each with configurable options (prompt pipe, model override, max-turns, skip idle).
+- **`launch`** — Creates tmux session per project with named windows per worktree role, launches Claude Code in each with `--effort max` always-on; configurable options via Step 5 checklist (prompt pipe, --dangerously-skip-permissions, resume, model override, skip idle, verbose, dry run).
 - **`update`** — Pulls latest from source repo and re-installs the skill.
 
 ## Subcommand reference

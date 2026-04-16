@@ -261,15 +261,16 @@ All tracking happens in **Jira** (not GitHub Issues, not GitHub PRs). Reviewer p
 /project launch --dry-run       # Preview without launching
 ```
 
+**Always-on defaults:** every session is launched with `--effort max` (maximum thinking-effort mode) so the role-sessions can reason deeply about coordination, plans, and audits. This is hardcoded in the launch flag builder — not a checkbox.
+
 **Interactive options checklist:**
 1. **Prompt pipe** (recommended) — feeds `.claude/sessions/<role>.md` to each Claude instance
 2. **--dangerously-skip-permissions** — skip permission prompts for autonomous operation
 3. **Resume existing sessions** — attach to existing tmux sessions
 4. **--model override** — use a specific model for all sessions
-5. **--max-turns limit** — cap autonomous turns per session
-6. **Skip idle roles** — only launch roles with pending work (dirty git state or commits ahead)
-7. **Verbose logging** — enable --verbose
-8. **Dry run** — show plan without executing
+5. **Skip idle roles** — only launch roles with pending work (dirty git state or commits ahead)
+6. **Verbose logging** — enable --verbose
+7. **Dry run** — show plan without executing
 
 **How it works:**
 1. Detects project root via `git rev-parse --git-common-dir` (works from main repo OR any worktree)

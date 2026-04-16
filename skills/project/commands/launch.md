@@ -125,18 +125,18 @@ Use AskUserQuestion with multiSelect to present launch options:
 
 **Question:** "Select launch options for $PROJECT_NAME ($N worktree sessions):"
 
+**Note**: `--effort max` is always applied (every session starts in maximum thinking-effort mode for deep reasoning on complex coordination tasks). This is a hardcoded default, not a checkbox.
+
 Options (multiSelect: true):
 1. **Prompt pipe** (description: "Feed .claude/sessions/<role>.md as startup prompt to each Claude instance") — recommend checked by default
 2. **--dangerously-skip-permissions** (description: "Skip permission prompts for autonomous operation") — recommend checked by default
 3. **Resume existing sessions** (description: "Attach to existing tmux sessions instead of creating new") — recommend checked by default
 4. **--model override** (description: "Use a specific model for all sessions — will ask which model")
-5. **--max-turns limit** (description: "Set maximum autonomous turns per session — will ask for number")
-6. **Skip idle roles** (description: "Only launch roles with pending Jira tasks or uncommitted git changes")
-7. **Verbose logging** (description: "Enable --verbose on Claude for debugging")
-8. **Dry run** (description: "Show what would be launched without actually launching anything")
+5. **Skip idle roles** (description: "Only launch roles with pending Jira tasks or uncommitted git changes")
+6. **Verbose logging** (description: "Enable --verbose on Claude for debugging")
+7. **Dry run** (description: "Show what would be launched without actually launching anything")
 
 If `--model` is selected, follow up: "Which model? (e.g., opus, sonnet, haiku)"
-If `--max-turns` is selected, follow up: "Maximum turns per session? (e.g., 10, 50, unlimited)"
 
 ## Step 6: Create tmux session and windows
 
@@ -218,13 +218,15 @@ done
 ### Building `$CLAUDE_FLAGS` from Step 5 answers
 
 ```bash
-CLAUDE_FLAGS=""
+# Seed with --effort max so every session starts in maximum thinking-effort mode.
+# This is hardcoded, not conditional — see the Step 5 note above.
+CLAUDE_FLAGS="--effort max"
 [ "$SKIP_PERMS" = "true" ] && CLAUDE_FLAGS="$CLAUDE_FLAGS --dangerously-skip-permissions"
 [ "$VERBOSE"    = "true" ] && CLAUDE_FLAGS="$CLAUDE_FLAGS --verbose"
-[ -n "${MAX_TURNS:-}" ]    && CLAUDE_FLAGS="$CLAUDE_FLAGS --max-turns $MAX_TURNS"
 [ -n "${MODEL:-}" ]        && CLAUDE_FLAGS="$CLAUDE_FLAGS --model $MODEL"
-CLAUDE_FLAGS="${CLAUDE_FLAGS# }"   # trim leading space
 ```
+
+`--max-turns` is NOT built here. The flag was removed from the `claude` CLI; leaving it in would have produced an "unknown option" error at launch. Model and verbose remain configurable via Step 5 answers.
 
 Tune timeouts (optional) via env vars:
 - `PROJECT_LAUNCH_READY_TIMEOUT` (default 60s) — max wait for initial Claude readiness
