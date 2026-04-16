@@ -8,7 +8,8 @@ set -euo pipefail
 source "$(dirname "$0")/_lib.sh"
 
 ROLE="implementer"
-PROMPT_FILE="$PROJECT_ROOT/.claude/loops/$ROLE.md"
+PROMPT_REL="$(jq -r --arg r "$ROLE" '.loops[$r].prompt // "loops/loop.md"' "$PROJECT_CONFIG")"
+PROMPT_FILE="$PROJECT_ROOT/$PROMPT_REL"
 STATE_FILE="$STATE_DIR/$ROLE.md"
 SESSION_PROMPT="$PROJECT_ROOT/.claude/sessions/$ROLE.md"
 

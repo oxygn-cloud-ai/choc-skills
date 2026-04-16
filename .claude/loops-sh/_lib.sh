@@ -56,13 +56,34 @@ release_lock() {
 }
 
 # render_prompt — produce the prompt string passed to `claude -p`.
-# Substitutes {{STATE_FILE}} and {{ROLE}} placeholders in the role's loop prompt.
-# The state file is the only durable memory between iterations (AC #4).
+# Prepends a state-handoff preamble (the state file is the only durable memory
+# between shell-driver iterations — AC #4/#5) and substitutes {{STATE_FILE}} /
+# {{ROLE}} placeholders in the role's loop prompt. If the prompt file already
+# contains an explicit state-handoff section, the preamble still fires — it is
+# idempotent guidance, not harmful duplication.
 # Usage: render_prompt <prompt-file> <state-file>
 render_prompt() {
   local prompt_file="$1"
   local state_file="$2"
-  sed -e "s|{{STATE_FILE}}|$state_file|g" -e "s|{{ROLE}}|${ROLE:-unknown}|g" "$prompt_file"
+  cat <<EOF
+# Shell-loop state handoff (CPT-42)
+
+You are running under the shell-loop driver. Each iteration is a **fresh**
+\`claude -p\` process with no memory of prior iterations. The state file at
+\`$state_file\` is the only durable memory between iterations.
+
+**On entry:** read \`$state_file\`. If it does not exist, this is the first
+iteration — treat state as empty and continue.
+
+**On exit:** before you finish, overwrite \`$state_file\` with a fresh handoff
+that the next iteration needs (open work, last-seen git SHA, last-seen Jira
+update timestamp, running notes). Keep it concise — future iterations pay for
+every byte.
+
+---
+
+$(sed -e "s|{{STATE_FILE}}|$state_file|g" -e "s|{{ROLE}}|${ROLE:-unknown}|g" "$prompt_file")
+EOF
 }
 
 # heartbeat — record iteration completion for /project:status staleness detection (AC #7).
