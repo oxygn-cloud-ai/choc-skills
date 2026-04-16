@@ -47,14 +47,14 @@
       "triager"
     ],
     "loops": {
-      "master": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
+      "master": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
       "triager": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-      "reviewer": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-      "merger": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-      "chk1": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
-      "chk2": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
-      "fixer": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-      "implementer": { "intervalMinutes": 10, "prompt": "loops/loop.md" }
+      "reviewer": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
+      "merger": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
+      "chk1": { "intervalMinutes": 30, "prompt": "loops/loop.md" },
+      "chk2": { "intervalMinutes": 30, "prompt": "loops/loop.md" },
+      "fixer": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
+      "implementer": { "intervalMinutes": 15, "prompt": "loops/loop.md" }
     }
   },
   "env": {
