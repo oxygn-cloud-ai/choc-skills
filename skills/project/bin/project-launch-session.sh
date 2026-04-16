@@ -271,8 +271,11 @@ for r in $LOOP_CAPABLE_ROLES; do
 done
 
 if [ "$ROLE_IS_LOOP_CAPABLE" = "true" ]; then
-  LOOP_INTERVAL=$(jq -r --arg r "$ROLE" '.sessions.loops[$r].intervalMinutes // 0' "$CONFIG")
-  LOOP_PROMPT_REL=$(jq -r --arg r "$ROLE" '.sessions.loops[$r].prompt // "loops/loop.md"' "$CONFIG")
+  # CPT-42: loops relocated from .sessions.loops to top-level .loops. Try the
+  # new location first, fall back to the old one so pre-CPT-42 project configs
+  # keep launching until they migrate. When both are empty, defaults apply.
+  LOOP_INTERVAL=$(jq -r --arg r "$ROLE" '(.loops[$r].intervalMinutes // .sessions.loops[$r].intervalMinutes) // 0' "$CONFIG")
+  LOOP_PROMPT_REL=$(jq -r --arg r "$ROLE" '(.loops[$r].prompt // .sessions.loops[$r].prompt) // "loops/loop.md"' "$CONFIG")
 fi
 
 LOOP_PROMPT_ABS="$WORKTREE/$LOOP_PROMPT_REL"

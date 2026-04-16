@@ -113,17 +113,17 @@ Create these files at the repo root:
 - `jira`: projectKey, cloudId, epicKey (filled in Step 7), boardUrl
 - `github`: owner, repo, defaultBranch, `issuesEnabled: false`, branchProtection (Software only)
 - `sessions.roles`: 11 for Software, 8 for Non-Software
-- `sessions.loops`: default intervals for 8 loop-capable roles with `prompt: "loops/loop.md"`:
+- Top-level `.loops` (CPT-42; was `sessions.loops` pre-CPT-42): default intervals, prompt paths, **driver**, and state file path for the 8 loop-capable roles. Default driver is `session` for backwards compatibility; flip a role to `shell` once its loop prompt has been validated end-to-end (see CPT-42 rollout plan).
   ```json
   "loops": {
-    "master":      { "intervalMinutes": 5,  "prompt": "loops/loop.md" },
-    "triager":     { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-    "reviewer":    { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-    "merger":      { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-    "chk1":        { "intervalMinutes": 15, "prompt": "loops/loop.md" },
-    "chk2":        { "intervalMinutes": 15, "prompt": "loops/loop.md" },
-    "fixer":       { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-    "implementer": { "intervalMinutes": 10, "prompt": "loops/loop.md" }
+    "master":      { "intervalMinutes": 5,  "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/master.md" },
+    "triager":     { "intervalMinutes": 10, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/triager.md" },
+    "reviewer":    { "intervalMinutes": 10, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/reviewer.md" },
+    "merger":      { "intervalMinutes": 10, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/merger.md" },
+    "chk1":        { "intervalMinutes": 15, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/chk1.md" },
+    "chk2":        { "intervalMinutes": 15, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/chk2.md" },
+    "fixer":       { "intervalMinutes": 10, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/fixer.md" },
+    "implementer": { "intervalMinutes": 10, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/implementer.md" }
   }
   ```
   For Non-Software, omit chk1/chk2.

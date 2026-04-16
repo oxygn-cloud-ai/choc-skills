@@ -127,31 +127,41 @@
           },
           "uniqueItems": true,
           "description": "Active session roles for this project."
-        },
-        "loops": {
-          "type": "object",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^(master|triager|reviewer|merger|chk1|chk2|fixer|implementer)$": {
-              "type": "object",
-              "required": ["intervalMinutes"],
-              "additionalProperties": false,
-              "properties": {
-                "intervalMinutes": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "description": "Loop interval in minutes. 0 = no loop (on-demand only)."
-                },
-                "prompt": {
-                  "type": "string",
-                  "description": "Path to the loop prompt file, relative to the worktree root. Defaults to 'loops/loop.md'."
-                }
-              }
-            }
-          },
-          "description": "Per-role loop intervals and prompt files. Only the 8 polling roles are valid (master, triager, reviewer, merger, chk1, chk2, fixer, implementer). planner/performance/playtester never loop — they are on-demand only."
         }
       }
+    },
+    "loops": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(master|triager|reviewer|merger|chk1|chk2|fixer|implementer)$": {
+          "type": "object",
+          "required": ["intervalMinutes"],
+          "additionalProperties": false,
+          "properties": {
+            "intervalMinutes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Loop interval in minutes. 0 = no loop (on-demand only)."
+            },
+            "prompt": {
+              "type": "string",
+              "description": "Path to the loop prompt file, relative to the worktree root. Defaults to 'loops/loop.md'."
+            },
+            "driver": {
+              "type": "string",
+              "enum": ["shell", "session", "none"],
+              "default": "session",
+              "description": "How this loop is driven. 'shell' = CPT-42 headless wrapper at .claude/loops-sh/<role>.sh (context-safe for long runs). 'session' = CPT-41 in-session /loop in the interactive TUI. 'none' = equivalent to intervalMinutes:0."
+            },
+            "stateFile": {
+              "type": "string",
+              "description": "Path (relative to worktree root) to the role's state handoff file. Shell driver reads/writes this between iterations. Defaults to '.claude/state/<role>.md'."
+            }
+          }
+        }
+      },
+      "description": "Per-role loop intervals, prompt files, and driver. Only the 8 polling roles are valid (master, triager, reviewer, merger, chk1, chk2, fixer, implementer). planner/performance/playtester never loop — they are on-demand only. Relocated from .sessions.loops in CPT-42."
     },
     "env": {
       "type": "object",

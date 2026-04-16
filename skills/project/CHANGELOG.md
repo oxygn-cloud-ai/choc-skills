@@ -2,6 +2,78 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.2.0] - 2026-04-17
+
+### Added (CPT-42 — shell-loop driver for polling roles)
+
+Moves the 8 polling roles (master, triager, reviewer, merger, chk1, chk2,
+fixer, implementer) onto a **shell-loop pattern driven by `claude -p`**
+(headless mode). Each iteration is a fresh process, so long-running roles
+can no longer exhaust context. State handoff between iterations is via
+`.claude/state/<role>.md`. Pilot: triager flipped to `driver: "shell"`;
+others stay on `driver: "session"` until they have 7 days of green
+heartbeats on the pilot.
+
+- `.claude/loops-sh/_lib.sh` — shared helpers: `acquire_lock` (non-blocking
+  flock on `.claude/locks/<role>.lock`), `release_lock`, `log` (structured
+  stderr + per-role file log), `render_prompt` (substitute `{{STATE_FILE}}`
+  / `{{ROLE}}` into loop prompt), `heartbeat` (write
+  `.claude/state/<role>.heartbeat.json` for staleness detection).
+- `.claude/loops-sh/<role>.sh` × 8 — per-role wrappers. Each reads
+  `intervalMinutes` from `.loops.<role>` in PROJECT_CONFIG.json, acquires
+  lock, traps EXIT, runs `claude --dangerously-skip-permissions
+  --append-system-prompt <.claude/sessions/<role>.md> -p <rendered prompt>`
+  in `while true` with failure survival (iteration fails → log, continue,
+  never drop out of the outer loop).
+- `.claude/loops-sh/README.md` — shell vs session driver matrix, state
+  handoff contract, debugging recipe for a stuck loop.
+
+### Changed (PROJECT_CONFIG.json schema migration)
+
+- `.sessions.loops` → top-level `.loops`. Loop config is now structurally
+  separate from session metadata.
+- Each entry gains `driver` (`shell` | `session` | `none`; default
+  `session`) and `stateFile` (default `.claude/state/<role>.md`).
+- `scripts/validate-config.sh` reads the new location with a warn-and-
+  fall-back path for pre-CPT-42 configs still using `.sessions.loops`,
+  and enforces the `driver` enum per role.
+- `skills/project/bin/project-launch-session.sh` reads the new location
+  with the same fall-back so the launcher keeps working against older
+  project configs.
+- `/project:config`, `/project:launch`, `/project:status`, `/project:new`,
+  `/project:audit` updated to read/write / display the new location and
+  the new driver field.
+- Test fixtures in `tests/validate-config.bats` migrated to the new shape.
+
+### Tests
+
+- `tests/shell-loop-driver.bats` — 23 new scaffold tests cover wrapper
+  existence / executability / syntax / library API, PROJECT_CONFIG driver
+  field, validator driver check, launch-driver routing, config-driver
+  menu, status-heartbeat display, and README contract. All green.
+- Full bats suite: 103/103 passing.
+
+### Rollout status
+
+- **Phase 1** (this release): scaffolding landed, schema migrated,
+  validator + launcher aware. **Default driver: `session`** — no
+  behaviour change for any role except the triager pilot.
+- **Phase 2** (pilot): triager flipped to `driver: "shell"`. 7 days of
+  green heartbeats required before widening.
+- **Phase 3+**: reviewer, merger, fixer, implementer → chk1, chk2 →
+  master. Master is last and gets a follow-up `master-repl.sh` escape
+  hatch for drop-in queries.
+
+### Ticket references
+
+- **CPT-42** — this release.
+- Depends on **CPT-40** (config schema, shipped), **CPT-41** (launch
+  integration, shipped).
+- Upstream context: `/clear` and `/compact` are user-only and not
+  callable from hooks / subagents / model (anthropics/claude-code#19877,
+  #20267, #16659, #12665, #31220, #45627, #47861 — all open with no
+  ETA). Shell-loop sidesteps this entirely.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

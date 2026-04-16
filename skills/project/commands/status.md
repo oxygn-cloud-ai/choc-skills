@@ -135,11 +135,18 @@ Branch: <branch> (protected: <yes/no>, force-push: <blocked/allowed>)
 Worktrees:
   <for each worktree from git worktree list, show branch, path, ahead/behind main>
 
-Loops (from PROJECT_CONFIG.json sessions.loops):
-  <role>     <intervalMinutes>m   <prompt-path>   [file exists?]
-  master     5m                   loops/loop.md   [x]
-  triager    10m                  loops/loop.md   [x]
+Loops (from PROJECT_CONFIG.json .loops — CPT-42 relocated from sessions.loops):
+  <role>      <interval>  <driver>   <prompt>        <last iteration / heartbeat>   <staleness>
+  master      5m          session    loops/loop.md   2026-04-17T02:15:00Z (ok)      fresh
+  triager     5m          shell      loops/loop.md   2026-04-17T02:14:22Z (ok)      fresh
+  reviewer    5m          session    loops/loop.md   —                              never started
   ...
+
+**Heartbeat** is read from `.claude/state/<role>.heartbeat.json` written by each
+shell-driver iteration (CPT-42). For `driver: "session"` roles heartbeat is
+inferred from the tmux pane's last visible `/loop` tick. A role is flagged
+**stale** if its last heartbeat is older than `3 × intervalMinutes`, or **never
+started** if the heartbeat file is missing and the role is `driver: "shell"`.
 
 Env vars:
   project:   <count>   (e.g., CHOC_SKILLS_PATH auto-set at launch — sanitized dir name)

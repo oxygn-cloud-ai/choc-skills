@@ -78,7 +78,17 @@ Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the role list.
 Read `$REPO_ROOT/PROJECT_CONFIG.json` for:
 - Project type (`project.type`)
 - Role list (`sessions.roles`)
-- Loop intervals and prompts (`sessions.loops.<role>.intervalMinutes` and `.prompt`)
+- Loop config (`.loops.<role>.{intervalMinutes, prompt, driver, stateFile}`). Note: relocated from `sessions.loops` in CPT-42; readers that still use the old path get a validator warning but continue to function on the fall-back.
+
+### Loop driver routing (CPT-42)
+
+`.loops.<role>.driver` selects how the polling role is driven:
+
+- `driver: "shell"` — do **not** open an interactive Claude Code TUI tab for this role. Instead open a tmux window running `.claude/loops-sh/<role>.sh` directly (fresh `claude -p` process per iteration; context cannot exhaust). The wrapper reads `intervalMinutes` itself — no `/loop` dispatch needed.
+- `driver: "session"` (default) — legacy CPT-41 path. Open the interactive TUI, wait for pane stability, dispatch `/loop <N>m …` as a single-line slash command.
+- `driver: "none"` — skip this role entirely (equivalent to `intervalMinutes: 0`).
+
+During dispatch, read the driver for each role first and branch: `shell` roles go through the `.claude/loops-sh/` path; `session` roles follow the existing `/loop` flow below. Roles missing a `driver` key default to `session` for backwards compatibility with pre-CPT-42 configs.
 - Env vars (`env.project` and `env.sessions.<role>`)
 
 Detect project type from `PROJECT_CONFIG.json` or infer if absent:

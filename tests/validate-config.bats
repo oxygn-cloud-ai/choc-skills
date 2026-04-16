@@ -169,11 +169,11 @@ EOF
   "jira": { "projectKey": "TST", "epicKey": "TST-1" },
   "github": { "owner": "org", "repo": "test" },
   "sessions": {
-    "roles": ["master"],
-    "loops": {
-      "master": { "intervalMinutes": 5 },
-      "fixer": { "intervalMinutes": 10 }
-    }
+    "roles": ["master"]
+  },
+  "loops": {
+    "master": { "intervalMinutes": 5 },
+    "fixer": { "intervalMinutes": 10 }
   }
 }
 EOF
@@ -211,11 +211,11 @@ EOF
     }
   },
   "sessions": {
-    "roles": ["master", "fixer", "implementer", "reviewer", "merger", "triager"],
-    "loops": {
-      "master": { "intervalMinutes": 5 },
-      "fixer": { "intervalMinutes": 10 }
-    }
+    "roles": ["master", "fixer", "implementer", "reviewer", "merger", "triager"]
+  },
+  "loops": {
+    "master": { "intervalMinutes": 5 },
+    "fixer": { "intervalMinutes": 10 }
   },
   "coverage": {
     "tool": "kcov",
@@ -304,9 +304,9 @@ EOF
   "jira": { "projectKey": "TST", "epicKey": "TST-1" },
   "github": { "owner": "org", "repo": "test" },
   "sessions": {
-    "roles": ["master"],
-    "loops": { "master": { "intervalMinutes": -5 } }
-  }
+    "roles": ["master"]
+  },
+  "loops": { "master": { "intervalMinutes": -5 } }
 }
 EOF
   run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
@@ -322,9 +322,9 @@ EOF
   "jira": { "projectKey": "TST", "epicKey": "TST-1" },
   "github": { "owner": "org", "repo": "test" },
   "sessions": {
-    "roles": ["master", "planner"],
-    "loops": { "planner": { "intervalMinutes": 5 } }
-  }
+    "roles": ["master", "planner"]
+  },
+  "loops": { "planner": { "intervalMinutes": 5 } }
 }
 EOF
   run "$VALIDATOR" "$TEST_DIR/PROJECT_CONFIG.json"
@@ -377,11 +377,11 @@ EOF
   "jira": { "projectKey": "TST", "epicKey": "TST-1" },
   "github": { "owner": "org", "repo": "test" },
   "sessions": {
-    "roles": ["master", "fixer"],
-    "loops": {
-      "master": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
-      "fixer": { "intervalMinutes": 10, "prompt": "loops/custom.md" }
-    }
+    "roles": ["master", "fixer"]
+  },
+  "loops": {
+    "master": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
+    "fixer": { "intervalMinutes": 10, "prompt": "loops/custom.md" }
   }
 }
 EOF
@@ -476,10 +476,10 @@ EOF
   "jira": { "projectKey": "TST", "epicKey": "TST-1" },
   "github": { "owner": "org", "repo": "test" },
   "sessions": {
-    "roles": ["master", "triager", "fixer"],
-    "loops": {
-      "master": { "intervalMinutes": 5 }
-    }
+    "roles": ["master", "triager", "fixer"]
+  },
+  "loops": {
+    "master": { "intervalMinutes": 5 }
   }
 }
 EOF

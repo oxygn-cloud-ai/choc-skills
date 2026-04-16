@@ -663,7 +663,7 @@ When all gates pass, Master notifies you:
 | `PROJECT_CONFIG.json` | Repo root | Per-project: Jira epic, GitHub settings, session roles, loop intervals, deviations |
 | `PROJECT_CONFIG.schema.json` | Repo root | Per-project: JSON Schema for config validation |
 | `.claude/sessions/<role>.md` | Repo | Per-project: session identity prompts (thin — point to architecture doc) |
-| `sessions.loops` in PROJECT_CONFIG.json | Repo root | Per-project: loop intervals per role (planned — CPT-41) |
+| `.loops` in PROJECT_CONFIG.json | Repo root | Per-project: loop intervals, prompts, driver (shell\|session\|none), state file — one entry per of 8 loop-capable roles (CPT-41 launched the config; CPT-42 added driver and relocated from `sessions.loops` to top level) |
 | `CLAUDE.md` | Repo root | Per-project: Claude Code instructions |
 | `PHILOSOPHY.md` | Repo root | Per-project: vision, principles, non-negotiables |
 

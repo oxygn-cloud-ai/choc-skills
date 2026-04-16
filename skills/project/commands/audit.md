@@ -53,7 +53,7 @@ For each check, report PASS, FAIL, WARN, or SKIP with details.
 9. **notify-recovery job** (Software only): grep for `notify-recovery` in workflow files.
 10. **GitHub Issues disabled**: `gh repo view --json hasIssuesEnabled --jq .hasIssuesEnabled` returns `false` (Jira is source of truth).
 11. **No GitHub labels**: `gh label list --json name --jq 'length'` returns 0 (labels are vestigial — Jira handles priority/category).
-12. **Loop configuration**: for every role in `sessions.roles` that is loop-capable (master, triager, reviewer, merger, chk1, chk2, fixer, implementer), `sessions.loops.<role>` exists in PROJECT_CONFIG.json with a non-negative `intervalMinutes`. On-demand roles (planner, performance, playtester) must NOT have loop entries.
+12. **Loop configuration**: for every role in `sessions.roles` that is loop-capable (master, triager, reviewer, merger, chk1, chk2, fixer, implementer), `.loops.<role>` exists in PROJECT_CONFIG.json (top-level — relocated from `sessions.loops` in CPT-42) with a non-negative `intervalMinutes` and a valid `driver` (shell|session|none; default session). On-demand roles (planner, performance, playtester) must NOT have loop entries.
 13. **Loop prompt files**: for every role with `intervalMinutes > 0`, the prompt file exists at `.worktrees/<role>/<prompt-path>` (default `loops/loop.md`).
 14. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
 15. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.

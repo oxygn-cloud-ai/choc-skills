@@ -174,9 +174,16 @@ else
   err "jira.epicKey ($EPIC_KEY) does not start with jira.projectKey ($PROJ_KEY)"
 fi
 
-# Check all loop roles are in the roles list
+# Check all loop roles are in the roles list.
+# CPT-42: loops relocated from .sessions.loops to top-level .loops. We read
+# the new location and fall back to the old one if a caller still has a v0
+# config (warn to flag the migration).
 ROLES=$(jq -r '.sessions.roles[]' "$CONFIG_FILE" 2>/dev/null)
-LOOP_ROLES=$(jq -r '.sessions.loops // {} | keys[]' "$CONFIG_FILE" 2>/dev/null)
+LOOP_ROLES=$(jq -r '.loops // {} | keys[]' "$CONFIG_FILE" 2>/dev/null)
+if [[ -z "$LOOP_ROLES" ]] && [[ "$(jq -r '.sessions.loops // empty | keys // []' "$CONFIG_FILE" 2>/dev/null)" != "[]" ]]; then
+  warn ".sessions.loops is deprecated (CPT-42) — move this block to top-level .loops"
+  LOOP_ROLES=$(jq -r '.sessions.loops // {} | keys[]' "$CONFIG_FILE" 2>/dev/null)
+fi
 for role in $LOOP_ROLES; do
   if echo "$ROLES" | grep -qx "$role"; then
     pass "Loop role '$role' is in sessions.roles"
@@ -196,8 +203,21 @@ for role in $LOOP_CAPABLE; do
     if echo "$LOOP_ROLES" | grep -qx "$role"; then
       :
     else
-      warn "Loop-capable role '$role' is in sessions.roles but has no sessions.loops entry (launcher will skip /loop for this role)"
+      warn "Loop-capable role '$role' is in sessions.roles but has no .loops entry (launcher will skip /loop for this role)"
     fi
+  fi
+done
+
+# CPT-42: validate driver field per role. Must be one of shell / session / none.
+# Missing driver is allowed (defaults to session) but emit a WARN so the operator
+# knows which path the launcher will take.
+VALID_DRIVERS="shell session none"
+for role in $LOOP_ROLES; do
+  ROLE_DRIVER=$(jq -r --arg r "$role" '.loops[$r].driver // "session"' "$CONFIG_FILE" 2>/dev/null)
+  if echo "$VALID_DRIVERS" | grep -qw "$ROLE_DRIVER"; then
+    pass "Loop role '$role' driver is valid ($ROLE_DRIVER)"
+  else
+    err "Loop role '$role' has invalid driver '$ROLE_DRIVER' (must be one of: $VALID_DRIVERS)"
   fi
 done
 

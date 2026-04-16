@@ -122,14 +122,16 @@ done
 
 ### Configure loops
 - Loop-capable roles: master, triager, reviewer, merger, chk1, chk2, fixer, implementer. Never offer planner/performance/playtester — they're on-demand only.
-- Show current `sessions.loops` from PROJECT_CONFIG.json with intervals and prompt paths
+- Show current `.loops` from PROJECT_CONFIG.json with intervals, prompt paths, **driver**, and state-file path per role. (CPT-42 relocated loops from `sessions.loops` to top-level `.loops`; read the new location, fall back to the old one with a migration warning.)
 - Ask which role to edit (multi-select OK)
 - For each selected role, ask:
   - Interval in minutes (integer, 0 = disable loop)
   - Prompt path relative to worktree root (default `loops/loop.md`)
+  - **Driver** — one of `shell` (CPT-42 headless wrapper at `.claude/loops-sh/<role>.sh`, recommended for long-running polling roles), `session` (legacy CPT-41 interactive `/loop`), or `none` (skip).
+  - State file path (default `.claude/state/<role>.md`) — only meaningful when driver is `shell`.
 - Verify the prompt file exists at `.worktrees/<role>/<prompt-path>`. If missing, offer to create it with a role-appropriate template (same templates as `/project:new` Step 10.5).
-- Update `sessions.loops.<role>` in PROJECT_CONFIG.json
-- Remind user: changes take effect on next `/project:launch`. Currently-looping sessions must be sent `/loop` again to pick up new intervals.
+- Update `.loops.<role>` in PROJECT_CONFIG.json (top-level, not under `sessions`).
+- Remind user: changes take effect on next `/project:launch`. Currently-looping sessions must be sent `/loop` again to pick up new intervals (for `driver: "session"`), or the tmux window re-started (for `driver: "shell"`).
 
 ### Manage env vars
 - Show current `env.project` and `env.sessions` from PROJECT_CONFIG.json

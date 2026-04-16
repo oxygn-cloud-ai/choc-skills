@@ -9,12 +9,17 @@
 
 set -euo pipefail
 
+# shellcheck disable=SC2034
+# PROJECT_CONFIG / PROJECT_ROOT / LOCK_DIR / LOG_DIR / STATE_DIR are exported to
+# the sourcing wrapper (module-style public vars); shellcheck flags them as
+# unused because it lints this file in isolation.
 _LOOPS_SH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$_LOOPS_SH_DIR/../.." && pwd)"
 PROJECT_CONFIG="$PROJECT_ROOT/PROJECT_CONFIG.json"
 LOCK_DIR="$PROJECT_ROOT/.claude/locks"
 LOG_DIR="$PROJECT_ROOT/.claude/logs"
 STATE_DIR="$PROJECT_ROOT/.claude/state"
+export PROJECT_ROOT PROJECT_CONFIG LOCK_DIR LOG_DIR STATE_DIR
 mkdir -p "$LOCK_DIR" "$LOG_DIR" "$STATE_DIR"
 
 # log — structured stderr + per-role file log. Always prefixes with ISO-8601 UTC.

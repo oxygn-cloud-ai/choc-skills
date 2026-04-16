@@ -45,17 +45,17 @@
       "playtester",
       "reviewer",
       "triager"
-    ],
-    "loops": {
-      "master": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
-      "triager": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
-      "reviewer": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
-      "merger": { "intervalMinutes": 10, "prompt": "loops/loop.md" },
-      "chk1": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
-      "chk2": { "intervalMinutes": 15, "prompt": "loops/loop.md" },
-      "fixer": { "intervalMinutes": 5, "prompt": "loops/loop.md" },
-      "implementer": { "intervalMinutes": 5, "prompt": "loops/loop.md" }
-    }
+    ]
+  },
+  "loops": {
+    "master":      { "intervalMinutes": 5,  "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/master.md" },
+    "triager":     { "intervalMinutes": 5,  "prompt": "loops/loop.md", "driver": "shell",   "stateFile": ".claude/state/triager.md" },
+    "reviewer":    { "intervalMinutes": 5,  "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/reviewer.md" },
+    "merger":      { "intervalMinutes": 10, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/merger.md" },
+    "chk1":        { "intervalMinutes": 15, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/chk1.md" },
+    "chk2":        { "intervalMinutes": 15, "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/chk2.md" },
+    "fixer":       { "intervalMinutes": 5,  "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/fixer.md" },
+    "implementer": { "intervalMinutes": 5,  "prompt": "loops/loop.md", "driver": "session", "stateFile": ".claude/state/implementer.md" }
   },
   "env": {
     "project": {},
