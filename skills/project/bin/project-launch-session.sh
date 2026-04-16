@@ -132,19 +132,6 @@ wait_pane_stable() {
   return 1
 }
 
-# Paste a file's contents into the pane as a single bracketed-paste block,
-# then submit. Works because tmux paste-buffer -p emits \e[200~ … \e[201~
-# around the content, which Claude Code's TUI treats as one input event.
-paste_file_and_submit() {
-  local file="$1"
-  [ -f "$file" ] || { warn "paste file missing: $file"; return 1; }
-  local buf="project_launch_${ROLE}_${RANDOM}_$$"
-  tmux load-buffer -b "$buf" "$file"
-  tmux paste-buffer -b "$buf" -t "$TARGET" -p
-  tmux send-keys -t "$TARGET" Enter
-  tmux delete-buffer -b "$buf" 2>/dev/null || true
-}
-
 # Submit a single-line text as a user message (no newlines — keeps /loop's
 # slash-command parser in known-good territory).
 #
@@ -220,12 +207,40 @@ trap cleanup_setup EXIT
   # approach appended '; rm -f' to the tmux send-keys string but that also
   # never ran for the same reason.
   echo 'rm -f "$0"'
-  # exec claude
-  if [ -n "$CLAUDE_FLAGS" ]; then
-    # shellcheck disable=SC2086  # intentional word-splitting of flags
-    printf 'exec claude %s\n' "$CLAUDE_FLAGS"
+  # CPT-75: deliver role identity as the positional prompt arg (with `--`
+  # sentinel to terminate flag parsing) instead of paste-buffering it into the
+  # TUI post-readiness. Removes the TUI paste-collapse / Enter-timing race and
+  # leaves the identity as the first user message in the transcript (same
+  # visible semantics as the old path). printf %q handles newlines in the
+  # identity via bash ANSI-C $'...' quoting — lossless for multiline markdown.
+  # Argv size guard: files >64 KB skip the inline path (falls back to a plain
+  # `exec claude`; role re-establishes state from MEMORY.md + progress-registry
+  # on first /loop tick). Current role prompts are ~1.9 KB so the guard is
+  # strictly defensive and never fires in practice.
+  SESSION_SIZE=0
+  if [ "$PROMPT_PIPE" = "true" ] && [ -f "$SESSION_PROMPT" ]; then
+    SESSION_SIZE=$(wc -c < "$SESSION_PROMPT" | tr -d ' ')
+  fi
+  # shellcheck disable=SC2086  # intentional word-splitting of flags
+  if [ "$PROMPT_PIPE" = "true" ] && [ -f "$SESSION_PROMPT" ] && [ "$SESSION_SIZE" -le 65536 ]; then
+    if [ -n "$CLAUDE_FLAGS" ]; then
+      printf 'exec claude %s -- %q\n' "$CLAUDE_FLAGS" "$(cat "$SESSION_PROMPT")"
+    else
+      printf 'exec claude -- %q\n' "$(cat "$SESSION_PROMPT")"
+    fi
+  elif [ "$PROMPT_PIPE" = "true" ] && [ -f "$SESSION_PROMPT" ]; then
+    warn "session prompt >64 KB at $SESSION_PROMPT — skipping inline identity (role will establish state on first /loop tick)"
+    if [ -n "$CLAUDE_FLAGS" ]; then
+      printf 'exec claude %s\n' "$CLAUDE_FLAGS"
+    else
+      echo 'exec claude'
+    fi
   else
-    echo 'exec claude'
+    if [ -n "$CLAUDE_FLAGS" ]; then
+      printf 'exec claude %s\n' "$CLAUDE_FLAGS"
+    else
+      echo 'exec claude'
+    fi
   fi
 } > "$SETUP_SCRIPT"
 
@@ -244,7 +259,9 @@ if [ -n "$bad_keys" ]; then
   while IFS= read -r bad; do
     warn "ignoring env var with invalid identifier: '$bad' (must match ^[A-Za-z_][A-Za-z0-9_]*\$)"
   done <<< "$bad_keys"
-  # Regenerate the setup script with the invalid keys filtered out.
+  # Regenerate the setup script with the invalid keys filtered out. The
+  # identity-injection and size-guard logic (CPT-75) is byte-for-byte
+  # equivalent with the primary generator above.
   {
     echo "#!/usr/bin/env bash"
     echo ""
@@ -252,10 +269,28 @@ if [ -n "$bad_keys" ]; then
     jq -r '.env.project // {} | to_entries[] | select(.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) | "export \(.key)=\(.value | @sh)"' "$CONFIG"
     jq -r --arg r "$ROLE" '.env.sessions[$r] // {} | to_entries[] | select(.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) | "export \(.key)=\(.value | @sh)"' "$CONFIG"
     printf 'cd %q\n' "$WORKTREE"
-    if [ -n "$CLAUDE_FLAGS" ]; then
-      printf 'exec claude %s\n' "$CLAUDE_FLAGS"
+    echo 'rm -f "$0"'
+    # shellcheck disable=SC2086  # intentional word-splitting of flags
+    if [ "$PROMPT_PIPE" = "true" ] && [ -f "$SESSION_PROMPT" ] && [ "$SESSION_SIZE" -le 65536 ]; then
+      if [ -n "$CLAUDE_FLAGS" ]; then
+        printf 'exec claude %s -- %q\n' "$CLAUDE_FLAGS" "$(cat "$SESSION_PROMPT")"
+      else
+        printf 'exec claude -- %q\n' "$(cat "$SESSION_PROMPT")"
+      fi
+    elif [ "$PROMPT_PIPE" = "true" ] && [ -f "$SESSION_PROMPT" ]; then
+      # Size-guard warn already emitted in the primary generator; avoid
+      # duplicating it here (otherwise bats would see two WARN lines).
+      if [ -n "$CLAUDE_FLAGS" ]; then
+        printf 'exec claude %s\n' "$CLAUDE_FLAGS"
+      else
+        echo 'exec claude'
+      fi
     else
-      echo 'exec claude'
+      if [ -n "$CLAUDE_FLAGS" ]; then
+        printf 'exec claude %s\n' "$CLAUDE_FLAGS"
+      else
+        echo 'exec claude'
+      fi
     fi
   } > "$SETUP_SCRIPT"
 fi
@@ -333,10 +368,12 @@ fi
 
 log "Claude ready"
 
-# Paste identity prompt (if requested and available)
+# CPT-75: identity is now delivered as the positional prompt arg on the
+# `exec claude` line in the setup script above. No post-readiness paste step.
+# We still wait for Claude to finish processing that first user message
+# before dispatching /loop, so the slash-command parser sees a ready REPL.
 if [ "$PROMPT_PIPE" = "true" ] && [ -f "$SESSION_PROMPT" ]; then
-  log "pasting identity prompt ($SESSION_PROMPT)"
-  paste_file_and_submit "$SESSION_PROMPT"
+  log "identity prompt delivered as positional arg on exec line; waiting for first-message processing"
   if ! wait_pane_stable "$PROCESS_TIMEOUT"; then
     warn "identity prompt did not finish processing within ${PROCESS_TIMEOUT}s; NOT dispatching /loop"
     exit 4

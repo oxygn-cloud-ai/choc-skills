@@ -2,6 +2,42 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.4] - 2026-04-17
+
+### Fixed (CPT-75 — replace bracketed-paste identity injection with positional-prompt-arg)
+
+Eliminates the TUI paste-collapse / Enter-timing race in `project-launch-session.sh`'s identity-prompt delivery. Previously `paste_file_and_submit()` loaded `.claude/sessions/<role>.md` into a tmux buffer and pasted it bracketed into the running Claude TUI, then sent Enter — the Enter timing was racy against the TUI's paste-collapse rendering, leading to scrollback clutter and occasional silent identity loss (worst case: identity + subsequent `/loop` both eaten by the auth-screen input buffer when the pane was unauth'd at paste time).
+
+- `skills/project/bin/project-launch-session.sh`:
+  - **Deleted** the `paste_file_and_submit()` function (10 lines).
+  - **Deleted** the post-readiness identity-paste call site; replaced with a lighter-weight "wait for Claude to finish processing the already-delivered positional prompt" stability poll.
+  - **Setup-script generator** (both the primary and invalid-env-key regeneration branches, kept byte-equivalent) now emits:
+
+    ```bash
+    exec claude $CLAUDE_FLAGS -- "<identity content, %q-quoted>"
+    ```
+
+    `--` terminates flag parsing (POSIX convention, respected by Commander.js underlying claude's CLI). `printf %q` handles newlines in the markdown via bash ANSI-C `$'…'` quoting — lossless across tabs, newlines, single quotes, dollar signs.
+
+  - **Argv size guard**: session prompts >64 KB fall back to a plain `exec claude` with a WARN — the role establishes state from MEMORY.md + the Phase-3 progress registry on its first `/loop` tick. Current role prompts are ~1.9 KB so this branch is strictly defensive.
+  - Rolled the rm-f self-delete line into the invalid-env-key regeneration branch for byte-equivalence with the primary generator.
+
+- `skills/project/commands/launch.md`: Step 7 responsibility 5 updated to describe the positional-prompt path + size guard.
+
+### Tests
+
+`tests/project-launch-session.bats` gains 5 new tests (29 in file, 85 total).
+
+- Coverage: `paste_file_and_submit` grep-absent from script source; `--prompt-pipe` + existing file inlines identity after `-- ` sentinel; no `--prompt-pipe` omits the sentinel; missing session file omits the sentinel; >64 KB session file triggers the WARN and omits the sentinel.
+- No breakage to any of the pre-existing 24 tests in this file.
+
+### Behaviour notes
+
+- **Visible semantics unchanged**: identity still appears as the first user message in the Claude transcript for each role. The difference is purely in how it gets delivered (positional-arg vs post-readiness paste).
+- **Merge interaction with CPT-71 (in review)**: CPT-71 adds `ensure_logged_in` between `wait_pane_stable` and the (now-gone) identity-paste block. Post-merge, `ensure_logged_in` sits between the readiness poll and `/loop` dispatch — semantically correct. Edge case: if claude launches unauth'd, the positional identity gets eaten by the auth screen during startup; `ensure_logged_in` drives `/login` recovery, and `/loop` still dispatches, but identity is lost for that one cycle (MEMORY.md / progress registry re-establish state next tick).
+- **Merge interaction with CPT-74 Phase 1 (in review)**: CPT-74 P1 changes `exec claude $CLAUDE_FLAGS` to `exec claude --continue $CLAUDE_FLAGS 2>/dev/null || exec claude $CLAUDE_FLAGS`. Post-merge the identity positional must flow into both primary and fallback: `exec claude --continue $FLAGS -- "$IDENTITY" 2>/dev/null || exec claude $FLAGS -- "$IDENTITY"`.
+- **ticket AC 8 fallback note**: ticket suggested `--append-system-prompt-file` or a stdin heredoc for oversized files. Verified on claude 2.1.112: no `--append-system-prompt-file` flag ships; only `--append-system-prompt <prompt>` (inline, same argv-size constraint). Chose the simpler "warn + skip" fallback — operators can intervene manually if they ever hit that path. Reviewer can flag if a different fallback is preferred.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

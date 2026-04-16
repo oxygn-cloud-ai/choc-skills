@@ -328,3 +328,88 @@ EOF
   [[ "$output" == *'rm -f "$0"'* ]]
   [[ "$output" == *"exec claude --dangerously-skip-permissions"* ]]
 }
+
+# =============================================================================
+# CPT-75 — positional-prompt-arg replaces bracketed-paste identity injection
+# =============================================================================
+#
+# Identity now lives on the `exec claude` line as a positional argument after
+# a `--` sentinel, so it's delivered to Claude as the first user message at
+# startup instead of being pasted into the TUI post-readiness. Eliminates the
+# paste-collapse TUI fragility entirely.
+
+@test "launch-session (CPT-75): paste_file_and_submit is removed from the script" {
+  # The paste-based identity injection function is gone; its replacement lives
+  # in the setup-script generator (positional-prompt-arg with -- sentinel).
+  run grep -n 'paste_file_and_submit' "$SCRIPT"
+  [ "$status" -ne 0 ] || { echo "info: paste_file_and_submit still present: $output"; return 1; }
+}
+
+@test "launch-session (CPT-75): --prompt-pipe inlines identity after -- sentinel" {
+  mkdir -p "$TEST_REPO/.worktrees/master/.claude/sessions"
+  printf 'Role: master\nCycle: check Jira and act.\n' > "$TEST_REPO/.worktrees/master/.claude/sessions/master.md"
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --prompt-pipe --claude-flags "--dangerously-skip-permissions" --dry-run
+  [ "$status" -eq 0 ]
+  # `exec claude --dangerously-skip-permissions -- $'Role: master\nCycle: check Jira and act.\n'`
+  # %q-quoted content — the $' prefix is the bash ANSI-C quoting marker for
+  # multiline strings. We assert on the `-- ` sentinel + the identity text
+  # substring.
+  [[ "$output" == *"exec claude --dangerously-skip-permissions -- "* ]] \
+    || { echo "info: missing '-- ' sentinel after flags; output: $output"; return 1; }
+  # Identity text appears in the emitted setup script (%q may or may not wrap
+  # in $'' depending on content — the 'Role: master' substring survives either).
+  [[ "$output" == *"Role: master"* ]] \
+    || { echo "info: identity text not inlined; output: $output"; return 1; }
+}
+
+@test "launch-session (CPT-75): no --prompt-pipe means no -- sentinel on exec claude" {
+  mkdir -p "$TEST_REPO/.worktrees/master/.claude/sessions"
+  printf 'Role: master\n' > "$TEST_REPO/.worktrees/master/.claude/sessions/master.md"
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --claude-flags "--dangerously-skip-permissions" --dry-run
+  [ "$status" -eq 0 ]
+  # The exec line is present but MUST NOT contain the -- sentinel.
+  local exec_line
+  exec_line=$(printf '%s\n' "$output" | grep -E '^\s*exec claude' | tail -1)
+  [ -n "$exec_line" ] || { echo "info: no 'exec claude' line in output: $output"; return 1; }
+  if [[ "$exec_line" == *" -- "* ]]; then
+    echo "info: unexpected -- sentinel without --prompt-pipe: $exec_line"
+    return 1
+  fi
+}
+
+@test "launch-session (CPT-75): --prompt-pipe with missing session file skips inline identity" {
+  # No session file created — script must emit a plain `exec claude` without
+  # the positional identity (and warn, but we don't assert on warn text).
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --prompt-pipe --dry-run
+  [ "$status" -eq 0 ]
+  local exec_line
+  exec_line=$(printf '%s\n' "$output" | grep -E '^\s*exec claude' | tail -1)
+  [ -n "$exec_line" ]
+  if [[ "$exec_line" == *" -- "* ]]; then
+    echo "info: -- sentinel present but session file is missing: $exec_line"
+    return 1
+  fi
+}
+
+@test "launch-session (CPT-75): argv size guard skips inline identity for >64 KB file" {
+  mkdir -p "$TEST_REPO/.worktrees/master/.claude/sessions"
+  # Generate a 70 KB session file (well over 64 KB threshold).
+  local sf="$TEST_REPO/.worktrees/master/.claude/sessions/master.md"
+  # printf is faster than a bash loop; write 70 * 1024 bytes of 'X'.
+  head -c $((70 * 1024)) /dev/urandom | base64 | head -c $((70 * 1024)) > "$sf"
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --prompt-pipe --dry-run
+  [ "$status" -eq 0 ]
+  # Warn line about size cap.
+  [[ "$output" == *"session prompt"*"64 KB"* ]] \
+    || [[ "$output" == *">64"* ]] \
+    || [[ "$output" == *"oversized"* ]] \
+    || { echo "info: no size-guard warning in output; output (head): $(printf '%s' "$output" | head -30)"; return 1; }
+  # The exec line must NOT contain -- sentinel.
+  local exec_line
+  exec_line=$(printf '%s\n' "$output" | grep -E '^\s*exec claude' | tail -1)
+  [ -n "$exec_line" ]
+  if [[ "$exec_line" == *" -- "* ]]; then
+    echo "info: oversized file still inlined as positional: $exec_line"
+    return 1
+  fi
+}

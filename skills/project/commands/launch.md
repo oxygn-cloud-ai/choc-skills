@@ -176,10 +176,7 @@ The script's responsibilities per role:
 3. **Source that script** in the pane via `tmux send-keys "source … ; rm -f …" Enter`.
 4. **Wait for Claude readiness** by polling `tmux capture-pane` for output
    stability (N consecutive 1s samples unchanged). No blind `sleep`.
-5. **Paste the identity prompt** (if `--prompt-pipe` requested and
-   `.claude/sessions/<role>.md` exists) as a single bracketed-paste block via
-   `tmux load-buffer`/`paste-buffer -p`. Then wait for stability again before
-   dispatching `/loop`. On timeout: SKIP /loop dispatch (no fire-and-forget).
+5. **Identity prompt** (if `--prompt-pipe` requested and `.claude/sessions/<role>.md` exists) is delivered as the **positional prompt argument on the `exec claude` line** in the setup script (CPT-75). A `--` sentinel terminates flag parsing so the identity text can start with any character; `printf %q` handles newlines via bash `$'…'` ANSI-C quoting (lossless for multiline markdown). This replaces the older bracketed-paste mechanism whose TUI paste-collapse / Enter-timing race could silently eat identity prompts. Argv size guard: files larger than 64 KB fall back to a plain `exec claude` with a WARN (role will re-establish state from MEMORY.md and the progress registry on its first `/loop` tick — current prompts are ~1.9 KB so this branch is strictly defensive). After claude launches with the identity as its first user message, a second `wait_pane_stable` cycle confirms the message has finished processing before `/loop` dispatches; on timeout: SKIP /loop dispatch (no fire-and-forget).
 6. **Dispatch `/loop`** as a **single line**:
    `/loop <N>m Read the file loops/loop.md in this worktree and execute the recurring task described there.`
    We do NOT inline multi-line prompt text into `/loop` because the slash-command
