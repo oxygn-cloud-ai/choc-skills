@@ -142,18 +142,60 @@ If `--max-turns` is selected, follow up: "Maximum turns per session? (e.g., 10, 
 
 If `--dry-run` selected, skip execution and show the plan instead (jump to Step 8 reporting).
 
+### Role → letter mapping (CPT-72)
+
+Windows are letter-prefixed — `a master`, `b planner`, `c implementer`, …, `k triager` — so `<prefix> a..k` can jump directly to a role without the numeric-index two-keystroke delay. Blink / iOS-friendly and scalable past 9 roles. Internal window indexes 0..10 are unchanged — `<prefix> 0..9` still works for the first 10 windows.
+
+```bash
+# Canonical Software-project mapping (11 roles, a..k).
+declare -A ROLE_LETTER=(
+  [master]=a      [planner]=b      [implementer]=c  [fixer]=d  [merger]=e
+  [chk1]=f        [chk2]=g         [performance]=h  [playtester]=i
+  [reviewer]=j    [triager]=k
+)
+```
+
+For Non-Software projects (8 roles: master, planner, implementer, fixer, merger, performance, reviewer, triager — no chk1/chk2/playtester), the letters are taken from the same canonical mapping — each role keeps its own letter (a=master, b=planner, c=implementer, d=fixer, e=merger, h=performance, j=reviewer, k=triager). The result is `a..e` and then `h / j / k` (gaps where chk/playtester would be). Stable role→letter assignment matters more than dense packing — operators remember `k = triager` regardless of whether f/g/i exist.
+
 ### Create session with first window
 
 ```bash
-tmux new-session -d -s "$PROJECT_SLUG" -n "master" -c "$REPO_ROOT/.worktrees/master"
+# First role in $ROLES is master by project-standard ordering.
+first_role="${ROLES[0]}"
+first_letter="${ROLE_LETTER[$first_role]}"
+tmux new-session -d -s "$PROJECT_SLUG" -n "$first_letter $first_role" -c "$REPO_ROOT/.worktrees/$first_role"
 ```
 
 ### Create remaining windows
 
-For each role (excluding master, already created):
+For each role after the first:
+
 ```bash
-tmux new-window -t "$PROJECT_SLUG" -n "$ROLE" -c "$REPO_ROOT/.worktrees/$ROLE"
+for role in "${ROLES[@]:1}"; do
+  letter="${ROLE_LETTER[$role]}"
+  tmux new-window -t "$PROJECT_SLUG" -n "$letter $role" -c "$REPO_ROOT/.worktrees/$role"
+done
 ```
+
+## Step 6.1: Bind `<prefix> a..k` to window indexes (CPT-72)
+
+Immediately after window creation, install one key binding per role at tmux's prefix table so `<prefix> a` selects master's window, `<prefix> k` selects triager's, etc. Bindings are server-scope (tmux stores key tables at server level) and persist across session detach/attach.
+
+```bash
+for i in "${!ROLES[@]}"; do
+  role="${ROLES[$i]}"
+  letter="${ROLE_LETTER[$role]}"
+  # Target by INDEX not NAME — the rename put a space in the name ("a master")
+  # and while tmux supports quoted name-targets, index is unambiguous.
+  tmux bind-key "$letter" select-window -t "$PROJECT_SLUG:$i"
+done
+```
+
+Idempotency: `tmux bind-key` replaces the binding if it already exists — safe to re-run on a relaunched session.
+
+Collision avoidance: if the operator has custom `bind-key a` / `bind-key k` bindings in their `~/.tmux.conf`, `/project:launch` quietly overrides them for this server. Operators who need to preserve their own bindings can unbind the role-letters after launch (`tmux unbind-key a`) or move them to a dedicated key table via a launch flag (out of scope for this ticket — see the "Root-table bindings" note below).
+
+**Root-table bindings (not currently installed):** the ticket spec noted an opt-in mechanism for binding `C-] a..k` at the `root` table so operators can switch windows without first hitting `<prefix>`. Not installed by default — operators who want that can bind manually via `tmux bind -T root 'C-] a' select-window -t …`. A follow-up ticket can add a `--root-bindings` flag if this becomes common.
 
 ## Step 7: Launch Claude in each window (delegates to project-launch-session.sh)
 
@@ -196,8 +238,14 @@ The script's responsibilities per role:
 # $PROMPT_PIPE / $SKIP_IDLE are "true" / "false" strings from Step 5.
 # $DRY_RUN is "true" if Step 5 dry-run option was selected.
 
-for ROLE in "${ROLES[@]}"; do
-  target="$PROJECT_SLUG:$ROLE"
+# Target by INDEX rather than window name — after the CPT-72 letter-prefix
+# rename the name is "<letter> <role>" (with a space), which is technically
+# targetable as "$PROJECT_SLUG:a master" but requires quoting. Index is
+# unambiguous. `tmux send-keys -t "$PROJECT_SLUG:<index>"` behaves identically
+# to the old `:<role>` form inside project-launch-session.sh.
+for i in "${!ROLES[@]}"; do
+  ROLE="${ROLES[$i]}"
+  target="$PROJECT_SLUG:$i"
   args=(
     --target "$target"
     --role "$ROLE"
@@ -267,7 +315,8 @@ project launch — $PROJECT_NAME
   | k | triager     | created | ●      | ✓      | 10m   |
 
   To attach: tmux attach -t $PROJECT_SLUG
-  To navigate: Prefix+P for project picker, or tmux select-window -t $PROJECT_SLUG:<role>
+  To navigate: <prefix> a..k to jump to a role directly, <prefix> w for picker,
+               or tmux select-window -t $PROJECT_SLUG:<index>
   To pick remotely: project-picker.sh
 ```
 

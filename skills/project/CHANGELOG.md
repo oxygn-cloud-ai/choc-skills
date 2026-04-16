@@ -2,6 +2,43 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.6] - 2026-04-17
+
+### Added (CPT-72 — letter-prefix tmux windows + `<prefix> a..k` bindings)
+
+`/project:launch` now creates tmux windows named `a master`, `b planner`, `c implementer`, …, `k triager` (letter-prefixed) and binds `<prefix> a..k` to select the corresponding window. Blink / iOS-keyboard friendly (letter chording > numeric chording on iPad) and scales cleanly past 9 roles without the two-digit delay on window 10.
+
+- `skills/project/commands/launch.md` Step 6 rewritten with canonical `ROLE_LETTER` associative array (`master=a` … `triager=k`). `tmux new-session` / `new-window` now emit the letter-prefixed name.
+- New **Step 6.1 Bind `<prefix> a..k`** installs one key binding per role at tmux's default prefix table. Bindings target windows by **index** (not name), because the renamed names have spaces — index is unambiguous.
+- Step 7 invocation loop also targets by index (`$PROJECT_SLUG:$i`) rather than role name (`$PROJECT_SLUG:$ROLE`) to match. Semantics identical inside `project-launch-session.sh` — `tmux send-keys -t` accepts either form.
+- Step 8 launch-report "To navigate" hint updated to advertise `<prefix> a..k`.
+- Internal window indexes 0..10 are unchanged — `<prefix> 0..9` still works for the first 10 windows; `<prefix> w` picker shows letter-prefixed names sortably.
+
+### Tests
+
+New `tests/launch-letter-prefix.bats` (13 tests). Pure-static checks on `launch.md` content:
+
+- `ROLE_LETTER` associative array declared.
+- All 11 canonical roles map to `a..k`.
+- `master=a` and `triager=k` pinned.
+- Letter uniqueness (no two roles share a letter).
+- Step 6 new-session / new-window format.
+- Step 6.1 present with bind-key loop targeting windows by index.
+- Step 7 invocation targets `$PROJECT_SLUG:$i` (index), not `$PROJECT_SLUG:$ROLE`.
+- Step 8 report hints at `<prefix> a..k` navigation.
+- Idempotency note present.
+- Non-Software project mapping documented.
+
+**Live-tmux verification is operator-smoke-test only** — bats doesn't spin up a real tmux server. An operator running `/project:launch` against a fresh or resumed session visually confirms the letter-prefixed names in the status bar and `<prefix> a` jumps to the master window.
+
+### Non-Software projects
+
+8-role Non-Software projects (master, planner, implementer, fixer, merger, performance, reviewer, triager — no chk1/chk2/playtester) preserve the canonical role→letter map, so letters land on `a..e` + `h`/`j`/`k` with gaps at `f` (chk1), `g` (chk2), `i` (playtester). Stable role→letter assignment matters more than dense packing — `k=triager` always works regardless of which chk/playtester roles are absent.
+
+### Out of scope
+
+Root-table bindings (`C-] a..k` without prefix) — noted in launch.md as a follow-up knob operators can self-install; skill does not ship it by default to avoid surprising tmux conf overrides.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)
