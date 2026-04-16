@@ -2,16 +2,6 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
-## [2.3.0] - 2026-04-13
-
-### Added
-- **Codex cross-validation**: when the Codex CLI is available, chk2 invokes `codex exec` after all test categories complete to independently review SECURITY_CHECK.md for false negatives, severity misclassifications, and missing attack vectors
-- Codex availability check in pre-flight (soft — WARN, not blocking)
-- Codex CLI check in `/chk2 doctor` (check #9)
-- `Bash(codex *)` added to allowed-tools
-- Codex Cross-Validation section appended to SECURITY_CHECK.md output with corroborated FAILs, severity escalations, suspected false negatives, missing coverage gaps, and agreement rate
-- Summary line now reports Codex availability status
-
 ## [2.2.0] - 2026-04-09
 
 ### Changed

@@ -6,31 +6,6 @@ A monorepo for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) ski
 
 Skills are discovered dynamically via `skills/*/SKILL.md` — adding a new skill directory is automatically picked up by the installer, CI, tests, and validation.
 
-## Skill-is-product rule (choc-skills-specific, non-negotiable)
-
-**This repo is the home of the `/project` skill that Claude Code sessions run inside.** The skill source under `skills/project/` is the product; `~/.claude/skills/project/`, `~/.claude/commands/project/`, `~/.local/bin/project-*`, `~/.claude/hooks/` files owned by this skill, and the `hooks.PreToolUse[]` entries in `~/.claude/settings.json` that this skill installs are its install *outputs*.
-
-**Any edit to `~/.claude/*` that isn't purely per-machine data MUST have a corresponding source-of-truth in `skills/<name>/` and an install path in that skill's `install.sh`. Never edit the install output directly.**
-
-Per-machine data = hostname-keyed config, login-specific env vars, machine-specific PATH overrides — content that *must* differ across machines. Everything else — hooks, commands, bin scripts, skill files, settings.json hook registrations that a skill owns — is skill product and ships from the skill source.
-
-### Before editing `~/.claude/<anything>`, ask:
-
-1. **Is this purely per-machine data?** (hostname, login env, etc.) → OK to edit in place.
-2. **Is this a skill install output?** (`~/.claude/skills/<name>/`, `~/.claude/commands/<name>/`, `~/.local/bin/<name>-*.sh`, `~/.claude/hooks/<name>.sh` registered in `settings.json` by a skill's `install.sh`, etc.) → Edit the skill source under `skills/<name>/` instead, then re-run that skill's `install.sh --force` to propagate.
-3. **Is the answer unclear?** → Stop and work out which category it falls into before proceeding.
-
-### Failure mode this rule exists to prevent
-
-On 2026-04-16 two PreToolUse hooks (`block-worktree-add.sh`, `verify-jira-parent.sh`) were added directly to `~/.claude/hooks/` + `~/.claude/settings.json` without corresponding source files in `skills/project/hooks/`. Discovered ~2 hours later. Consequence: a fresh install of `/project` on a new machine would have had zero enforcement. Fixed in commit `d9cb637` (v2.1.0) by reshipping both as skill-source artefacts and extending `install.sh` to copy + register them idempotently. This rule is the primary defence against the same error recurring.
-
-### Verification mechanisms
-
-- `./skills/project/install.sh --check` — currently verifies install-target presence; [CPT-58](https://chocfin.atlassian.net/browse/CPT-58) upgrades to byte-parity + orphan detection.
-- `/project:self-audit` — [CPT-59](https://chocfin.atlassian.net/browse/CPT-59) — new subcommand for bidirectional rules ↔ mechanisms audit of the skill itself.
-- CI install-manifest test — [CPT-60](https://chocfin.atlassian.net/browse/CPT-60) — runs `install.sh` in a temp HOME and asserts the installed tree matches the skill source. PR-time gate.
-- Session-prompt reminders — every `.claude/sessions/<role>.md` has a "Cave rule" section so role sessions load this at startup.
-
 ## Skill Conventions
 
 Every skill must have a `SKILL.md` with these YAML frontmatter fields:
@@ -106,7 +81,7 @@ cd skills/chk1 && ./install.sh --force
 10. Run `./scripts/validate-skills.sh` — must be 0 errors
 11. Run `./scripts/generate-checksums.sh` — regenerate checksums
 12. Run `bats tests/` — must pass
-13. Push your branch for review
+13. Submit a PR
 
 ## Checksums
 
@@ -149,13 +124,3 @@ This triggers `.github/workflows/release-skill.yml` which:
 3. Creates a GitHub Release named `<skill> v<version>`
 
 The monorepo-wide `release.yml` (triggered by plain `v*` tags) is kept for milestone releases spanning all skills.
-
-## Verification discipline (non-negotiable)
-
-- **Verify before asserting.** Before stating any checkable fact — CLI flag, API behavior, file contents, function signature, library feature, config key, version string — run the check first (`--help`, read the file, grep the source, query the live API). No "I think", no pattern-matching, no guessing. If it is locally checkable and the answer matters, check it every time.
-- **Never flip on authority alone.** If the user (or anyone else) contradicts a factual claim you made, re-verify from primary source before changing your position. Disagreeing with evidence is helpful; agreeing without evidence is worse than being wrong once.
-- **Subagent output is a hypothesis, not an answer.** Treat agent summaries, tool results, and documentation snippets as claims requiring verification. Verify specific assertions (flag names, file paths, function signatures, endpoint shapes) locally before relaying them. Delegation does not launder the trust problem.
-- **Checkable-claim triggers force verification.** Any sentence forming around "the flag is X", "the API returns Y", "the file contains Z", "function F does G", "version V supports W" — pause, verify, then speak.
-- **Recalibrate the cost model.** Verification is nearly free. Being wrong — and especially wrong-then-flipping — is expensive. Err on the side of checking.
-- **Recursive self-check.** Before reporting a task done, re-examine your solution for correctness. Read the diff. Run the tests. Trace the code paths. Never report completion on faith.
-- **Never take shortcuts.** Investigate fully before determining solutions. If a path feels easy, ask whether you have actually understood the problem.

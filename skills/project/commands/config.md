@@ -1,6 +1,6 @@
 ---
 name: project-config
-description: Change project configuration — type, worktrees, Jira, CI, protection, loops
+description: Change project configuration — type, worktrees, labels, Jira, CI, protection
 allowed-tools:
   - Bash
   - Read
@@ -12,7 +12,7 @@ allowed-tools:
 ---
 
 <objective>
-Interactively modify the current project's configuration. Changes are persisted to PROJECT_CONFIG.json and applied to GitHub/git.
+Interactively modify the current project's configuration. Changes are persisted to GITHUB_CONFIG.md and applied to GitHub/git.
 </objective>
 
 <process>
@@ -26,9 +26,9 @@ If not in a git repo: "Not in a git repository."
 
 Verify dependencies exist before reading:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. Required for project configuration."
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. Required for project configuration."
+- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. Required for project configuration."
 
-Read the project's `PROJECT_CONFIG.json` for current configuration.
+Read the project's `GITHUB_CONFIG.md` for current configuration.
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions.
 
 ## Step 2: Show current config and ask what to change
@@ -42,21 +42,20 @@ Options:
 - **Add worktree session** — create a new session worktree (asks: role name, purpose)
 - **Remove worktree session** — remove a session worktree and optionally delete its branch
 - **List worktrees** — show all active worktrees with branch, path, and status
+- **Add/remove labels** — manage GitHub labels
 - **Enable/disable branch protection** — toggle branch protection on main
 - **Enable/disable CI workflow** — add or remove .github/workflows/test.yml
-- **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and PROJECT_CONFIG.json
-- **Configure loops** — set loop intervals and prompt paths per role (8 loop-capable roles only)
-- **Manage env vars** — add/remove project-level and per-session env vars
-- **Update deviations** — document a deviation from global standards in PROJECT_CONFIG.json
+- **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and GITHUB_CONFIG.md
+- **Update deviations** — document a deviation from global standards in GITHUB_CONFIG.md
 - **Done — no changes**
 
 ## Step 3: Execute the chosen action
 
 ### Change project type
 1. Ask: "Switch to Software or Non-Software?"
-2. If switching to Software: add missing worktrees (chk1, chk2, playtester), create CI, set protection
+2. If switching to Software: add missing worktrees (chk1, chk2, playtester), create CI, set protection, add full label set
 3. If switching to Non-Software: warn about removing CI/protection, remove extra worktrees if user confirms
-4. Update PROJECT_CONFIG.json
+4. Update GITHUB_CONFIG.md
 
 ### Add worktree session
 1. Ask: "Role name?" (slug, e.g., `designer`)
@@ -67,7 +66,7 @@ Options:
    git push -u origin "session/<role>"
    ```
 4. Create session prompt at `.claude/sessions/<role>.md`
-5. Update PROJECT_CONFIG.json with the new role
+5. Update GITHUB_CONFIG.md with the new role
 
 ### Remove worktree session
 1. Show list of current worktrees
@@ -94,7 +93,7 @@ Options:
    git push origin --delete "session/<role>" 2>/dev/null
    ```
 5. Remove `.claude/sessions/<role>.md`
-6. Update PROJECT_CONFIG.json
+6. Update GITHUB_CONFIG.md
 
 ### List worktrees
 ```bash
@@ -108,41 +107,26 @@ for wt in $(git worktree list --porcelain | grep '^worktree ' | sed 's/worktree 
 done
 ```
 
+### Add/remove labels
+- Show current labels
+- Ask which to add or remove
+- Execute `gh label create` or `gh label delete`
+
 ### Enable/disable branch protection
 - Toggle via `gh api repos/{owner}/{repo}/branches/main/protection`
-- Update PROJECT_CONFIG.json
+- Update GITHUB_CONFIG.md
 
 ### Enable/disable CI
 - Create or remove `.github/workflows/test.yml`
-- Read template from `~/.claude/PROJECT_STANDARDS.md` section 3
+- Read template from `~/.claude/GITHUB_CONFIG.md` section 3
 
 ### Set Jira epic key
 - Ask for the key (e.g., CPT-42)
-- Update CLAUDE.md and PROJECT_CONFIG.json
-
-### Configure loops
-- Loop-capable roles: master, triager, reviewer, merger, chk1, chk2, fixer, implementer. Never offer planner/performance/playtester — they're on-demand only.
-- Show current `sessions.loops` from PROJECT_CONFIG.json with intervals and prompt paths
-- Ask which role to edit (multi-select OK)
-- For each selected role, ask:
-  - Interval in minutes (integer, 0 = disable loop)
-  - Prompt path relative to worktree root (default `loops/loop.md`)
-- Verify the prompt file exists at `.worktrees/<role>/<prompt-path>`. If missing, offer to create it with a role-appropriate template (same templates as `/project:new` Step 10.5).
-- Update `sessions.loops.<role>` in PROJECT_CONFIG.json
-- Remind user: changes take effect on next `/project:launch`. Currently-looping sessions must be sent `/loop` again to pick up new intervals.
-
-### Manage env vars
-- Show current `env.project` and `env.sessions` from PROJECT_CONFIG.json
-- Ask: add / remove / edit; project-level or per-session
-- If per-session, ask which role
-- **Validate key** against `^[A-Za-z_][A-Za-z0-9_]*$`. Reject hyphens, dots, or any non-identifier characters — `/project:launch` would be unable to `export` them.
-- **Never write secrets here** — warn if value looks like a secret (starts with `sk-`, `ghp_`, contains "password", "token", "key" with long random value). Direct user to future secrets manager integration.
-- Update PROJECT_CONFIG.json
-- Note: the auto-set project-path var is `<DIRNAME_SANITIZED>_PATH` — directory name uppercased with non-[A-Z0-9_] chars replaced by underscore, then `_PATH` appended. For `choc-skills` this is `CHOC_SKILLS_PATH` (not `CHOC-SKILLS_PATH` — bash rejects hyphens in identifiers). Auto-set by `/project:launch`; do not declare it here.
+- Update CLAUDE.md and GITHUB_CONFIG.md
 
 ### Update deviations
 - Ask: "What deviation are you documenting?"
-- Append to PROJECT_CONFIG.json deviations array with justification
+- Append to GITHUB_CONFIG.md deviations section with justification
 
 ## Step 4: Confirm
 

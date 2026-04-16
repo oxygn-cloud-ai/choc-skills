@@ -21,24 +21,13 @@ Verify dependencies exist:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error.
 - `command -v tmux` — if missing: **STOP** with error: "tmux is required. Install with: brew install tmux"
 - `command -v claude` — if missing: **STOP** with error: "Claude Code CLI is required."
-- `command -v jq` — if missing: **STOP** with error: "jq is required for PROJECT_CONFIG.json reading."
-- `command -v bash` — if missing: **STOP** (the per-role launch script requires bash). macOS and Linux always have bash; this check guards against exotic environments.
-- `command -v ~/.local/bin/project-launch-session.sh` — if missing: **STOP** with error: "project-launch-session.sh not installed. Re-run `~/.claude/skills/project/install.sh --force`."
 
-## Step 1: Detect project (worktree-aware)
+## Step 1: Detect project
 
 ```bash
-# Use git-common-dir so we resolve to the MAIN repo path even when /project:launch
-# is invoked from inside a .worktrees/<role>/ subdirectory (common case: master
-# session running /project:launch from within its own worktree).
-COMMON=$(git rev-parse --git-common-dir 2>/dev/null) || {
-  echo "Not in a git repository. Navigate to a project and try again."
-  exit 1
-}
-REPO_ROOT=$(cd "$COMMON/.." && pwd)
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 ```
-`REPO_ROOT` is always the main repo path — the directory that contains `.worktrees/`.
-Verify `$REPO_ROOT/.worktrees/` exists; if not, STOP (no worktrees to launch into).
+If not in a git repo: "Not in a git repository. Navigate to a project and try again."
 
 Parse `$ARGUMENTS` for flags:
 - `--all` → scan `${TMUX_REPOS_DIR:-~/Repos}` for all projects with `.worktrees/`
@@ -71,35 +60,13 @@ for dir in "$REPOS_DIR"/*/; do
 done
 ```
 
-## Step 3: Read architecture and config
+## Step 3: Read architecture
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the role list.
 
-Read `$REPO_ROOT/PROJECT_CONFIG.json` for:
-- Project type (`project.type`)
-- Role list (`sessions.roles`)
-- Loop intervals and prompts (`sessions.loops.<role>.intervalMinutes` and `.prompt`)
-- Env vars (`env.project` and `env.sessions.<role>`)
-
-Detect project type from `PROJECT_CONFIG.json` or infer if absent:
+Detect project type from `GITHUB_CONFIG.md` or infer:
 - **Software** (11 roles): master, planner, implementer, fixer, merger, chk1, chk2, performance, playtester, reviewer, triager
 - **Non-Software** (8 roles): master, planner, implementer, fixer, merger, performance, reviewer, triager
-
-**Loop-capable roles** (8): master, triager, reviewer, merger, chk1, chk2, fixer, implementer. Other roles never loop — they are on-demand only (planner, performance, playtester).
-
-**Project path env var (MUST be sanitized to a valid shell identifier):**
-```bash
-# Uppercase, then replace any non-[A-Z0-9_] char with underscore. Prepend '_'
-# if the name would start with a digit. Append _PATH.
-SAFE=$(basename "$REPO_ROOT" | LC_ALL=C tr '[:lower:]' '[:upper:]' | LC_ALL=C sed 's/[^A-Z0-9_]/_/g')
-[[ "$SAFE" =~ ^[0-9] ]] && SAFE="_$SAFE"
-PROJECT_ENV_NAME="${SAFE}_PATH"
-# Examples:
-#   choc-skills  → CHOC_SKILLS_PATH
-#   my.thing     → MY_THING_PATH
-#   42repo       → _42REPO_PATH
-```
-Hyphens, dots, and other characters invalid in bash identifiers are replaced with underscore; bare `basename | tr upper` would produce invalid names like `CHOC-SKILLS_PATH` and `export` would fail with "not a valid identifier". This variable is auto-exported into every launched session so loop prompts and env-dependent scripts can reference the project root portably.
 
 Build the actual role list by checking which `.worktrees/<role>` directories exist:
 ```bash
@@ -155,87 +122,39 @@ For each role (excluding master, already created):
 tmux new-window -t "$PROJECT_SLUG" -n "$ROLE" -c "$REPO_ROOT/.worktrees/$ROLE"
 ```
 
-## Step 7: Launch Claude in each window (delegates to project-launch-session.sh)
+## Step 7: Launch Claude in each window
 
-**All per-role logic lives in `~/.local/bin/project-launch-session.sh`** (installed
-by the `project` skill). This is a real bash script — NOT pseudocode inside
-`launch.md` — so its helper functions survive across the Bash tool
-invocations that Claude Code makes. It also gives us something we can unit-test
-and run in `--dry-run` mode before the real launch.
+For each role/window, build and send the Claude command:
 
-The script's responsibilities per role:
+Build the claude command string based on which options the user selected in Step 5:
 
-1. **Validate env var keys** against `^[A-Za-z_][A-Za-z0-9_]*$`; skip any invalid.
-2. **Generate a setup script** at `/tmp/project-launch-<slug>-<role>.sh` that:
-   - Exports the sanitized `<SANITIZED_DIRNAME>_PATH` (e.g., `CHOC_SKILLS_PATH`).
-   - Exports `env.project` and `env.sessions.<role>` entries using `jq @sh`
-     (POSIX-compatible single-quoted, lossless for tabs, newlines, single
-     quotes, dollar signs — no `printf %q` portability traps).
-   - `cd`'s into the worktree.
-   - `exec`s Claude with the requested flags (stdin = pane TTY, NOT a pipe).
-3. **Source that script** in the pane via `tmux send-keys "source … ; rm -f …" Enter`.
-4. **Wait for Claude readiness** by polling `tmux capture-pane` for output
-   stability (N consecutive 1s samples unchanged). No blind `sleep`.
-5. **Paste the identity prompt** (if `--prompt-pipe` requested and
-   `.claude/sessions/<role>.md` exists) as a single bracketed-paste block via
-   `tmux load-buffer`/`paste-buffer -p`. Then wait for stability again before
-   dispatching `/loop`. On timeout: SKIP /loop dispatch (no fire-and-forget).
-6. **Dispatch `/loop`** as a **single line**:
-   `/loop <N>m Read the file loops/loop.md in this worktree and execute the recurring task described there.`
-   We do NOT inline multi-line prompt text into `/loop` because the slash-command
-   parser's behavior on multi-line bracketed pastes is undocumented and a line
-   starting with `/` in the pasted content could flip into slash-command mode.
-   The session reads the file fresh each cycle, so edits take effect on next tick.
+1. Start with base: `claude`
+2. If "dangerously-skip-permissions" selected: append `--dangerously-skip-permissions`
+3. If "verbose" selected: append `--verbose`
+4. If "max-turns" selected: append `--max-turns <N>` (using the number from the follow-up question)
+5. If "model override" selected: append `--model <model>` (using the model from the follow-up question)
 
-### Invocation per role
+Then, if "Prompt pipe" was selected and `.claude/sessions/<role>.md` exists in the project:
+- Read the prompt file content
+- Pipe it to Claude via stdin: `cat "$PROMPT_FILE" | claude [flags]`
+- If no prompt file exists for this role, launch Claude without a prompt
 
+Send the assembled command to the tmux window:
 ```bash
-# $PROJECT_SLUG is the tmux session name from Step 2.
-# $ROLE is the current role in the iteration.
-# $CLAUDE_FLAGS is the space-separated flag string built from Step 5 answers.
-# $PROMPT_PIPE / $SKIP_IDLE are "true" / "false" strings from Step 5.
-# $DRY_RUN is "true" if Step 5 dry-run option was selected.
-
-for ROLE in "${ROLES[@]}"; do
-  target="$PROJECT_SLUG:$ROLE"
-  args=(
-    --target "$target"
-    --role "$ROLE"
-    --repo "$REPO_ROOT"
-    --claude-flags "$CLAUDE_FLAGS"
-  )
-  [ "$PROMPT_PIPE" = "true" ] && args+=(--prompt-pipe)
-  [ "$SKIP_IDLE"   = "true" ] && args+=(--skip-idle)
-  [ "$DRY_RUN"     = "true" ] && args+=(--dry-run)
-
-  # The script returns non-zero on readiness timeout (exit 4) but we continue
-  # to the next role — the window is left in a recoverable state and the
-  # summary table will flag it.
-  ~/.local/bin/project-launch-session.sh "${args[@]}" || true
-done
+tmux send-keys -t "$PROJECT_SLUG:$ROLE" "$CMD" Enter
 ```
 
-### Building `$CLAUDE_FLAGS` from Step 5 answers
+### Skip idle roles (if selected)
 
+Before launching Claude in a role, check for activity:
 ```bash
-CLAUDE_FLAGS=""
-[ "$SKIP_PERMS" = "true" ] && CLAUDE_FLAGS="$CLAUDE_FLAGS --dangerously-skip-permissions"
-[ "$VERBOSE"    = "true" ] && CLAUDE_FLAGS="$CLAUDE_FLAGS --verbose"
-[ -n "${MAX_TURNS:-}" ]    && CLAUDE_FLAGS="$CLAUDE_FLAGS --max-turns $MAX_TURNS"
-[ -n "${MODEL:-}" ]        && CLAUDE_FLAGS="$CLAUDE_FLAGS --model $MODEL"
-CLAUDE_FLAGS="${CLAUDE_FLAGS# }"   # trim leading space
+BRANCH="session/$ROLE"
+# Check for uncommitted changes
+DIRTY=$(git -C "$REPO_ROOT/.worktrees/$ROLE" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+# Check for commits ahead of main
+AHEAD=$(git rev-list --count main.."$BRANCH" 2>/dev/null || echo 0)
 ```
-
-Tune timeouts (optional) via env vars:
-- `PROJECT_LAUNCH_READY_TIMEOUT` (default 60s) — max wait for initial Claude readiness
-- `PROJECT_LAUNCH_PROCESS_TIMEOUT` (default 120s) — max wait after identity prompt
-- `PROJECT_LAUNCH_STABLE_SAMPLES` (default 3) — consecutive quiet samples required
-
-**Dispatch order is important**: launch all roles serially, because bracketed
-paste is targeted at a specific tmux window and parallel paste can interleave
-if the shared global tmux buffer is ever under contention. With 11 roles and
-typical init times, expect 10-20 minutes of serial launch — acceptable for a
-session restart that happens once per day.
+If `DIRTY == 0` and `AHEAD == 0` and no Jira tasks assigned to this role: skip launching Claude in this window (but still create the window for manual use later).
 
 ## Step 8: Select master and report
 
@@ -252,19 +171,19 @@ project launch — $PROJECT_NAME
   Windows: $N_LAUNCHED / $N_TOTAL
   Claude:  $N_WITH_CLAUDE running
 
-  | # | Role        | Status  | Claude | Prompt | Loop  |
-  |---|-------------|---------|--------|--------|-------|
-  | a | master      | created | ●      | ✓      | 5m    |
-  | b | planner     | created | ●      | ✓      | —     |
-  | c | implementer | created | ○ idle | —      | 10m   |
-  | d | fixer       | created | ○ idle | —      | 10m   |
-  | e | merger      | created | ●      | ✓      | 10m   |
-  | f | chk1        | created | ●      | ✓      | 15m   |
-  | g | chk2        | created | ●      | ✓      | 15m   |
-  | h | performance | created | ○ idle | —      | —     |
-  | i | playtester  | created | ○ idle | —      | —     |
-  | j | reviewer    | created | ●      | ✓      | 10m   |
-  | k | triager     | created | ●      | ✓      | 10m   |
+  | # | Role        | Status  | Claude | Prompt |
+  |---|-------------|---------|--------|--------|
+  | a | master      | created | ●      | ✓      |
+  | b | planner     | created | ●      | ✓      |
+  | c | implementer | created | ○ idle | —      |
+  | d | fixer       | created | ○ idle | —      |
+  | e | merger      | created | ●      | ✓      |
+  | f | chk1        | created | ●      | ✓      |
+  | g | chk2        | created | ●      | ✓      |
+  | h | performance | created | ○ idle | —      |
+  | i | playtester  | created | ○ idle | —      |
+  | j | reviewer    | created | ●      | ✓      |
+  | k | triager     | created | ●      | ✓      |
 
   To attach: tmux attach -t $PROJECT_SLUG
   To navigate: Prefix+P for project picker, or tmux select-window -t $PROJECT_SLUG:<role>
@@ -295,16 +214,10 @@ project launch --all — $N projects launched
 <success_criteria>
 - [ ] tmux session created with correct name
 - [ ] All worktree roles have named windows
-- [ ] Per-role logic runs in `~/.local/bin/project-launch-session.sh` — no helper functions defined inline in this prompt
-- [ ] `REPO_ROOT` resolved via `git rev-parse --git-common-dir` + parent (works from main repo AND from inside a worktree)
-- [ ] Claude launched via `source /tmp/project-launch-*.sh` → `exec claude` (no stdin pipe, attached to pane TTY)
-- [ ] Env vars: sanitized `<PROJECT>_PATH` + env.project + env.sessions.<role>, written through `jq @sh` (lossless for tabs/newlines/quotes). Invalid identifier keys are filtered with a WARN.
-- [ ] Identity prompt (if selected) pasted as bracketed-paste block via `tmux load-buffer`/`paste-buffer -p`
-- [ ] Pane stability polled before and after identity-prompt paste; no blind sleep. On readiness/processing timeout, `/loop` is SKIPPED (exit 4) — never fired blind.
-- [ ] `/loop` dispatched as a SINGLE LINE: `/loop <N>m Read the file loops/loop.md in this worktree and execute the recurring task described there.`
-- [ ] On-demand roles (planner/performance/playtester) never get /loop
+- [ ] Claude launched in each non-idle window with correct flags
+- [ ] Session prompts piped when available
 - [ ] Existing sessions handled gracefully (resume/recreate)
-- [ ] Dry run passes `--dry-run` to `project-launch-session.sh` and prints the full setup-script contents without executing
+- [ ] Dry run shows plan without side effects
 - [ ] --all mode launches all projects in TMUX_REPOS_DIR
-- [ ] Report shows accurate status table with loop intervals and readiness-timeout markers
+- [ ] Report shows accurate status table
 </success_criteria>

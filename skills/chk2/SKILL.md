@@ -1,10 +1,10 @@
 ---
 name: chk2
-version: 2.3.0
+version: 2.2.0
 description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(dig *), Bash(openssl *), Bash(python3 *), Bash(jq *), Bash(nmap *), Bash(git *), Bash(host *), Bash(shasum *), Bash(echo *), Bash(cat *), Bash(base64 *), Bash(date *), Bash(ls *), Bash(grep *), Bash(sed *), Bash(awk *), Bash(head *), Bash(tail *), Bash(rm *), Bash(codex *), Write, Agent, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(dig *), Bash(openssl *), Bash(python3 *), Bash(jq *), Bash(nmap *), Bash(git *), Bash(host *), Bash(shasum *), Bash(echo *), Bash(cat *), Bash(base64 *), Bash(date *), Bash(ls *), Bash(grep *), Bash(sed *), Bash(awk *), Bash(head *), Bash(tail *), Bash(rm *), Write, Agent, AskUserQuestion
 argument-hint: [all | quick | headers | tls | dns | cors | api | ws | waf | infra | brute | scale | disclosure | cookies | cache | smuggling | auth | transport | redirect | fingerprint | timing | compression | jwt | graphql | sse | ipv6 | reporting | hardening | negotiation | proxy | business | backend | fix | github | update | help | doctor | version]
 ---
 
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk2 v2.3.0 — Adversarial Security Audit
+chk2 v2.2.0 — Adversarial Security Audit
 
 USAGE
   /chk2                Run all test categories (~211 checks)
@@ -94,7 +94,6 @@ If $ARGUMENTS equals "doctor", "--doctor", or "check", run environment diagnosti
 6. Verify target is reachable: `curl -s -o /dev/null -w "%{http_code}" https://myzr.io/`
 7. Verify sub-command files exist: `ls ~/.claude/commands/chk2/*.md`
 8. Report installed skill version
-9. Verify Codex CLI available: `command -v codex && codex --version 2>/dev/null | head -1`. If found: PASS with version. If not found: WARN — "Codex CLI not installed. Cross-validation will be skipped. Install from: https://github.com/openai/codex"
 
 Format:
 ```
@@ -107,8 +106,7 @@ chk2 doctor — Environment Health Check
   [PASS] websockets: installed
   [PASS] target reachable: https://myzr.io/ (200)
   [PASS] sub-commands: 35 files in ~/.claude/commands/chk2/
-  [PASS] version: 2.3.0
-  [PASS] Codex CLI: codex v0.118.0
+  [PASS] version: 2.2.0
 
   Result: N passed, N warnings, N failed
 ```
@@ -120,7 +118,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-chk2 v2.3.0
+chk2 v2.2.0
 ```
 
 End of version output. Do not continue.
@@ -139,12 +137,6 @@ Before executing, silently verify:
 
 3. **Sub-commands installed**: `ls ~/.claude/commands/chk2/*.md` finds files. If not:
    > **chk2 warning**: Sub-command files not found in ~/.claude/commands/chk2/. Running inline.
-
-4. **Codex CLI availability** (soft check): Run `command -v codex 2>/dev/null`. Store the result:
-   - If found: set `CODEX_AVAILABLE=true`. Codex cross-validation will run after all test categories complete.
-   - If not found: set `CODEX_AVAILABLE=false`. Note:
-     > **chk2 note**: Codex CLI not found. Skipping cross-validation. Install from: https://github.com/openai/codex
-   - This is NOT a blocking check. The audit proceeds regardless.
 
 ---
 
@@ -227,87 +219,10 @@ After all categories, append:
 | ... |
 
 **Overall**: X passed, Y failed, Z warnings out of N tests
-**Codex**: available — cross-validation ran | not available — skipped
 
 ## Recommendations
 
 {Numbered list of actionable fixes for FAIL/WARN items, ordered by severity}
-```
-
----
-
-## Codex Cross-Validation
-
-**Skip this section entirely if `CODEX_AVAILABLE=false`.**
-
-chk2 is a live security scanner — Codex cannot re-run the same curl/openssl/dig probes. Instead, Codex reviews the completed SECURITY_CHECK.md to independently assess the results for: missed attack vectors, false negatives, test methodology gaps, and findings that deserve higher severity.
-
-### Invoke Codex
-
-After SECURITY_CHECK.md is fully written (all categories complete), invoke Codex:
-
-```bash
-codex exec \
-  --ephemeral \
-  -o /tmp/chk2-codex-review.txt \
-  "You are an adversarial security reviewer. Read the file SECURITY_CHECK.md in this repo. It contains the results of a live security scan against a web target. For every PASS result, challenge whether the test was sufficient — could an attacker bypass what was tested? For every FAIL and WARN, assess whether the severity is correctly classified. Identify any attack vectors, OWASP categories, or security checks that are MISSING from the scan entirely. Report: (1) Tests where PASS may be a false negative — the test methodology has a gap. (2) FAIL/WARN items that should be escalated to higher severity. (3) Missing attack vectors not covered by any test. (4) Any test that appears flawed in methodology. For each finding, state the category, test ID if applicable, and specific concern."
-```
-
-**Timeout:** If Codex takes more than 5 minutes, kill the process and note:
-> **chk2 note**: Codex cross-validation timed out after 5 minutes. Proceeding with chk2 findings only.
-
-### Read and parse Codex output
-
-Read `/tmp/chk2-codex-review.txt`. If the file is empty or doesn't exist, note:
-> **chk2 note**: Codex produced no output. Cross-validation skipped.
-
-### Reconcile findings
-
-Compare Codex's review against chk2's SECURITY_CHECK.md. Categorize into four buckets:
-
-| Category | Meaning |
-|----------|---------|
-| **Corroborated FAILs** | Codex agrees the FAIL is real and correctly classified |
-| **Severity escalations** | Codex argues a FAIL/WARN deserves higher severity — assess and accept or reject with reasoning |
-| **Suspected false negatives** | Codex flags a PASS as potentially insufficient — verify by re-running the specific test with Codex's suggested bypass, or note for manual follow-up |
-| **Missing coverage** | Codex identifies attack vectors not tested by any chk2 category — log as gaps for future chk2 versions |
-
-For each **suspected false negative**:
-1. If the bypass can be tested with a curl/openssl command, run it now and update the test result
-2. If it requires manual testing, add it to Recommendations with `[Codex]` tag
-
-For each **missing coverage** item:
-1. Note it in the Recommendations section as a gap: `[Codex gap] <description>`
-
-### Append to SECURITY_CHECK.md
-
-After the Recommendations section, append:
-
-```markdown
-## Codex Cross-Validation
-
-**Codex version**: {version from `codex --version`}
-
-### Corroborated (N)
-- {test ID}: {description} — confirmed by Codex
-
-### Severity Escalations (N)
-- {test ID}: {current severity} → {proposed severity} — {accepted/rejected}: {reasoning}
-
-### Suspected False Negatives (N)
-- {test ID}: PASS may be insufficient — {Codex's concern} — {RETESTED: new result | DEFERRED: needs manual testing}
-
-### Missing Coverage (N)
-- {attack vector not tested} — {OWASP category if applicable}
-
-### Agreement Rate
-N% of FAIL/WARN findings corroborated. N suspected false negatives. N coverage gaps identified.
-```
-
-### Clean up
-
-```bash
-rm -f /tmp/chk2-codex-review.txt
 ```
 
 ---

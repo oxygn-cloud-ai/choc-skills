@@ -1,10 +1,10 @@
 ---
 name: chk1
-version: 2.5.1
+version: 2.4.0
 description: Adversarial Implementation Audit Mandate. Use when auditing recently implemented changes for bugs, risks, omissions, deviations, and unintended modifications. Fault-finding audit, not validation.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(git *), Bash(gh *), Bash(curl *), Bash(codex *), Write, Edit, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(git *), Bash(gh *), Bash(curl *), Write, Edit, AskUserQuestion
 argument-hint: [all | quick | security | scope | architecture | fix | github | update | help | doctor | version]
 ---
 
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk1 v2.5.1 — Adversarial Implementation Audit
+chk1 v2.4.0 — Adversarial Implementation Audit
 
 USAGE
   /chk1                     Full audit (auto-detects recent changes)
@@ -56,10 +56,9 @@ AUDIT SECTIONS (full mode)
   6. Architectural Compliance Review
   7. Omissions Analysis
   8. Completeness Verification
-  9. Codex Cross-Validation (if codex CLI is available)
 
 TOOLS USED
-  Audit: Read, Grep, Glob, Bash(git *), Bash(codex *)
+  Audit: Read, Grep, Glob, Bash(git *)
   Fix mode: + Write, Edit (to apply fixes)
 
 LOCATION
@@ -83,7 +82,6 @@ If $ARGUMENTS equals "doctor", "--doctor", or "check", run the following diagnos
 6. **Branch status**: Run `git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD`. Report current branch or detached HEAD state. WARN if detached HEAD.
 7. **Skill installation**: Check if `~/.claude/skills/chk1/SKILL.md` exists. Report installed path.
 8. **Skill version**: Read the `version:` field from the installed SKILL.md. Report version number.
-9. **Codex CLI available**: Run `command -v codex && codex --version 2>/dev/null | head -1`. If found: PASS with version. If not found: WARN — "Codex CLI not installed. Codex cross-validation will be skipped during audits. Install from: https://github.com/openai/codex"
 
 Format the output as:
 
@@ -97,8 +95,7 @@ chk1 doctor — Environment Health Check
   [PASS] Has recent commits: N commits found
   [PASS] Branch: main
   [PASS] Installed: ~/.claude/skills/chk1/SKILL.md
-  [PASS] Version: 2.5.1
-  [PASS] Codex CLI: codex v0.118.0
+  [PASS] Version: 1.1.0
 
   Result: N passed, N warnings, N failed
 ```
@@ -110,7 +107,7 @@ If any check is FAIL, advise the user on how to fix it. End of doctor output. Do
 If $ARGUMENTS equals "version", "--version", or "-v", output:
 
 ```
-chk1 v2.5.1
+chk1 v2.4.0
 ```
 
 End of version output. Do not continue.
@@ -160,12 +157,6 @@ Before beginning any audit, silently verify the following. If any check fails, s
    >
    > Proceed anyway, but note the risk of incomplete coverage in the summary.
 
-6. **Codex CLI availability** (soft check): Run `command -v codex 2>/dev/null`. Store the result:
-   - If found: set `CODEX_AVAILABLE=true`. Codex cross-validation will run after the primary audit.
-   - If not found: set `CODEX_AVAILABLE=false`. Note:
-     > **chk1 note**: Codex CLI not found. Skipping cross-validation. Install from: https://github.com/openai/codex
-   - This is NOT a blocking check. The audit proceeds regardless.
-
 ---
 
 ## Audit Instructions
@@ -214,6 +205,7 @@ If $ARGUMENTS is provided and is not a subcommand (help/doctor/version):
 1. Run `git log --oneline -20` to see recent commits.
 2. Identify the boundary of the most recent implementation session:
    - Look for a natural boundary: a merge commit, a commit from a different author, a large time gap (>4 hours) between commits, or a commit message indicating a different task.
+   - If using Co-Authored-By tags, treat consecutive commits with the same co-author as one session.
    - If no clear boundary is found, default to the most recent commit only and note:
      > **chk1 note**: Could not auto-detect implementation boundary. Auditing only the most recent commit. Use `/chk1 <commit>..<commit>` to specify a wider range.
 3. Run `git diff <base>..<head> --stat` to list all modified files.
@@ -320,64 +312,6 @@ Explicitly confirm or refute:
 
 Partial completion is not acceptable unless explicitly authorised.
 
-## 9. Codex Cross-Validation
-
-**Skip this section entirely if `CODEX_AVAILABLE=false`.**
-
-This section invokes the Codex CLI as an independent second auditor on the same scope. Codex reviews the diff without knowledge of chk1's findings, then the two reports are reconciled.
-
-### 9a. Invoke Codex
-
-Determine the correct `codex exec review` flags based on the scope detected earlier:
-
-- **Uncommitted changes** (no commit range, working tree diff): use `--uncommitted`
-- **Commit range** (`<base>..<head>`): use `--base <base>` (Codex reviews HEAD vs base)
-- **Specific commit**: use `--commit <sha>`
-- **Branch**: use `--base main` (or the appropriate base branch)
-
-Build and run the command:
-
-```bash
-codex exec review \
-  <scope-flag> \
-  --ephemeral \
-  -o /tmp/chk1-codex-review.txt \
-  "Adversarial code review. You are a fault-finding auditor. Assume the code is defective until proven otherwise. For every change, check: bugs (syntax, types, race conditions, resource leaks, off-by-one, missing null checks), security risks (injection, exposed secrets, auth bypasses), data integrity risks, performance risks, scope compliance, architectural deviations, and omissions. Do NOT validate or reassure. Report every issue found with file, line, severity (Critical/High/Medium/Low), and specific description. If you find nothing in a category, state what you verified."
-```
-
-**Flags explained:**
-- `--ephemeral` — don't persist the session (this is a one-shot review)
-- `-o /tmp/chk1-codex-review.txt` — capture Codex's full response to a file
-
-**Timeout:** If Codex takes more than 5 minutes, kill the process and note:
-> **chk1 note**: Codex cross-validation timed out after 5 minutes. Proceeding with chk1 findings only.
-
-### 9b. Read and parse Codex output
-
-Read `/tmp/chk1-codex-review.txt`. If the file is empty or doesn't exist, note:
-> **chk1 note**: Codex produced no output. Cross-validation skipped.
-
-### 9c. Reconcile findings
-
-Compare the Codex review against chk1's findings from sections 1-8. Categorize every finding into one of three buckets:
-
-| Category | Meaning |
-|----------|---------|
-| **Corroborated** | Both chk1 and Codex independently found the same issue (strengthens confidence) |
-| **chk1 only** | chk1 found this but Codex did not (may be a subtle issue Codex missed, or a false positive — state which) |
-| **Codex only** | Codex found this but chk1 did not (chk1 missed it — this is the high-value output of cross-validation) |
-
-For each **Codex only** finding:
-1. Verify it against the actual code (Codex can hallucinate — read the file and line it references)
-2. If verified: add it to the appropriate section (Bugs Found, Critical Risks, etc.) and mark it `[Codex]`
-3. If false positive: note it as "Codex false positive: <description>" in the reconciliation table
-
-### 9d. Clean up
-
-```bash
-rm -f /tmp/chk1-codex-review.txt
-```
-
 ## Output Format (Strict)
 
 Produce a structured report using only the following sections and order:
@@ -391,7 +325,6 @@ Lines:    +N / -N
 Author:   <commit author(s)>
 Date:     <date range>
 Plan:     <plan file if found, or "None detected">
-Codex:    <available — cross-validation will run | not available — skipped>
 ```
 
 ### Files Changed
@@ -430,33 +363,6 @@ VERDICT: BLOCKED | PERMITTED | PERMITTED WITH WARNINGS
 
 Issues:  N bugs, N risks, N unintended changes, N omissions
 ```
-
-### Codex Cross-Validation
-
-If Codex was available and ran successfully, include this section. If Codex was not available, display:
-```
-Codex: not available (skipped)
-```
-
-If Codex ran, display the reconciliation table:
-```
-Codex Cross-Validation
-
-  Corroborated (N):
-    - Bug #1: <description> — confirmed by both auditors
-    - Risk #2: <description> — confirmed by both auditors
-
-  chk1 only (N):
-    - Bug #3: <description> — Codex did not flag this (subtle/domain-specific)
-
-  Codex only (N):
-    - [Codex] Bug #4: <description> — VERIFIED, added to Bugs Found
-    - [Codex] Risk #5: <description> — FALSE POSITIVE: <reason>
-
-  Agreement rate: N% (N of N total findings corroborated)
-```
-
-Any verified Codex-only findings must also appear in their respective sections above (Bugs Found, Critical Risks, etc.) marked with `[Codex]`.
 
 ### Remediation Plan
 Prepare a detailed, step-by-step plan to address every issue identified. If no issues found, state "No remediation required."

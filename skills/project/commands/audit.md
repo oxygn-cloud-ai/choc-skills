@@ -9,7 +9,7 @@ allowed-tools:
 ---
 
 <objective>
-Audit the current project against ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/PROJECT_STANDARDS.md. Report compliance gaps with PASS/FAIL/WARN/SKIP verdicts.
+Audit the current project against ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/GITHUB_CONFIG.md. Report compliance gaps with PASS/FAIL/WARN/SKIP verdicts.
 </objective>
 
 <process>
@@ -25,15 +25,15 @@ If not in a git repo: "Not in a git repository. Navigate to a project and try ag
 
 Before reading, verify the dependency files exist:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file is required for project auditing. Restore it or check your ~/.claude configuration."
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. This file is required for project auditing."
+- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. This file is required for project auditing."
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the full role list and requirements.
-Read `~/.claude/PROJECT_STANDARDS.md` for branch protection, CI, and documentation requirements.
-Read the project's `PROJECT_CONFIG.json` to understand project type and documented deviations.
+Read `~/.claude/GITHUB_CONFIG.md` for label, CI, branch protection, and doc requirements.
+Read the project's `GITHUB_CONFIG.md` to understand project type and documented deviations.
 
 ## Step 3: Determine project type
 
-If `PROJECT_CONFIG.json` exists and specifies a type, use it.
+If `GITHUB_CONFIG.md` exists and specifies a type, use it.
 Otherwise infer: if `.github/workflows/` exists or `pyproject.toml`/`package.json` exists → Software. Else → Non-Software.
 
 ## Step 4: Run audit checklist
@@ -43,21 +43,20 @@ For each check, report PASS, FAIL, WARN, or SKIP with details.
 ### Checks (run all, adapt expectations to project type):
 
 1. **GitHub repo exists**: `git remote get-url origin` succeeds
-2. **Jira epic configured**: CLAUDE.md or PROJECT_CONFIG.json contains a CPT-<N> or Jira epic reference
-3. **Required docs present**: README.md, CLAUDE.md, PROJECT_CONFIG.json (always). ARCHITECTURE.md, PHILOSOPHY.md (Software or if present).
+2. **Jira epic configured**: CLAUDE.md or GITHUB_CONFIG.md contains a CPT-<N> reference
+3. **Required docs present**: README.md, CLAUDE.md, GITHUB_CONFIG.md (always). ARCHITECTURE.md, PHILOSOPHY.md (Software or if present).
 4. **Session worktrees present**: Per architecture doc — 11 for Software, 8 for Non-Software. Check `git worktree list`.
 5. **Session startup prompts**: `.claude/sessions/<role>.md` exists for each expected role
 6. **Branch protection on main**: Derive `OWNER_REPO` from `git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||'`, then `gh api "repos/$OWNER_REPO/branches/main/protection"` succeeds. SKIP for Non-Software if documented deviation.
 7. **CI workflow exists** (Software only): `.github/workflows/test.yml` or similar. SKIP for Non-Software.
 8. **notify-failure job** (Software only): grep for `notify-failure` in workflow files.
 9. **notify-recovery job** (Software only): grep for `notify-recovery` in workflow files.
-10. **GitHub Issues disabled**: `gh repo view --json hasIssuesEnabled --jq .hasIssuesEnabled` returns `false` (Jira is source of truth).
-11. **No GitHub labels**: `gh label list --json name --jq 'length'` returns 0 (labels are vestigial — Jira handles priority/category).
-12. **Loop configuration**: for every role in `sessions.roles` that is loop-capable (master, triager, reviewer, merger, chk1, chk2, fixer, implementer), `sessions.loops.<role>` exists in PROJECT_CONFIG.json with a non-negative `intervalMinutes`. On-demand roles (planner, performance, playtester) must NOT have loop entries.
-13. **Loop prompt files**: for every role with `intervalMinutes > 0`, the prompt file exists at `.worktrees/<role>/<prompt-path>` (default `loops/loop.md`).
+10. **P1-P4 labels exist**: `gh label list` includes P1, P2, P3, P4
+11. **Category labels exist**: check for expected labels per project type
+12. **No deprecated labels**: no `P1-blocking`, `P2-important`, `severity-*`, etc.
+13. **Every open issue has priority**: check `gh issue list` for issues missing P-labels
 14. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
 15. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.
-16. **No unauthorised worktrees**: per MULTI_SESSION_ARCHITECTURE.md §7.1, the only worktrees permitted are the role worktrees named in `sessions.roles` (plus the main repo). Iterate `git worktree list --porcelain`, extract each worktree's `worktree <path>` line, and for each one under `.worktrees/<name>/`, assert `<name>` is a member of `sessions.roles`. FAIL on any `<name>` not in the role list. Also FAIL on any role worktree whose HEAD branch is not `session/<role>` (feature/fix work must be a branch INSIDE the role worktree, never as a new or re-pointed worktree).
 
 ## Step 5: Display report
 
@@ -74,14 +73,13 @@ Type: <Software|Non-Software>
   [PASS] CI workflow: .github/workflows/test.yml
   [FAIL] notify-failure job missing from CI workflow
   [PASS] notify-recovery job present
-  [PASS] GitHub Issues disabled
-  [PASS] No GitHub labels present
-  [PASS] Loop configuration: 8/8 roles configured
-  [FAIL] Loop prompt missing: .worktrees/chk2/loops/loop.md
+  [PASS] P1-P4 labels exist
+  [WARN] Deprecated labels found: severity-high, severity-low
+  [PASS] All open issues have priority labels
   [WARN] Stale worktree: session/playtester (no commits in 5 days)
   [SKIP] Coverage thresholds (not configured)
 
-  Result: 8 passed, 2 warnings, 4 failed, 1 skipped
+  Result: 8 passed, 3 warnings, 3 failed, 1 skipped
 
   To fix gaps, run /project:config or address manually.
 ```
