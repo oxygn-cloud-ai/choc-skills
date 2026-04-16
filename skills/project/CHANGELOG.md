@@ -2,6 +2,41 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.5] - 2026-04-17
+
+### Added (CPT-60 — CI install-manifest test)
+
+New bats file `tests/install-manifest.bats` (11 tests) that runs `skills/project/install.sh --force` in a throwaway `$HOME=$(mktemp -d)` and byte-parity-compares every install category against the source tree. CI gate for the 2026-04-16 cave-inversion failure class — if a source file is added without a corresponding install step, or an install step points to a missing source, the PR fails.
+
+**Categories covered** (one `@test` each — specific failures instead of one mega-test):
+
+- Installer exits 0 in a fresh HOME.
+- `SKILL.md` byte-identical to target.
+- Every `hooks/*.sh` byte-identical + executable in target.
+- Orphan detection: every `~/.claude/hooks/*.sh` has a matching source.
+- Every `bin/*.sh` byte-identical + executable.
+- Every `commands/*.md` byte-identical.
+- `PROJECT_CONFIG.schema.json` copied into the installed skill dir.
+- Router `~/.claude/commands/project.md` exists.
+- `settings.json` PreToolUse contains one registration per installed hook.
+- `.source-repo` marker written with correct path.
+- Deliberate-break sanity: seeds a fake orphan in TEST_HOME, confirms detection returns exactly 1.
+
+**Deliberate-break verification** (done locally during implementation): added `skills/project/hooks/fake-drift-hook.sh` with no `hook_matcher_for()` mapping → test 9 correctly failed ("hook fake-drift-hook.sh not registered in settings.json"). Removed; tests pass again. This is the concrete evidence the test catches the failure mode that motivated the ticket.
+
+### Notes
+
+- Portable sha256 via `shasum -a 256` (macOS + Linux; matches CLAUDE.md rule + what install.sh itself uses).
+- Test skips gracefully when `jq` or `shasum` is absent rather than failing hard.
+- `teardown()` paranoia: only `rm -rf`s `TEST_HOME` when the path looks like a temp dir (`/tmp/*`, `/var/folders/*`, or `*/tmp.*`) — belt-and-braces against a misconfigured HOME wiping real data.
+- No dependency on CPT-58's parity-helpers refactor: inlined a 2-line `sha256_of()` helper in the test file. When CPT-58 lands, helper moves to `scripts/install-parity-helpers.sh` and both the runtime `--check` mode and this test import it.
+
+### Dependencies / complements
+
+- CPT-58 (pending): runtime `install.sh --check` byte-parity mode. Same check, different invocation context.
+- CPT-59 (pending): `/project:self-audit` recursive audit. Operator-run on demand.
+- This ticket: **PR-time CI gate**. Runs automatically on every push.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)
