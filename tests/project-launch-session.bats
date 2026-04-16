@@ -328,3 +328,272 @@ EOF
   [[ "$output" == *'rm -f "$0"'* ]]
   [[ "$output" == *"exec claude --dangerously-skip-permissions"* ]]
 }
+
+# =============================================================================
+# CPT-71: auto-detect unauthenticated Claude + drive /login flow
+# =============================================================================
+#
+# classify_auth_state and ensure_logged_in live in skills/project/bin/_launch-auth.sh
+# so the decision logic is sourceable and unit-testable without a live tmux.
+#
+# setup_tmux_stub — stamps a PATH-first tmux + sleep stub into $1 (a tmpdir).
+#   - capture-pane -p -t <target>  serves $dir/capture.<N>.txt. N starts at 1.
+#     N advances ONLY on send-keys invocations that include 'Enter' — simulates
+#     "state changes after the user hits submit", matching how the real Claude
+#     TUI behaves.
+#   - send-keys                    logs full arg vector to $dir/keystrokes.log.
+#   - has-session / load-buffer / paste-buffer / delete-buffer / list-* / new-*
+#     are no-ops (exit 0).
+#   - sleep is stubbed to exit 0 so wait_pane_stable's 1s polls don't slow
+#     tests down.
+# The stub cooperates with wait_pane_stable: since capture-pane returns the
+# SAME file until send-keys Enter advances the counter, wait_pane_stable sees
+# stable output and returns 0 after $STABLE_SAMPLES matching calls.
+setup_tmux_stub() {
+  local dir="$1"
+  mkdir -p "$dir"
+  export TMUX_STATE_DIR="$dir"
+  echo 1 > "$dir/capture.counter"
+  cat > "$dir/tmux" <<'TMUX_EOF'
+#!/usr/bin/env bash
+dir="${TMUX_STATE_DIR:?TMUX_STATE_DIR not set}"
+case "$1" in
+  capture-pane)
+    n=$(cat "$dir/capture.counter" 2>/dev/null || echo 1)
+    f="$dir/capture.$n.txt"
+    [ -f "$f" ] && cat "$f"
+    ;;
+  send-keys)
+    shift
+    printf '%s\n' "$*" >> "$dir/keystrokes.log"
+    # An argument exactly "Enter" (not substring) triggers a state transition.
+    for a in "$@"; do
+      if [ "$a" = "Enter" ]; then
+        n=$(cat "$dir/capture.counter" 2>/dev/null || echo 1)
+        echo $((n + 1)) > "$dir/capture.counter"
+        break
+      fi
+    done
+    ;;
+  has-session|load-buffer|paste-buffer|delete-buffer|list-windows|new-window|new-session|kill-session)
+    exit 0
+    ;;
+  *)
+    # Silently no-op on anything else so tests don't blow up on future tmux usage.
+    exit 0
+    ;;
+esac
+TMUX_EOF
+  chmod +x "$dir/tmux"
+  cat > "$dir/sleep" <<'SLEEP_EOF'
+#!/usr/bin/env bash
+exit 0
+SLEEP_EOF
+  chmod +x "$dir/sleep"
+  PATH="$dir:$PATH"; export PATH
+}
+
+# seed_capture <dir> <N> <text> — writes text (one pane capture) for state N.
+seed_capture() {
+  local dir="$1" n="$2" text="$3"
+  printf '%s\n' "$text" > "$dir/capture.$n.txt"
+}
+
+LIB="${REPO_DIR}/skills/project/bin/_launch-auth.sh"
+
+# --- classify_auth_state (pure, no tmux) ---
+
+@test "classify_auth_state: authed when pane has no login markers" {
+  run bash -c "source '$LIB'; classify_auth_state 'Welcome back, James. Claude ready.'"
+  [ "$status" -eq 0 ]
+  [ "$output" = "authed" ]
+}
+
+@test "classify_auth_state: not-logged-in when pane contains 'Not logged in'" {
+  run bash -c "source '$LIB'; classify_auth_state 'Not logged in · Please run /login'"
+  [ "$status" -eq 0 ]
+  [ "$output" = "not-logged-in" ]
+}
+
+@test "classify_auth_state: login-menu when pane advertises Claude subscription option" {
+  run bash -c "source '$LIB'; classify_auth_state 'Select auth method:
+1. Claude subscription (recommended)
+2. Anthropic Console (API key)'"
+  [ "$status" -eq 0 ]
+  [ "$output" = "login-menu" ]
+}
+
+@test "classify_auth_state: login-complete when pane shows 'Login successful'" {
+  run bash -c "source '$LIB'; classify_auth_state 'Login successful! Press Enter to continue.'"
+  [ "$status" -eq 0 ]
+  [ "$output" = "login-complete" ]
+}
+
+@test "classify_auth_state: keychain-locked when pane mentions 'security unlock-keychain'" {
+  run bash -c "source '$LIB'; classify_auth_state 'Error: keychain locked.
+Run: security unlock-keychain ~/Library/Keychains/login.keychain-db'"
+  [ "$status" -eq 0 ]
+  [ "$output" = "keychain-locked" ]
+}
+
+@test "classify_auth_state: unclear when pane mentions 'login' but has no specific marker" {
+  run bash -c "source '$LIB'; classify_auth_state 'Verifying login credentials...'"
+  [ "$status" -eq 0 ]
+  [ "$output" = "unclear" ]
+}
+
+# --- ensure_logged_in (tmux-driven, orchestration) ---
+
+@test "ensure_logged_in: returns 0 immediately when first capture is authed" {
+  local dir="$BATS_TEST_TMPDIR/tmux-stub"
+  setup_tmux_stub "$dir"
+  seed_capture "$dir" 1 "Welcome back — Claude ready"
+  run bash -c "
+    source '$LIB'
+    log() { :; }
+    warn() { :; }
+    wait_pane_stable() { return 0; }
+    TARGET='fake:master'
+    ROLE='master'
+    ensure_logged_in
+  "
+  [ "$status" -eq 0 ]
+  [ ! -s "$dir/keystrokes.log" ] 2>/dev/null || [ ! -f "$dir/keystrokes.log" ]
+}
+
+@test "ensure_logged_in: full recovery flow not-logged-in → menu → success → dismiss" {
+  local dir="$BATS_TEST_TMPDIR/tmux-stub"
+  setup_tmux_stub "$dir"
+  seed_capture "$dir" 1 "Not logged in · Please run /login"
+  seed_capture "$dir" 2 "Select auth method:
+1. Claude subscription
+2. API key"
+  seed_capture "$dir" 3 "Login successful! Press Enter to continue."
+  seed_capture "$dir" 4 "Ready"
+  run bash -c "
+    source '$LIB'
+    log() { :; }
+    warn() { :; }
+    wait_pane_stable() { return 0; }
+    TARGET='fake:master'
+    ROLE='master'
+    ensure_logged_in
+  "
+  [ "$status" -eq 0 ]
+  # Keystrokes expected: literal '/login', then 3 Enters (submit /login, pick option 1, dismiss)
+  grep -q -- '/login' "$dir/keystrokes.log"
+  [ "$(grep -cFx 'Enter' "$dir/keystrokes.log" 2>/dev/null || echo 0)" -ge 3 ] || {
+    echo "info: expected 3 standalone Enters; keystrokes log:"; cat "$dir/keystrokes.log"; return 1; }
+}
+
+@test "ensure_logged_in: returns 1 on keychain-locked hint without sending keystrokes" {
+  local dir="$BATS_TEST_TMPDIR/tmux-stub"
+  setup_tmux_stub "$dir"
+  seed_capture "$dir" 1 "security unlock-keychain ~/Library/Keychains/login.keychain-db required"
+  run bash -c "
+    source '$LIB'
+    log() { :; }
+    WARN_LOG='$dir/warn.log'; warn() { printf '%s\n' \"\$*\" >> \"\$WARN_LOG\"; }
+    wait_pane_stable() { return 0; }
+    TARGET='fake:master'
+    ROLE='master'
+    ensure_logged_in
+  "
+  [ "$status" -eq 1 ]
+  grep -qi 'keychain' "$dir/warn.log"
+  [ ! -s "$dir/keystrokes.log" ] 2>/dev/null || [ ! -f "$dir/keystrokes.log" ]
+}
+
+@test "ensure_logged_in: returns 1 when menu never arrives after /login" {
+  local dir="$BATS_TEST_TMPDIR/tmux-stub"
+  setup_tmux_stub "$dir"
+  seed_capture "$dir" 1 "Not logged in"
+  seed_capture "$dir" 2 "Still not logged in (broken)"  # No 'Claude subscription' — no menu
+  run bash -c "
+    source '$LIB'
+    log() { :; }
+    warn() { :; }
+    wait_pane_stable() { return 0; }
+    TARGET='fake:master'
+    ROLE='master'
+    ensure_logged_in
+  "
+  [ "$status" -eq 1 ]
+  # /login was dispatched + exactly ONE Enter (to submit /login).
+  # NO second Enter should have been sent to "pick option 1".
+  [ "$(grep -cFx 'Enter' "$dir/keystrokes.log" 2>/dev/null || echo 0)" -eq 1 ] || {
+    echo "info: expected exactly 1 Enter; keystrokes log:"; cat "$dir/keystrokes.log"; return 1; }
+}
+
+@test "ensure_logged_in: returns 1 when initial capture is 'unclear'" {
+  local dir="$BATS_TEST_TMPDIR/tmux-stub"
+  setup_tmux_stub "$dir"
+  seed_capture "$dir" 1 "Checking login status..."
+  run bash -c "
+    source '$LIB'
+    log() { :; }
+    warn() { :; }
+    wait_pane_stable() { return 0; }
+    TARGET='fake:master'
+    ROLE='master'
+    ensure_logged_in
+  "
+  [ "$status" -eq 1 ]
+}
+
+# --- write_status ---
+
+@test "write_status: writes one-word status to /tmp path" {
+  local slug="cpt71test$$"
+  run bash -c "source '$LIB'; write_status '$slug' master auth-failed"
+  [ "$status" -eq 0 ]
+  [ -f "/tmp/project-launch-${slug}-master.status" ]
+  [ "$(cat "/tmp/project-launch-${slug}-master.status")" = "auth-failed" ]
+  rm -f "/tmp/project-launch-${slug}-master.status"
+}
+
+# --- End-to-end launch: auth gating + status file ---
+
+@test "launch e2e: exits 4 and writes auth-failed status when pane stays unauthed" {
+  local dir="$BATS_TEST_TMPDIR/e2e-stub"
+  setup_tmux_stub "$dir"
+  # capture.1 comes before the first send-keys "exec bash …" advances the counter;
+  # seed capture.2 for when the script runs wait_pane_stable + ensure_logged_in.
+  seed_capture "$dir" 2 "Not logged in · Please run /login"
+  seed_capture "$dir" 3 "Still broken"
+  local slug
+  slug=$(basename "$TEST_REPO")
+  local statusfile="/tmp/project-launch-${slug}-master.status"
+  rm -f "$statusfile"
+  run env PATH="$PATH" \
+    PROJECT_LAUNCH_READY_TIMEOUT=5 \
+    PROJECT_LAUNCH_STABLE_SAMPLES=1 \
+    PROJECT_LAUNCH_PROCESS_TIMEOUT=5 \
+    "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --prompt-pipe
+  [ "$status" -eq 4 ] || { echo "info: expected exit 4, got $status; output=$output"; rm -f "$statusfile"; return 1; }
+  [ -f "$statusfile" ] || { echo "info: status file not written at $statusfile"; return 1; }
+  grep -qi 'auth-failed' "$statusfile" || { echo "info: status file contents: $(cat "$statusfile")"; rm -f "$statusfile"; return 1; }
+  rm -f "$statusfile"
+}
+
+@test "launch e2e: passes through on already-authed pane and writes ok status" {
+  local dir="$BATS_TEST_TMPDIR/e2e-authed"
+  setup_tmux_stub "$dir"
+  seed_capture "$dir" 2 "Claude ready — what should we work on?"
+  # Ensure the identity file exists so the script attempts the paste path.
+  mkdir -p "$TEST_REPO/.worktrees/master/.claude/sessions"
+  printf 'Role: master\n' > "$TEST_REPO/.worktrees/master/.claude/sessions/master.md"
+  local slug
+  slug=$(basename "$TEST_REPO")
+  local statusfile="/tmp/project-launch-${slug}-master.status"
+  rm -f "$statusfile"
+  run env PATH="$PATH" \
+    PROJECT_LAUNCH_READY_TIMEOUT=5 \
+    PROJECT_LAUNCH_STABLE_SAMPLES=1 \
+    PROJECT_LAUNCH_PROCESS_TIMEOUT=5 \
+    "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --prompt-pipe
+  [ "$status" -eq 0 ] || { echo "info: expected exit 0, got $status; output=$output"; rm -f "$statusfile"; return 1; }
+  [ -f "$statusfile" ] || { echo "info: status file not written at $statusfile"; return 1; }
+  [ "$(cat "$statusfile")" = "ok" ] || { echo "info: status=$(cat "$statusfile")"; rm -f "$statusfile"; return 1; }
+  rm -f "$statusfile"
+}
