@@ -2,6 +2,18 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.2.2] - 2026-04-17
+
+### Removed (CPT-43 — dead-code cleanup)
+
+`tmux-iterm-tabs.sh --session <project>` mode has been removed entirely. No caller existed anywhere in the repo (confirmed via `grep -r 'tmux-iterm-tabs.sh.*--session'` returning only the script itself), and the mode expected tmux environment variables (`PROJECT`, `ROLE`, `ROLE_INDEX`) that `/project:launch` never set — if a future caller had wired it up unchanged, it would have run with empty env vars and silently misbehaved.
+
+Triager (2026-04-16) chose Option B (delete) over Option A (wire it up) since wiring was speculative for a code path nobody uses. Removed: header-comment documentation of the mode, `--session` arg-parser case, `TARGET_PROJECT` variable, the entire mode block (AppleScript builder, background generation calls, session-lock sentinel management), and the autostart-side `SESSION_LOCK` guard that existed only to prevent tab explosion *from* the deleted mode. Script is down from 382 lines to 231.
+
+Added `tests/iterm2-tmux-session-mode-removed.bats` with three assertions (`--session` now rejected as unknown arg, `--help` no longer mentions it, no source-level artefacts remain) so the orphan doesn't creep back in.
+
+Help text also updated — `Usage:` line no longer advertises the removed flag.
+
 ## [1.2.1] - 2026-04-15
 
 ### Fixed
