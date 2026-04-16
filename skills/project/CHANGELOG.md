@@ -2,6 +2,23 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.2] - 2026-04-16
+
+### Fixed
+
+- `project-launch-session.sh`: mktemp templates at lines 197 and 312 used
+  `-XXXXXX.sh` (Xs followed by a `.sh` suffix). BSD mktemp (macOS) and GNU
+  mktemp both require the Xs to be **trailing** — a suffix after them
+  silently returns the literal template unchanged. Result: setup-script
+  filenames were predictable and sequential launches of the same
+  project+role would collide (`File exists`). Changed template to
+  `.XXXXXX` (dot before the Xs) so the randomization is the trailing
+  component. The setup script is invoked via `exec bash '<path>'` and
+  does not need the `.sh` extension. (CPT-50)
+- Two regression tests added in `tests/project-launch-session.bats`
+  asserting (a) the setup-script path matches the randomized template
+  shape, and (b) two sequential dry-runs produce distinct paths.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)
