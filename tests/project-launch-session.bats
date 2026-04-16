@@ -361,6 +361,18 @@ case "$1" in
   capture-pane)
     n=$(cat "$dir/capture.counter" 2>/dev/null || echo 1)
     f="$dir/capture.$n.txt"
+    # Fall back to the highest-numbered seeded capture when the counter exceeds
+    # what the test seeded — simulates "pane stays in its last state". Without
+    # this, wait_pane_stable sees empty captures after state transitions and
+    # never reaches stability.
+    if [ ! -f "$f" ]; then
+      for prev in $(seq $((n - 1)) -1 1); do
+        if [ -f "$dir/capture.$prev.txt" ]; then
+          f="$dir/capture.$prev.txt"
+          break
+        fi
+      done
+    fi
     [ -f "$f" ] && cat "$f"
     ;;
   send-keys)
@@ -480,10 +492,14 @@ Run: security unlock-keychain ~/Library/Keychains/login.keychain-db'"
     ensure_logged_in
   "
   [ "$status" -eq 0 ]
-  # Keystrokes expected: literal '/login', then 3 Enters (submit /login, pick option 1, dismiss)
+  # Keystrokes expected: literal '/login', then 3 Enters (submit /login, pick option 1, dismiss).
+  # send-keys logs one LINE per tmux invocation (args joined), so grep for lines
+  # ending in " Enter" — there must be at least 3.
   grep -q -- '/login' "$dir/keystrokes.log"
-  [ "$(grep -cFx 'Enter' "$dir/keystrokes.log" 2>/dev/null || echo 0)" -ge 3 ] || {
-    echo "info: expected 3 standalone Enters; keystrokes log:"; cat "$dir/keystrokes.log"; return 1; }
+  local enters
+  enters=$(grep -cE ' Enter$' "$dir/keystrokes.log" 2>/dev/null || true)
+  [ "${enters:-0}" -ge 3 ] || {
+    echo "info: expected ≥3 Enter invocations (got ${enters}); keystrokes log:"; cat "$dir/keystrokes.log"; return 1; }
 }
 
 @test "ensure_logged_in: returns 1 on keychain-locked hint without sending keystrokes" {
@@ -521,8 +537,10 @@ Run: security unlock-keychain ~/Library/Keychains/login.keychain-db'"
   [ "$status" -eq 1 ]
   # /login was dispatched + exactly ONE Enter (to submit /login).
   # NO second Enter should have been sent to "pick option 1".
-  [ "$(grep -cFx 'Enter' "$dir/keystrokes.log" 2>/dev/null || echo 0)" -eq 1 ] || {
-    echo "info: expected exactly 1 Enter; keystrokes log:"; cat "$dir/keystrokes.log"; return 1; }
+  local enters
+  enters=$(grep -cE ' Enter$' "$dir/keystrokes.log" 2>/dev/null || true)
+  [ "${enters:-0}" -eq 1 ] || {
+    echo "info: expected exactly 1 Enter (got ${enters}); keystrokes log:"; cat "$dir/keystrokes.log"; return 1; }
 }
 
 @test "ensure_logged_in: returns 1 when initial capture is 'unclear'" {

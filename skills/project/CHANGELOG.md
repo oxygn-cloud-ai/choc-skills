@@ -2,6 +2,34 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.2] - 2026-04-17
+
+### Fixed (CPT-71 — auto-detect unauthenticated Claude panes at launch)
+
+Closes the silent-failure class where `wait_pane_stable` returns "success" on a stuck `Not logged in · Please run /login` screen, then the identity prompt + `/loop` dispatch land in the auth-screen input buffer and vanish. Observed 2026-04-17 on master + triager (keychain-lock race: first session triggers unlock dialog, last session launches after the keychain re-locks).
+
+- `skills/project/bin/_launch-auth.sh` — new library with three functions:
+  - `classify_auth_state` — pure pane-text classifier (`authed` / `not-logged-in` / `login-menu` / `login-complete` / `keychain-locked` / `unclear`). Priority-ordered so the most-specific marker wins; unit-testable without tmux.
+  - `ensure_logged_in` — tmux orchestrator. For a `not-logged-in` pane: send `/login` → Enter → (expect menu) → Enter → (expect success) → Enter. Any state mismatch logs a warn and returns 1 so the caller can refuse the identity-prompt paste.
+  - `write_status` — persists one-word status to `/tmp/project-launch-<slug>-<role>.status` for the launch report.
+- `skills/project/bin/project-launch-session.sh` — sources `_launch-auth.sh`; calls `ensure_logged_in` between the initial `wait_pane_stable` and the identity-prompt paste; writes status on every exit path (`ok` / `auth-failed` / `timeout` / `idle-skipped`); exits 4 when auth cannot be recovered (no identity prompt pasted, no `/loop` dispatched).
+- `skills/project/commands/launch.md`:
+  - New **Step 0.1 Pre-flight keychain unlock** — on macOS, `security unlock-keychain ~/Library/Keychains/login.keychain-db` runs once before the role loop, preventing the keychain-relock race.
+  - **Step 8 launch report** gets an **Auth** column mapping the status file to glyphs: `✓` (ok), `↻` (auto-recovered), `✗` (auth-failed — needs manual `/login`), `⏱` (timeout), `·` (idle-skipped), `?` (missing / unknown).
+
+### Tests (CPT-71)
+
+`tests/project-launch-session.bats` gains 14 tests (38 total, up from 24). Tests use a PATH-first tmux + sleep stub: `capture-pane` serves `$dir/capture.<N>.txt` (counter advances only on `send-keys Enter`, simulating post-submit state changes); `send-keys` logs to `keystrokes.log`; sleep is no-oped so `wait_pane_stable`'s 1 s polls don't add test latency. Coverage:
+
+- 6× `classify_auth_state` fixture cases (one per output value).
+- 5× `ensure_logged_in` orchestration flows (authed passthrough, full recovery, keychain-locked refusal, menu-never-arrives abort, unclear initial state).
+- 1× `write_status` file path + content.
+- 2× end-to-end launch: exit 4 + `auth-failed` on stuck unauth'd pane; exit 0 + `ok` on authed pane.
+
+### Out of scope (per CPT-71 §"Out of scope")
+
+Fresh-machine OAuth browser-URL flow (requires human); alternative auth methods (Bedrock / Vertex / Console); `wait_pane_stable` algorithm changes; post-launch auth monitoring.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

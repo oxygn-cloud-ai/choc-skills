@@ -25,6 +25,24 @@ Verify dependencies exist:
 - `command -v bash` — if missing: **STOP** (the per-role launch script requires bash). macOS and Linux always have bash; this check guards against exotic environments.
 - `command -v ~/.local/bin/project-launch-session.sh` — if missing: **STOP** with error: "project-launch-session.sh not installed. Re-run `~/.claude/skills/project/install.sh --force`."
 
+## Step 0.1: Pre-flight keychain unlock (macOS, CPT-71)
+
+On macOS, the first role whose Claude invocation reads OAuth creds from the keychain triggers an interactive unlock dialog. While that dialog is open, subsequent role launches that race ahead see `Not logged in · Please run /login` — their identity prompt and `/loop` dispatch land in the auth-screen input buffer and silently vanish (observed 2026-04-17 on master + triager).
+
+Pre-unlocking the keychain once, BEFORE the role loop, makes every subsequent Claude launch inherit a ready keychain:
+
+```bash
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  echo "About to launch N Claude sessions. Each reads OAuth creds from the login keychain."
+  echo "Unlocking the keychain now avoids a race where later sessions see 'Not logged in'."
+  echo "You will be prompted for your login password (once):"
+  security unlock-keychain ~/Library/Keychains/login.keychain-db || \
+    echo "[WARN] unlock failed — continuing, but expect some sessions to require manual /login"
+fi
+```
+
+Linux skips this step (no macOS keychain). The unlock is advisory; even if it fails the per-pane `ensure_logged_in` in `project-launch-session.sh` will still detect unauthenticated panes and attempt `/login` recovery.
+
 ## Step 1: Detect project (worktree-aware)
 
 ```bash
@@ -243,7 +261,32 @@ session restart that happens once per day.
 tmux select-window -t "$PROJECT_SLUG:master"
 ```
 
-Display launch report:
+Display launch report. The **Auth** column (CPT-71) reads `/tmp/project-launch-<slug>-<role>.status` per role — populated by each `project-launch-session.sh` invocation — and maps the one-word status to a glyph:
+
+| status file content | Auth column | Meaning |
+|---------------------|-------------|---------|
+| `ok`                | `✓`         | Pane is authed and ready |
+| `auth-recovered`    | `↻`         | Pane was unauth'd but `ensure_logged_in` completed `/login` automatically |
+| `auth-failed`       | `✗`         | Pane is unauth'd and auto-recovery did not complete — **operator must run `/login` manually** |
+| `timeout`           | `⏱`         | Claude did not reach stable state in `READY_TIMEOUT` / `PROCESS_TIMEOUT` |
+| `idle-skipped`      | `·`         | Role skipped via `--skip-idle` |
+| missing file        | `?`         | Status not written — treat as unknown / failed |
+
+```bash
+auth_glyph() {
+  local slug="$1" role="$2"
+  local f="/tmp/project-launch-${slug}-${role}.status"
+  [[ -f "$f" ]] || { printf '?'; return; }
+  case "$(cat "$f")" in
+    ok)             printf '✓'  ;;
+    auth-recovered) printf '↻' ;;
+    auth-failed)    printf '✗'  ;;
+    timeout)        printf '⏱' ;;
+    idle-skipped)   printf '·'  ;;
+    *)              printf '?'  ;;
+  esac
+}
+```
 
 ```
 project launch — $PROJECT_NAME
@@ -252,19 +295,22 @@ project launch — $PROJECT_NAME
   Windows: $N_LAUNCHED / $N_TOTAL
   Claude:  $N_WITH_CLAUDE running
 
-  | # | Role        | Status  | Claude | Prompt | Loop  |
-  |---|-------------|---------|--------|--------|-------|
-  | a | master      | created | ●      | ✓      | 5m    |
-  | b | planner     | created | ●      | ✓      | —     |
-  | c | implementer | created | ○ idle | —      | 10m   |
-  | d | fixer       | created | ○ idle | —      | 10m   |
-  | e | merger      | created | ●      | ✓      | 10m   |
-  | f | chk1        | created | ●      | ✓      | 15m   |
-  | g | chk2        | created | ●      | ✓      | 15m   |
-  | h | performance | created | ○ idle | —      | —     |
-  | i | playtester  | created | ○ idle | —      | —     |
-  | j | reviewer    | created | ●      | ✓      | 10m   |
-  | k | triager     | created | ●      | ✓      | 10m   |
+  | # | Role        | Status  | Claude | Auth | Prompt | Loop  |
+  |---|-------------|---------|--------|------|--------|-------|
+  | a | master      | created | ●      | ✓    | ✓      | 5m    |
+  | b | planner     | created | ●      | ✓    | ✓      | —     |
+  | c | implementer | created | ○ idle | ·    | —      | 10m   |
+  | d | fixer       | created | ○ idle | ·    | —      | 10m   |
+  | e | merger      | created | ●      | ↻    | ✓      | 10m   |
+  | f | chk1        | created | ●      | ✓    | ✓      | 15m   |
+  | g | chk2        | created | ●      | ✓    | ✓      | 15m   |
+  | h | performance | created | ○ idle | ·    | —      | —     |
+  | i | playtester  | created | ○ idle | ·    | —      | —     |
+  | j | reviewer    | created | ●      | ✓    | ✓      | 10m   |
+  | k | triager     | created | ●      | ✗    | —      | skipped |
+
+  Any row with Auth = ✗ needs manual /login in that pane. After /login completes,
+  re-run /project:launch for that role to inject the identity prompt and /loop.
 
   To attach: tmux attach -t $PROJECT_SLUG
   To navigate: Prefix+P for project picker, or tmux select-window -t $PROJECT_SLUG:<role>

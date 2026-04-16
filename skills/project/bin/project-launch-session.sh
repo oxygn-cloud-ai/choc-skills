@@ -100,6 +100,19 @@ log()  { printf '[%s] %s\n' "$ROLE" "$*"; }
 warn() { printf '[%s] [WARN] %s\n' "$ROLE" "$*" >&2; }
 die()  { printf '[%s] [FAIL] %s\n' "$ROLE" "$*" >&2; exit "${2:-1}"; }
 
+# Project slug used in /tmp status-file paths (CPT-71). basename is safe as the
+# content tag — collisions are possible across worktrees named the same in
+# different parent dirs but that's also true for the existing setup scripts.
+SLUG=$(basename "$REPO_ROOT")
+
+# CPT-71: auth detection + /login orchestration live in _launch-auth.sh so the
+# decision logic is bats-testable without a real tmux. Source depends on log(),
+# warn(), and wait_pane_stable() being defined — wait_pane_stable comes later
+# in this file, but bash only resolves function names at CALL time so the
+# forward reference is fine.
+# shellcheck source=_launch-auth.sh
+source "$(dirname "$0")/_launch-auth.sh"
+
 # Uppercase + sanitize dir name to a valid shell identifier, then append _PATH.
 # 'choc-skills' → CHOC_SKILLS_PATH. '42repo' → _42REPO_PATH.
 compute_project_env_name() {
@@ -174,6 +187,7 @@ if [ "$SKIP_IDLE" = "true" ]; then
   ahead=$(git -C "$WORKTREE" rev-list --count "main..session/$ROLE" 2>/dev/null || echo 0)
   if [ "$dirty" = "0" ] && [ "$ahead" = "0" ]; then
     log "idle (no dirty files, no commits ahead) — skipping Claude launch for this role"
+    write_status "$SLUG" "$ROLE" "idle-skipped"
     exit 0
   fi
 fi
@@ -328,10 +342,22 @@ tmux send-keys -t "$TARGET" "exec bash '$PANE_SETUP'" Enter
 # longer on first run).
 if ! wait_pane_stable "$READY_TIMEOUT"; then
   warn "Claude did not reach stable state within ${READY_TIMEOUT}s; leaving window as-is, NOT dispatching prompt or /loop"
+  write_status "$SLUG" "$ROLE" "timeout"
   exit 4
 fi
 
 log "Claude ready"
+
+# CPT-71: verify authentication BEFORE pasting identity or dispatching /loop.
+# A stuck "Not logged in · Please run /login" screen counts as "stable" by
+# wait_pane_stable's definition — without this gate, the identity prompt and
+# /loop dispatch get eaten by the auth-screen input buffer (silent failure
+# first seen 2026-04-17 on master + triager panes).
+if ! ensure_logged_in; then
+  warn "Claude is not authenticated in this pane — SKIPPING identity prompt and /loop dispatch"
+  write_status "$SLUG" "$ROLE" "auth-failed"
+  exit 4
+fi
 
 # Paste identity prompt (if requested and available)
 if [ "$PROMPT_PIPE" = "true" ] && [ -f "$SESSION_PROMPT" ]; then
@@ -339,6 +365,7 @@ if [ "$PROMPT_PIPE" = "true" ] && [ -f "$SESSION_PROMPT" ]; then
   paste_file_and_submit "$SESSION_PROMPT"
   if ! wait_pane_stable "$PROCESS_TIMEOUT"; then
     warn "identity prompt did not finish processing within ${PROCESS_TIMEOUT}s; NOT dispatching /loop"
+    write_status "$SLUG" "$ROLE" "timeout"
     exit 4
   fi
   log "identity prompt processed"
@@ -365,4 +392,5 @@ else
 fi
 
 log "OK"
+write_status "$SLUG" "$ROLE" "ok"
 exit 0
