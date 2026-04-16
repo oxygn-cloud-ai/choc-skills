@@ -2,16 +2,21 @@
 # Open iTerm2 tabs for tmux sessions.
 #
 # Modes:
-#   tmux-iterm-tabs.sh                    — autostart: tabs for all unattached sessions
-#   tmux-iterm-tabs.sh --session <project> — project launch: tabs for one project's role sessions
-#
-# In --session mode, sessions are identified via tmux environment variables:
-#   PROJECT=<project-slug>  ROLE=<role-name>  ROLE_INDEX=<N>
-# These are set by /project:launch when creating per-role sessions.
+#   tmux-iterm-tabs.sh                     — autostart: opt-in via AUTOSTART_ENABLED=true in
+#                                            ~/.config/iterm2-tmux/config. Default is no-op
+#                                            so a shell launch inside iTerm2 no longer opens
+#                                            a tab per global tmux session (the old "tab per
+#                                            /Repos/* entry" behavior that pre-dated the
+#                                            per-project-window architecture).
+#   tmux-iterm-tabs.sh --session <project> — open one iTerm2 window for a /project:launch
+#                                            tmux session, with one tab per WINDOW (role).
+#                                            Iterates `tmux list-windows -t <project>`; does
+#                                            NOT enumerate global tmux sessions.
 #
 # Environment overrides:
-#   TMUX_REPOS_DIR        — path to repos directory (default: ~/Repos)
-#   TMUX_SESSIONS_SCRIPT  — path to tmux-sessions.sh (default: alongside this script)
+#   TMUX_REPOS_DIR        — path to repos directory (autostart mode only; default: ~/Repos)
+#   TMUX_SESSIONS_SCRIPT  — path to tmux-sessions.sh (autostart mode only)
+#   AUTOSTART_ENABLED     — "true" to allow autostart mode to do work (default: no-op)
 set -euo pipefail
 
 # Source user config if available
@@ -95,6 +100,15 @@ generate_background() {
   fi
 }
 
+# --- Autostart opt-in gate (runs BEFORE preflight) ---
+# Autostart mode (no --session arg) used to open a tab per global tmux session.
+# On hosts with many pre-existing tmux sessions this produced tab spam for
+# unrelated projects. Default is now no-op unless explicitly enabled. Gate runs
+# before the preflight checks so Linux/CI (no iTerm2, no tmux) can exit clean.
+if [[ -z "$TARGET_PROJECT" ]] && [[ "${AUTOSTART_ENABLED:-false}" != "true" ]]; then
+  exit 0
+fi
+
 # --- Preflight checks ---
 
 if ! command -v tmux &>/dev/null; then
@@ -113,73 +127,84 @@ if ! pgrep -qf "iTerm"; then
 fi
 
 # ===========================================================================
-# MODE: --session <project> (per-role sessions for one project)
+# MODE: --session <project> (one iTerm2 tab per window of a single tmux session)
 # ===========================================================================
+#
+# Architecture note: /project:launch creates ONE tmux session per project, with
+# one named WINDOW per role. This mode iterates those windows — NOT sessions —
+# so we don't leak tabs from other projects' tmux sessions. Earlier iterations
+# of this mode filtered sessions by a PROJECT tmux env var that /project:launch
+# never actually set, so it produced zero tabs. Now we use `tmux list-windows`
+# on the single project session, which is the authoritative source.
+
+# Helper: render an AppleScript line that sets the background image if one exists.
+# Used in both --session and autostart paths; defined once here at file scope so
+# it's available to every mode below.
+bg_applescript_line() {
+  local sname="$1"
+  local bgfile="$BG_DIR/${sname}.png"
+  if [[ -f "$bgfile" ]]; then
+    local safe_bg
+    safe_bg="${bgfile//\\/\\\\}"
+    safe_bg="${safe_bg//\"/\\\"}"
+    echo "      set background image to \"$safe_bg\""
+  fi
+}
 
 if [[ -n "$TARGET_PROJECT" ]]; then
-  # Collect sessions belonging to this project via tmux env vars
-  session_entries=()
-  while IFS= read -r s; do
-    [[ -z "$s" ]] && continue
-    proj=$(tmux show-environment -t "$s" PROJECT 2>/dev/null | cut -d= -f2- 2>/dev/null) || continue
-    [[ "$proj" == "$TARGET_PROJECT" ]] || continue
-    role=$(tmux show-environment -t "$s" ROLE 2>/dev/null | cut -d= -f2- 2>/dev/null) || role="$s"
-    role_idx=$(tmux show-environment -t "$s" ROLE_INDEX 2>/dev/null | cut -d= -f2- 2>/dev/null) || role_idx="99"
-    session_entries+=("${role_idx}:${role}:${s}")
-  done < <(tmux ls -F '#{session_name}' 2>/dev/null)
-
-  if [[ ${#session_entries[@]} -eq 0 ]]; then
-    echo "[ERROR] No tmux sessions found for project '$TARGET_PROJECT'." >&2
-    echo "Run /project:launch first to create per-role sessions." >&2
+  # 1. Verify the project's tmux session exists. If not, /project:launch has not
+  #    run yet (or was run in --dry-run mode), and there are no windows to tab.
+  if ! tmux has-session -t "=$TARGET_PROJECT" 2>/dev/null; then
+    echo "[ERROR] tmux session '$TARGET_PROJECT' does not exist." >&2
+    echo "Run /project:launch first to create it (without --dry-run)." >&2
     exit 1
   fi
 
-  # Sort by ROLE_INDEX to preserve architecture-defined order
-  sorted_entries=()
+  # 2. Enumerate WINDOWS of the project session. Format: <idx>|<name>
+  #    We pipe through read to an array to avoid mapfile portability issues
+  #    on older bash (macOS default bash 3.2 does not have mapfile).
+  win_entries=()
   while IFS= read -r line; do
-    [[ -n "$line" ]] && sorted_entries+=("$line")
-  done < <(printf '%s\n' "${session_entries[@]}" | sort -t: -k1 -n)
+    [[ -n "$line" ]] && win_entries+=("$line")
+  done < <(tmux list-windows -t "=$TARGET_PROJECT" \
+    -F '#{window_index}|#{window_name}' 2>/dev/null)
 
-  # Generate backgrounds for each role
-  for entry in "${sorted_entries[@]}"; do
-    IFS=: read -r idx role session_name <<< "$entry"
-    generate_background "$role" "$session_name" "$idx"
+  if [[ ${#win_entries[@]} -eq 0 ]]; then
+    echo "[ERROR] tmux session '$TARGET_PROJECT' has no windows." >&2
+    exit 1
+  fi
+
+  # 3. Generate a distinct background image per role-window. The BG filename
+  #    namespaces on project name so two different projects can each have a
+  #    "master" window without clobbering each other's backgrounds.
+  for entry in "${win_entries[@]}"; do
+    IFS='|' read -r w_idx w_name <<< "$entry"
+    bg_key="${TARGET_PROJECT}-${w_name}"
+    generate_background "$w_name" "$bg_key" "$w_idx"
   done
 
-  # Build AppleScript — create a NEW window named after the project
+  # 4. Build AppleScript — create a new iTerm2 window, one tab per window.
   TMPSCRIPT=$(mktemp /tmp/tmux-iterm.XXXXXX) || {
     echo "[ERROR] Failed to create temp file." >&2
     exit 1
   }
   trap 'rm -f "$TMPSCRIPT"' EXIT
 
-  # First entry gets the new window
-  IFS=: read -r first_idx first_role first_session <<< "${sorted_entries[0]}"
+  # First role-window gets the freshly-created iTerm2 window's initial session.
+  IFS='|' read -r first_idx first_name <<< "${win_entries[0]}"
   safe_project="$(escape_applescript "$TARGET_PROJECT")"
-  safe_first_role="$(escape_applescript "$first_role")"
-  safe_first_session="$(escape_applescript "$first_session")"
+  safe_first_name="$(escape_applescript "$first_name")"
+  first_bg_line="$(bg_applescript_line "${TARGET_PROJECT}-${first_name}")"
 
-  # Build background image AppleScript snippet for a session
-  bg_applescript_line() {
-    local sname="$1"
-    local bgfile="$BG_DIR/${sname}.png"
-    if [[ -f "$bgfile" ]]; then
-      local safe_bg
-      safe_bg="${bgfile//\\/\\\\}"
-      safe_bg="${safe_bg//\"/\\\"}"
-      echo "      set background image to \"$safe_bg\""
-    fi
-  }
-
-  first_bg_line="$(bg_applescript_line "$first_session")"
-
-  # Suppress autostart: write sentinel so autostart mode exits early.
-  # Also claim the directory lock with fresh mtime so .zshrc hooks
-  # opened by the new tabs see a valid lock.
+  # Lock sentinels suppress the autostart path if a user opens a new shell
+  # during/right-after tab creation; see autostart guard below.
   echo "$TARGET_PROJECT" > "/tmp/.iterm2-tmux-session-active"
   rm -rf "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
   mkdir "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
 
+  # Attach command: the 1st arg is the tmux session; the 5th arg is the window
+  # name to select-window into after attach. tmux-attach-session.sh handles
+  # both args.
   cat > "$TMPSCRIPT" << HEADER
 tell application "iTerm2"
   activate
@@ -187,29 +212,26 @@ tell application "iTerm2"
   set newWindow to current window
   tell newWindow
     tell current session
-      set name to "$safe_first_role"
+      set name to "$safe_first_name"
 ${first_bg_line}
-      write text "exec $ATTACH_SCRIPT '$safe_first_session' '$safe_first_role' $first_idx '$safe_project'"
+      write text "exec $ATTACH_SCRIPT '$safe_project' '$safe_first_name' $first_idx '$safe_project' '$safe_first_name'"
     end tell
 HEADER
 
-  # Remaining entries get new tabs
+  # Remaining role-windows become additional tabs within the same iTerm2 window.
   rest_entries=()
-  if [[ ${#sorted_entries[@]} -gt 1 ]]; then
-    rest_entries=("${sorted_entries[@]:1}")
-  fi
+  [[ ${#win_entries[@]} -gt 1 ]] && rest_entries=("${win_entries[@]:1}")
 
   for entry in ${rest_entries[@]+"${rest_entries[@]}"}; do
-    IFS=: read -r idx role session_name <<< "$entry"
-    safe_role="$(escape_applescript "$role")"
-    safe_session="$(escape_applescript "$session_name")"
-    tab_bg_line="$(bg_applescript_line "$session_name")"
+    IFS='|' read -r w_idx w_name <<< "$entry"
+    safe_name="$(escape_applescript "$w_name")"
+    tab_bg_line="$(bg_applescript_line "${TARGET_PROJECT}-${w_name}")"
     cat >> "$TMPSCRIPT" << EOF
     set newTab to (create tab with default profile)
     tell current session of newTab
-      set name to "$safe_role"
+      set name to "$safe_name"
 ${tab_bg_line}
-      write text "exec $ATTACH_SCRIPT '$safe_session' '$safe_role' $idx '$safe_project'"
+      write text "exec $ATTACH_SCRIPT '$safe_project' '$safe_name' $w_idx '$safe_project' '$safe_name'"
     end tell
 EOF
   done
@@ -236,7 +258,7 @@ FOOTER
     exit 1
   fi
 
-  # Refresh locks after AppleScript completes to extend the suppression window
+  # Refresh locks post-AppleScript so late-arriving shells still see the lock.
   touch "/tmp/.iterm2-tmux-session-active" 2>/dev/null || true
   touch "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
 
@@ -244,8 +266,17 @@ FOOTER
 fi
 
 # ===========================================================================
-# MODE: autostart (all unattached sessions)
+# MODE: autostart (all unattached sessions) — OPT-IN via AUTOSTART_ENABLED=true
 # ===========================================================================
+#
+# This path used to run unconditionally from ~/.zshrc whenever a shell opened
+# inside iTerm2. That was fine when each /Repos/* subdir had its own tmux
+# session and the user wanted one iTerm2 tab per project. It is WRONG for the
+# per-project-window architecture: it produced a tab per global tmux session
+# (17+ on this host), one of which might attach to the "right" project while
+# the rest are noise. The opt-in gate above this point (just after arg parsing)
+# exits early when AUTOSTART_ENABLED is not true — so reaching this section
+# means the user explicitly opted in.
 
 # Skip if --session mode recently ran (prevents tab explosion from new shells)
 SESSION_LOCK="/tmp/.iterm2-tmux-session-active"

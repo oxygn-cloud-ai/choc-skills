@@ -1,6 +1,11 @@
 #!/bin/bash
 # Set up iTerm2 tab color, then attach tmux.
-# Usage: tmux-attach-session.sh <session> <label> <color_index> [window_title]
+# Usage: tmux-attach-session.sh <session> <label> <color_index> [window_title] [window_name]
+#
+# Args 1-4 exist for backwards compat. Arg 5 (optional) is the tmux window name
+# to select within the session — needed for the per-project-window architecture
+# where /project:launch creates one tmux session with many windows and each
+# iTerm2 tab should attach into a specific window.
 set -euo pipefail
 
 SESSION="${1:?session required}"
@@ -8,6 +13,7 @@ SESSION="${1:?session required}"
 INDEX="${3:-0}"
 # $4 accepted for compatibility; window title is set at the iTerm2 level
 : "${4:-}"
+WINDOW_NAME="${5:-}"
 
 # Tab color palette (R G B)
 TAB_COLORS=(
@@ -37,5 +43,12 @@ printf '\033]6;1;bg;blue;brightness;%s\a' "$b"
 # no confirmation dialog). The escape code SetBackgroundImageFile triggers an
 # iTerm2 security prompt, so we avoid it here.
 
-# Replace this process with tmux
-exec tmux attach -t "$SESSION"
+# Replace this process with tmux. If a window_name is supplied, attach to the
+# session AND select that window; otherwise let tmux pick the active window.
+# `tmux attach -t session:window` is documented shorthand for "attach session,
+# then switch to this window" — verified via `man tmux` target-window.
+if [ -n "$WINDOW_NAME" ]; then
+  exec tmux attach -t "${SESSION}:${WINDOW_NAME}"
+else
+  exec tmux attach -t "$SESSION"
+fi

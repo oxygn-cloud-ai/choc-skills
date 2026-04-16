@@ -2,6 +2,30 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.2] - 2026-04-17
+
+### Fixed
+
+- `/project:launch` now opens one iTerm2 window with one tab per role on macOS,
+  scoped to the current project's tmux session. Previously the command created
+  the tmux session + 11 windows but never touched iTerm2, so the user had to
+  attach manually from whichever terminal was focused. A sibling
+  `tmux-iterm-tabs.sh` script existed but iterated `tmux ls` globally and
+  filtered by tmux env vars `PROJECT`/`ROLE`/`ROLE_INDEX` that
+  `project-launch-session.sh` never set — it found zero matches and did
+  nothing useful. See `skills/iterm2-tmux/CHANGELOG.md` for the helper-side
+  change.
+
+### Added
+
+- **Step 8a — iTerm2 tab open**: after all roles launch, `launch.md` invokes
+  `~/.local/bin/tmux-iterm-tabs.sh --session "$PROJECT_SLUG"` in single-project
+  mode on macOS with iTerm2 running. Dry-run, `--all` mode, non-macOS, and no
+  iTerm2 all skip the step. AppleScript/helper failure does not abort the
+  launch — the tmux session stays up and the report tells the user how to
+  attach manually.
+- Launch report now includes an `iTerm2:` line (`opened` / `skipped` / `failed`).
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

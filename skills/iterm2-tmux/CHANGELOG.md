@@ -2,6 +2,36 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.3.0] - 2026-04-17
+
+### Fixed
+
+- **`--session <project>` mode now iterates `tmux list-windows -t <project>`
+  instead of enumerating global `tmux ls` and filtering by tmux env vars.**
+  The old logic required each role to be its own tmux session tagged with
+  `PROJECT=…` / `ROLE=…` / `ROLE_INDEX=…` environment variables. That
+  architecture was superseded in the project skill (one session per project
+  with one WINDOW per role), but this script was never updated — so the
+  helper silently produced zero tabs on every `/project:launch` invocation.
+  Now it verifies the tmux session exists, lists its windows, and opens one
+  iTerm2 tab per window. Each tab exec-attaches into a specific window via
+  `tmux attach -t session:window`.
+
+- **Autostart is now opt-in (`AUTOSTART_ENABLED=true` in config).** Previously
+  any iTerm2 shell launch would fire `tmux-iterm-tabs.sh` with no args, which
+  enumerated every unattached global tmux session and opened a tab per
+  session — on a host with 17+ project sessions that produced 17+ tabs of
+  unrelated projects. This was correct for the old one-tmux-session-per-repo
+  architecture but wrong for the per-project-window design. Default is now
+  no-op; existing users can restore the behavior by adding
+  `AUTOSTART_ENABLED=true` to `~/.config/iterm2-tmux/config`.
+
+### Added
+
+- `tmux-attach-session.sh` accepts an optional 5th arg `[window_name]`. When
+  set, it exec-attaches into `session:window_name` instead of just `session`.
+  Backwards compatible — args 1-4 unchanged, arg 5 is optional.
+
 ## [1.2.1] - 2026-04-15
 
 ### Fixed

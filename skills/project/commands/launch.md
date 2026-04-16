@@ -243,6 +243,26 @@ session restart that happens once per day.
 tmux select-window -t "$PROJECT_SLUG:master"
 ```
 
+### Step 8a: Open iTerm2 tabs (macOS + iTerm2 + not dry-run, single-project mode only)
+
+```bash
+ITERM_STATUS="skipped"
+if [ "$DRY_RUN" != "true" ] \
+   && [ "$(uname -s)" = "Darwin" ] \
+   && pgrep -qf "iTerm" \
+   && [ -x ~/.local/bin/tmux-iterm-tabs.sh ]; then
+  if ~/.local/bin/tmux-iterm-tabs.sh --session "$PROJECT_SLUG" 2>&1; then
+    ITERM_STATUS="opened"
+  else
+    ITERM_STATUS="failed — tmux session still running; attach manually with: tmux attach -t $PROJECT_SLUG"
+  fi
+fi
+```
+
+- **Scope**: only invoked in single-project mode and only on macOS with iTerm2 running. Skipped entirely in `--all` mode (would spam one iTerm2 window per project) and in dry-run.
+- **Architecture contract**: `tmux-iterm-tabs.sh --session <slug>` iterates `tmux list-windows -t <slug>` (the windows created in Step 6) and opens one iTerm2 tab per window, each tab exec-ing `tmux attach -t <slug>:<role>`. It does NOT enumerate global tmux sessions, so other projects' sessions are not tabbed.
+- **Failure mode**: if iTerm2 is not running or AppleScript fails, the tmux session is left running and the report tells the user how to attach manually. Launch does not abort.
+
 Display launch report:
 
 ```
@@ -251,6 +271,7 @@ project launch — $PROJECT_NAME
   Session: $PROJECT_SLUG
   Windows: $N_LAUNCHED / $N_TOTAL
   Claude:  $N_WITH_CLAUDE running
+  iTerm2:  $ITERM_STATUS
 
   | # | Role        | Status  | Claude | Prompt | Loop  |
   |---|-------------|---------|--------|--------|-------|
@@ -307,4 +328,6 @@ project launch --all — $N projects launched
 - [ ] Dry run passes `--dry-run` to `project-launch-session.sh` and prints the full setup-script contents without executing
 - [ ] --all mode launches all projects in TMUX_REPOS_DIR
 - [ ] Report shows accurate status table with loop intervals and readiness-timeout markers
+- [ ] Step 8a invokes `~/.local/bin/tmux-iterm-tabs.sh --session "$PROJECT_SLUG"` in single-project mode on macOS when iTerm2 is running. Skipped for --dry-run, --all, non-macOS, or iTerm2 not running. Failure does not abort the launch.
+- [ ] `tmux-iterm-tabs.sh --session` iterates `tmux list-windows -t <slug>` (NOT global `tmux ls`), so tabs are scoped to the current project's windows only — no leakage from other projects' tmux sessions.
 </success_criteria>
