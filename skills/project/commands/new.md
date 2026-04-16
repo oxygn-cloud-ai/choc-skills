@@ -52,6 +52,21 @@ Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions, worktree la
 
 Read `~/.claude/PROJECT_STANDARDS.md` for branch protection, CI templates, and documentation requirements.
 
+## Step 1.5: Preflight check for PreToolUse worktree hook (WARN not STOP)
+
+Tier 1 of the worktree-creation protection (MULTI_SESSION_ARCHITECTURE.md §7.1) depends on `~/.claude/hooks/block-worktree-add.sh` being installed and registered in `~/.claude/settings.json`. Scaffolding a new project on a machine where the hook is missing still produces a valid project, but role sessions on that machine won't have the hook guard. Warn the operator so they can remediate before launching.
+
+```bash
+test -x ~/.claude/hooks/block-worktree-add.sh \
+  || WARN "worktree hook missing at ~/.claude/hooks/block-worktree-add.sh — run install.sh --force on the /project skill to restore it"
+
+jq -e '.hooks.PreToolUse[]? | select(.matcher == "Bash") | .hooks[]? | select(.command | test("block-worktree-add\\.sh$"))' \
+  ~/.claude/settings.json >/dev/null 2>&1 \
+  || WARN "block-worktree-add.sh is not registered in ~/.claude/settings.json hooks.PreToolUse[] — run install.sh --force"
+```
+
+These are warnings not hard stops — the generated project is still standards-compliant; it's the host machine's enforcement posture that's weak. Operator can clear the warning with a re-install.
+
 ## Step 2: Gather basics
 
 Ask via AskUserQuestion:
@@ -84,13 +99,13 @@ Determine the GitHub owner from `gh api user --jq .login`.
 
 ## Step 4: Interview for PHILOSOPHY.md
 
-For Software projects (and Non-Software if user opts in), ask:
+PHILOSOPHY.md is **mandatory for every project** regardless of type — see `~/.claude/PROJECT_STANDARDS.md` §6 and global CLAUDE.md "Every project must have a PHILOSOPHY.md file." Ask via AskUserQuestion:
 
 1. "What is the vision for this project? What problem does it solve or what goal does it serve?"
 2. "What are your non-negotiable design principles?"
 3. "What is explicitly out of scope? What will this project NOT do?"
 
-Write `PHILOSOPHY.md` from the answers.
+Write `PHILOSOPHY.md` from the answers. If the operator passes `--minimal` (or asks to defer the interview), write a skeleton PHILOSOPHY.md with TODO markers for each question and flag it in the summary so they know to fill it in before the first significant commit.
 
 ## Step 5: Scaffold required docs
 
@@ -105,7 +120,10 @@ Create these files at the repo root:
 **ARCHITECTURE.md** (Software only) — title, version 0.1.0, placeholder sections:
 - Design Philosophy, System Overview, Module Reference, Endpoints (if applicable), State Files, Security Model, Error Handling
 
-**CLAUDE.md** — project name, type, description, Jira epic (placeholder until step 7), key files, development commands (language-specific).
+**CLAUDE.md** — project name, type, description, Jira epic (placeholder until step 7), key files, development commands (language-specific). In addition the generated `CLAUDE.md` MUST contain:
+
+- **"## Verification discipline" section** — either inline the 7 non-negotiable rules from global `~/.claude/CLAUDE.md` (verify-before-asserting, never-flip-on-authority, subagent-output-is-a-hypothesis, checkable-claim-triggers, recalibrate-cost-model, recursive-self-check, never-take-shortcuts) OR include an explicit pointer: "See `~/.claude/CLAUDE.md` for global verification discipline — the rules there apply to every project including this one." Inlining is preferred so the rules survive a `/clear` of the role session that forgets to read the global file.
+- **"## Coordination" section** stating: "Jira epic `<epic-key>` is the coordination mechanism for this project. GitHub Issues are disabled and GitHub PRs are not used — **do not run `gh pr create`**. Push feature/fix branches; the Reviewer session posts review comments to Jira; the Merger session squash-merges after Triager approval." This captures the no-PR policy so role sessions on new projects don't default to `gh pr create`.
 
 **PROJECT_CONFIG.json** — structured project configuration. Generate from the schema template. Include:
 - `schemaVersion: 1`
@@ -138,6 +156,13 @@ Create these files at the repo root:
 - Rust: `Cargo.toml`, `src/main.rs`, `.gitignore`
 - Go: `go.mod`, `main.go`, `.gitignore`
 - Other: `.gitignore`
+
+**`.gitignore` augmentation (all project types, all languages):** after writing the language-specific `.gitignore`, append a `.worktrees/` line so `/project:launch`-created worktree trees don't appear in `git status`. One-line append is sufficient — the language template handles everything else above it.
+
+```bash
+# Always append, whether the language template created .gitignore or not
+grep -q '^\.worktrees/$' .gitignore 2>/dev/null || printf '\n# Ignore per-role session worktrees created by /project:launch\n.worktrees/\n' >> .gitignore
+```
 
 ## Step 6: Delete GitHub labels
 
@@ -227,9 +252,12 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
 - Jira epic: <epic-key>
 - Repo: <owner>/<name>
 - Read CLAUDE.md and ARCHITECTURE.md for project context.
+
+## Worktree rule (non-negotiable)
+Do NOT create new git worktrees. The role worktrees are fixed — you work in yours. Feature/fix work is a **branch** created inside this worktree via `git checkout -b feature/<epic-prefix>-<n>-<slug>` or `git checkout -b fix/<epic-prefix>-<n>`, never `git worktree add`. See `~/.claude/MULTI_SESSION_ARCHITECTURE.md` §7.1. Attempts to `git worktree add` are hard-blocked by a `PreToolUse` hook unless the human inlines `GIT_WORKTREE_OVERRIDE=1` — do not use that override yourself.
 ```
 
-Add a brief quick-reference section specific to each role (3-5 bullet points summarizing the protocol steps).
+Add a brief quick-reference section specific to each role (3-5 bullet points summarizing the protocol steps). **The Worktree rule block above is mandatory for every role's prompt** — do not omit it. `<epic-prefix>` is the Jira project key (e.g., `CPT`, `ACME`) so branch naming stays consistent with the project's ticket numbering.
 
 ## Step 10.5: Create loop prompts (8 loop-capable roles)
 
@@ -285,12 +313,18 @@ Default loop intervals (written to PROJECT_CONFIG.json in Step 5):
 
 ## Step 11: CI workflow (Software only)
 
-Create `.github/workflows/test.yml` with:
-- Language-appropriate test job
-- `notify-failure` job from `~/.claude/PROJECT_STANDARDS.md` section 3 reference implementation
-- `notify-recovery` job
+Create `.github/workflows/test.yml` with a language-appropriate test job.
 
-Adapt the `needs:` list to match the actual test job name(s).
+**CI failure notification is pending a design decision — `CPT-52` / `CPT-53` will resolve whether `notify-failure` / `notify-recovery` jobs live in CI (requires `JIRA_API_KEY` as an Actions secret) OR whether the Master session's loop polls `gh run list` for failures (avoids CI-side secrets).** Until those tickets land, ship only the test job and inform the operator that failure-monitoring path is TBD:
+
+```
+CI test job: configured
+CI failure monitoring: pending CPT-52 / CPT-53 resolution — no notify-failure/notify-recovery jobs shipped yet
+```
+
+If the operator needs failure monitoring immediately, document the chosen path as a deviation in `PROJECT_CONFIG.json.deviations[]` with justification, and point at the relevant ticket once the design lands.
+
+When CPT-52/CPT-53 resolve, update this step to ship the chosen reference implementation.
 
 ## Step 12: Branch protection (Software)
 

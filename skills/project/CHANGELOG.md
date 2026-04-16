@@ -2,6 +2,21 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.2] - 2026-04-17
+
+### Fixed (CPT-56 — `/project:new` drift, 6 of 7 gaps)
+
+`skills/project/commands/new.md` had drifted from current standards; projects scaffolded at v2.1.1 were silently non-compliant. Gaps 1–4, 6, 7 fixed here; Gap 5 (CI `notify-failure` / `notify-recovery` templates) remains blocked on CPT-52 / CPT-53 and the prompt now explicitly flags that pending decision instead of promising a nonexistent reference implementation.
+
+- **Gap 1** — Session-prompt template (Step 10) now embeds the "Worktree rule (non-negotiable)" block mirroring this repo's 11 role prompts. Closes tier 4 of the worktree-creation protection for new projects.
+- **Gap 2** — Step 5 CLAUDE.md template instructs Claude to inline a "Verification discipline" section (or explicit pointer to global `~/.claude/CLAUDE.md`) so role sessions on new projects start with the 7 non-negotiable rules loaded.
+- **Gap 3** — Step 5 CLAUDE.md template adds a "Coordination" section stating Jira-first coordination and no `gh pr create`, matching the standing no-PR policy.
+- **Gap 4** — Step 5 generates a `.gitignore` augmentation that always appends `.worktrees/` regardless of language; prevents the `git status` noise documented in the v2.0.5 changelog from recurring on every new project.
+- **Gap 5** — Step 11 CI instructions tightened to acknowledge the pending CPT-52 / CPT-53 decision rather than referencing a nonexistent "section 3 reference implementation" in `PROJECT_STANDARDS.md`.
+- **Gap 6** — Step 4 PHILOSOPHY.md interview is now mandatory for every project regardless of type (was "Software only, or Non-Software if user opts in"), matching `PROJECT_STANDARDS.md` §6 and global CLAUDE.md. `--minimal` escape hatch documented.
+- **Gap 7** — New Step 1.5 warns (does not stop) if `~/.claude/hooks/block-worktree-add.sh` is missing or unregistered in settings.json. Scaffold still produces a valid project; the warning surfaces a weak host-machine enforcement posture so the operator can remediate.
+- `tests/project-new-compliance.bats` — 7 new source-level assertions (one per gap) verifying the skill prompt contains the required templates/instructions.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)
