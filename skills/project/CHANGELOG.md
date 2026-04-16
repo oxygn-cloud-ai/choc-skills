@@ -2,6 +2,30 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.6] - 2026-04-17
+
+### Fixed
+
+- **[CPT-50]** `project-launch-session.sh` mktemp templates at lines 197 and
+  312 used `-XXXXXX.sh` — BSD `mktemp(1)` (macOS) and GNU `mktemp(1)` both
+  require the `X` placeholders to be trailing, so a filename suffix after
+  them silently returns the literal template unchanged. Changed both
+  templates to `.XXXXXX` (trailing). The setup script is invoked via
+  `exec bash <path>` so the `.sh` extension was never functional. Without
+  this fix, two concurrent `/project:launch` runs of the same role (or any
+  re-launch over a stale `/tmp` file) would collide on the deterministic
+  path and the second attempt would die with `mkstemp failed: File exists`.
+
+### Tests
+
+- Added two regression tests to `tests/project-launch-session.bats`:
+  - `launch-session: setup script path is randomized (CPT-50)` — asserts the
+    printed setup-script path matches `/tmp/project-launch-<role>.<6alnum>$`
+    and does not contain the literal `XXXXXX` placeholder.
+  - `launch-session: two sequential dry-runs produce distinct setup script
+    paths (CPT-50)` — asserts two back-to-back dry runs of the same
+    project+role produce different `/tmp` paths.
+
 ## [2.1.5] - 2026-04-17
 
 ### Changed

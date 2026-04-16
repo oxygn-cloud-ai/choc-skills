@@ -194,7 +194,7 @@ fi
 #-----------------------------------------------------------------------------
 
 PROJECT_ENV_NAME=$(compute_project_env_name)
-SETUP_SCRIPT=$(mktemp "/tmp/project-launch-${ROLE}-XXXXXX.sh")
+SETUP_SCRIPT=$(mktemp "/tmp/project-launch-${ROLE}.XXXXXX")
 chmod 600 "$SETUP_SCRIPT"
 cleanup_setup() { rm -f "$SETUP_SCRIPT"; }
 trap cleanup_setup EXIT
@@ -309,7 +309,7 @@ tmux has-session -t "${TARGET%:*}" 2>/dev/null || die "tmux session does not exi
 # concurrently (or when a previous launch crashed mid-flight and left stale
 # files). 0600 perms since the file contains env var values that may be
 # non-secret but are still project-specific.
-PANE_SETUP=$(mktemp "/tmp/project-launch-$(basename "$REPO_ROOT")-${ROLE}-XXXXXX.sh")
+PANE_SETUP=$(mktemp "/tmp/project-launch-$(basename "$REPO_ROOT")-${ROLE}.XXXXXX")
 cp "$SETUP_SCRIPT" "$PANE_SETUP"
 chmod 600 "$PANE_SETUP"
 

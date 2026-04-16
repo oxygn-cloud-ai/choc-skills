@@ -328,3 +328,56 @@ EOF
   [[ "$output" == *'rm -f "$0"'* ]]
   [[ "$output" == *"exec claude --dangerously-skip-permissions"* ]]
 }
+
+@test "launch-session: setup script path is randomized (CPT-50)" {
+  # BSD mktemp requires the Xs to be trailing characters — a filename suffix
+  # after the Xs (e.g. XXXXXX.sh) silently returns the literal template
+  # unchanged. The printed path must match a 6-char alphanumeric tail,
+  # never contain the literal 'XXXXXX'.
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --dry-run
+  [ "$status" -eq 0 ]
+
+  # Extract the 'setup script: <path>' line (strip log prefix + trim)
+  local line path
+  line=$(printf '%s\n' "$output" | grep -E 'setup script:' | head -1)
+  [ -n "$line" ] || { echo "no 'setup script:' line in output" >&2; return 1; }
+
+  path=$(printf '%s\n' "$line" | sed -E 's|.*setup script:[[:space:]]+||')
+
+  # Must NOT contain the literal placeholder — that would mean mktemp silently
+  # returned the unrandomized template.
+  [[ "$path" != *"XXXXXX"* ]] || {
+    echo "setup script path still contains literal XXXXXX: $path" >&2
+    return 1
+  }
+
+  # Must match the expected shape: /tmp/project-launch-<role>.<6alnum>
+  [[ "$path" =~ ^/tmp/project-launch-master\.[A-Za-z0-9]{6}$ ]] || {
+    echo "setup script path does not match randomized template shape: $path" >&2
+    return 1
+  }
+}
+
+@test "launch-session: two sequential dry-runs produce distinct setup script paths (CPT-50)" {
+  # Running the same project+role twice must yield two DIFFERENT temp paths.
+  # With the broken template the first call returns the literal path, and
+  # the second call would either return the same literal (after cleanup) or
+  # fail with 'File exists' (if cleanup didn't run). Post-fix, both calls
+  # must produce distinct randomized names.
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --dry-run
+  [ "$status" -eq 0 ]
+  local path1
+  path1=$(printf '%s\n' "$output" | grep -E 'setup script:' | head -1 | sed -E 's|.*setup script:[[:space:]]+||')
+  [ -n "$path1" ] || { echo "first run produced no setup script path" >&2; return 1; }
+
+  run "$SCRIPT" --target fake:master --role master --repo "$TEST_REPO" --dry-run
+  [ "$status" -eq 0 ]
+  local path2
+  path2=$(printf '%s\n' "$output" | grep -E 'setup script:' | head -1 | sed -E 's|.*setup script:[[:space:]]+||')
+  [ -n "$path2" ] || { echo "second run produced no setup script path" >&2; return 1; }
+
+  [ "$path1" != "$path2" ] || {
+    echo "both runs produced the same setup script path: $path1" >&2
+    return 1
+  }
+}
