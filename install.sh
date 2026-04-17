@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.1.8"
+VERSION="2.1.9"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -482,7 +482,16 @@ case "$ACTION" in
         fi
       done
       echo ""
-      ok "${count} skill(s) installed"
+      # CPT-79: branch the summary on $DRY_RUN so the past-tense "installed"
+      # wording isn't used when nothing was actually installed. Previously
+      # `./install.sh --dry-run` printed "ok 5 skill(s) installed" at the
+      # end of a run that made zero changes, misleading log-scrapers and
+      # quick-glance readers.
+      if "$DRY_RUN"; then
+        ok "${count} skill(s) would be installed (dry run)"
+      else
+        ok "${count} skill(s) installed"
+      fi
       if [ "$failed" -gt 0 ]; then
         warn "${failed} skill(s) failed"
       fi
