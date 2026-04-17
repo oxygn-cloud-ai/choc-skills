@@ -278,7 +278,7 @@ main() {
     chmod 600 "$AUTH_FILE"
     printf '%s' "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n' > "$AUTH_FILE"
     trap 'rm -f "$AUTH_FILE"' EXIT
-    export WORK_DIR JIRA_BASE_URL AUTH_FILE PROJECT_KEY RR_QUARTER_OVERRIDE="$QUARTER_OVERRIDE"
+    export WORK_DIR JIRA_BASE_URL AUTH_FILE PROJECT_KEY RR_QUARTER_OVERRIDE="$QUARTER_OVERRIDE" RR_ASSIGNEE_ID
 
     # phase_collection and phase_publication echo counts to stdout which we
     # don't consume here — phase_completion re-reads the authoritative counts
