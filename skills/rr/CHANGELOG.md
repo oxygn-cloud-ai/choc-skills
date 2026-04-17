@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.4] - 2026-04-17
+
+### Changed
+- **Performance**: `_publish_one.sh` and `_update_cpt.sh` now use exponential backoff with random jitter on HTTP 429/503/529 retries instead of linear `attempt * 10` sleeps. Prevents thundering-herd retries under `xargs -P 10` parallel Jira publishing. Honours `Retry-After` header when present (CPT-33).
+
+### Note on version renumbering
+- CPT-33's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2–5.3.3 had all shipped, so the Merger renumbered CPT-33 to 5.3.4. No code semantics changed.
+
 ## [5.3.3] - 2026-04-17
 
 ### Changed

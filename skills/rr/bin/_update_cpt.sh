@@ -131,7 +131,10 @@ post_comment() {
                 ;;
             429|503|529)
                 if [ $attempt -lt $max_attempts ]; then
-                    sleep 2
+                    # Exponential backoff with jitter
+                    base_sleep=$((1 << attempt))
+                    jitter=$((RANDOM % (base_sleep + 1)))
+                    sleep $((base_sleep + jitter))
                     continue
                 fi
                 warn "CPT comment failed after retry: HTTP $http_code"

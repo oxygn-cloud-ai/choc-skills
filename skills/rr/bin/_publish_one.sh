@@ -426,7 +426,16 @@ while [ $attempt -lt $MAX_PUBLISH_RETRIES ]; do
             exit 0
             ;;
         429|503|529)
-            sleep_time=$((attempt * 10))
+            # Exponential backoff with random jitter to avoid thundering herd
+            # under xargs -P parallel workers
+            retry_after=$(echo "$http_body" | jq -r '.retryAfter // empty' 2>/dev/null)
+            if [ -n "$retry_after" ] && [ "$retry_after" -gt 0 ] 2>/dev/null; then
+                sleep_time=$((retry_after + RANDOM % 5))
+            else
+                base_sleep=$((1 << attempt))  # 2, 4, 8 seconds
+                jitter=$((RANDOM % (base_sleep + 1)))
+                sleep_time=$((base_sleep + jitter))
+            fi
             log "${risk_key}:HTTP_${http_code}:RETRY_${attempt}:SLEEPING_${sleep_time}s"
             sleep "$sleep_time"
             continue
