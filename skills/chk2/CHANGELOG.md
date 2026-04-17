@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.21] - 2026-04-18
+
+### Fixed
+- **CHK2-STATUS protocol now cleanly gated on orchestrator marker** (CPT-127). CPT-89 introduced the `CHK2-STATUS: OK|RATE_LIMITED|ERROR` final-line protocol so the `/chk2:all` orchestrator could track per-wave rate-limit state, but all 30 category sub-skills also carried a trailing `## After` "Ask the user" block ABOVE `## Status signal`. When Claude ran the sub-skill under orchestration, it would follow instructions in order, emit the user-question prose as the last conversational element, and `CHK2-STATUS` never made it out as the actual final line — the orchestrator's parser saw the user-question text instead, the RATE_LIMITED counter never tripped, and the rate-limit circuit breaker CPT-89 shipped was effectively unreachable. Renamed the two sections with anchor suffixes and added explicit skip-gating on the CPT-126 `.orchestrated` marker: `## After — standalone only` skips when the marker is present; `## Status signal — orchestrated only` skips when the marker is absent. Under orchestration the After block is skipped, the Status block emits the line as the absolute final response element, and the circuit breaker receives a clean signal. Three bats regressions in `tests/router-allowed-tools.bats` enforce the anchor suffixes and the gating body text.
+
+**Note on version renumbering**: This entry originally targeted 2.3.19 on `fix/CPT-127-chk2-sub-skill-section-gating`, but CPT-125 (v2.3.19) and CPT-126 (v2.3.20) landed on `main` first. Renumbered to 2.3.21 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.20] - 2026-04-18
 
 ### Fixed

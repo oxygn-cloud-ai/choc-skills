@@ -373,3 +373,49 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   echo "offenders:$offenders"
   [ -z "$offenders" ]
 }
+
+# --- CPT-127: sub-skill sections must be gated on .orchestrated so
+#     CHK2-STATUS is the final line under orchestration and `Ask the user`
+#     fires cleanly only under standalone invocation. Anchor phrase convention:
+#       After    → `standalone only`  (header suffix)
+#       Status   → `orchestrated only` (header suffix)
+
+@test "chk2 category sub-skills: '## After' header carries the 'standalone only' anchor (CPT-127)" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/chk2/commands/*.md; do
+    name=$(basename "$f")
+    case "$name" in all.md|quick.md|fix.md|github.md|update.md|help.md|doctor.md|version.md) continue ;; esac
+    if ! grep -qE '^## After.*standalone only' "$f"; then
+      offenders="$offenders $name"
+    fi
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}
+
+@test "chk2 category sub-skills: '## Status signal' header carries the 'orchestrated only' anchor (CPT-127)" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/chk2/commands/*.md; do
+    name=$(basename "$f")
+    case "$name" in all.md|quick.md|fix.md|github.md|update.md|help.md|doctor.md|version.md) continue ;; esac
+    if ! grep -qE '^## Status signal.*orchestrated only' "$f"; then
+      offenders="$offenders $name"
+    fi
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}
+
+@test "chk2 category sub-skills: Status block explicitly gates on .orchestrated absence (CPT-127)" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/chk2/commands/*.md; do
+    name=$(basename "$f")
+    case "$name" in all.md|quick.md|fix.md|github.md|update.md|help.md|doctor.md|version.md) continue ;; esac
+    status_block=$(awk '/^## Status signal/{flag=1} flag' "$f")
+    if ! printf '%s' "$status_block" | grep -qE '[Ss]kip.*\.orchestrated|\.orchestrated.*does NOT exist'; then
+      offenders="$offenders $name"
+    fi
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}
