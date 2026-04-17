@@ -14,6 +14,19 @@ Before starting any assessment, read these files using the Read tool:
 Then read the batch data file using the Read tool:
 - `{{BATCH_FILE}}`
 
+### Pre-Load Workflow Steps
+
+Before processing any risks, read all workflow step files once. These are static reference documents that do not change between risks — loading them once avoids 6×(N-1) redundant file reads **within a single uninterrupted session**. The per-phase re-check loop below verifies the pre-loaded content is still retrievable and re-reads on miss; without this pre-load, those re-checks have nothing to verify against and either re-read on every phase (defeating the optimization) or improvise from the one-line phase description (lossy).
+
+Read these files now and keep them in context for the batch run:
+- `~/.claude/skills/rr/references/workflow/step-1-extract.md`
+- `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`
+- `~/.claude/skills/rr/references/workflow/step-3-rectify.md`
+- `~/.claude/skills/rr/references/workflow/step-5-finalise.md`
+- `~/.claude/skills/rr/references/workflow/step-6-publish.md`
+
+**Known limitation — auto-compaction**: Claude Code auto-compacts context as it fills. Compaction can summarise or drop the pre-loaded step content silently. The per-phase re-check protocol in the Task section below catches this and re-reads on miss (CPT-133/CPT-143). Realistic savings are per-session (until the first compaction), not per-batch — the claim holds for the first ~N risks processed before compaction, then degrades gracefully via re-read.
+
 ## Task — For Each Risk
 
 For each risk in the batch, execute the six-step workflow with **per-phase compaction re-checks** (CPT-143; mirrors the CPT-133 protection added to `/rr:all` Sequential Mode). Claude Code auto-compacts context as it fills. Compaction can summarise or drop pre-loaded reference content silently, and it can happen mid-workflow — a single start-of-risk check can't catch drift between Phase 2 and Phase 5. Before each step-file-backed phase, verify the corresponding pre-loaded step file is still retrievable by recalling a known heading. If the content has been compacted away, re-read that step file on demand and log `pre-load recovered by re-read: <step-name>` to the session log so per-phase degradation is observable.

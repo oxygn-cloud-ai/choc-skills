@@ -104,3 +104,43 @@ SUB_AGENT_PROMPT="${REPO_DIR}/skills/rr/bin/sub-agent-prompt.md"
     return 1
   }
 }
+
+# --- CPT-157: the per-phase re-checks (CPT-143) assume each step file was
+#     pre-loaded before the per-risk loop began. Without that pre-load the
+#     re-check is a no-op — Claude either re-reads per phase (defeating the
+#     optimization CPT-9/CPT-91 were building toward) or improvises from the
+#     one-line phase description (lossy). Mirror commands/all.md Sequential
+#     Mode's "### Pre-Load Workflow Steps" block into sub-agent-prompt.md
+#     BEFORE "## Task — For Each Risk".
+
+@test "CPT-157: sub-agent-prompt.md pre-loads all 5 step files before the per-risk Task section" {
+  # Extract the pre-task slice (everything up to but NOT including the
+  # "## Task — For Each Risk" heading).
+  local pre_task
+  pre_task=$(awk '/^## Task — For Each Risk/{exit} {print}' "$SUB_AGENT_PROMPT")
+  [ -n "$pre_task" ] || { echo "pre-Task section empty" >&2; return 1; }
+
+  local step missing=0
+  for step in step-1-extract step-2-adversarial step-3-rectify step-5-finalise step-6-publish; do
+    if ! printf '%s\n' "$pre_task" | grep -qE "workflow/${step}\.md"; then
+      echo "CPT-157: ${step}.md not pre-loaded before Task section in sub-agent-prompt.md" >&2
+      missing=$((missing + 1))
+    fi
+  done
+  [ "$missing" -eq 0 ]
+}
+
+@test "CPT-157: sub-agent-prompt.md pre-load section appears before the per-phase re-check text" {
+  # Order matters: the pre-load must precede the re-check text, otherwise
+  # the "verify X is still retrievable" text would reference a file that
+  # hasn't been loaded yet.
+  local preload_line recheck_line
+  preload_line=$(grep -nE '^### Pre-Load Workflow Steps' "$SUB_AGENT_PROMPT" | head -1 | cut -d: -f1)
+  recheck_line=$(grep -niE 'verify.*step-1-extract.*heading' "$SUB_AGENT_PROMPT" | head -1 | cut -d: -f1)
+  [ -n "$preload_line" ] || { echo "### Pre-Load Workflow Steps heading missing" >&2; return 1; }
+  [ -n "$recheck_line" ] || { echo "per-phase re-check text missing (CPT-143 regression?)" >&2; return 1; }
+  [ "$preload_line" -lt "$recheck_line" ] || {
+    echo "Pre-Load block (line $preload_line) must precede per-phase re-check (line $recheck_line)" >&2
+    return 1
+  }
+}

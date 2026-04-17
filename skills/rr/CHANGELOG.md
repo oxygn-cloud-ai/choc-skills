@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.27] - 2026-04-18
+
+### Fixed
+- **`sub-agent-prompt.md` now pre-loads the 5 workflow step files before the per-risk loop** (CPT-157). CPT-143 (v5.3.23) mirrored the per-phase compaction re-check protocol from `commands/all.md` Sequential Mode into `bin/sub-agent-prompt.md` — "Verify step-X heading is still retrievable (re-read on miss)" for Phases 1, 2, 3, 5, 6. But the Setup section only pre-loaded `business-context.md`, `regulatory-framework.md`, `quality-standards.md`, `enums.schema.json`, and `{{BATCH_FILE}}`. No step-*.md files were ever read. The re-check has nothing to verify: Claude either re-reads every phase (defeats the optimization CPT-9/CPT-91/CPT-133/CPT-143 were building toward) or improvises from the one-line phase description (lossy). Under the primary batch path — Agent Orchestrator Mode, the default when `JIRA_EMAIL` + `JIRA_API_KEY` are set — CPT-133's compaction protection was effectively unactionable. Added a `### Pre-Load Workflow Steps` block between the Setup section and `## Task — For Each Risk`, mirroring `commands/all.md:244-253`. Reads all 5 step files once per batch; per-phase re-check now has content to verify against and recovers via explicit re-read on compaction. Two bats regressions in `tests/rr-all-per-phase-recheck.bats`: all 5 step-*.md files referenced before the Task section (was 0); pre-load block appears before the per-phase re-check text (structural ordering guard).
+
+**Note on version renumbering**: This entry originally targeted 5.3.26 on `fix/CPT-157-sub-agent-prompt-preload`, but CPT-155 (lock-ownership fix) was on an open branch also targeting 5.3.26 and landed on `main` first. Taking 5.3.27 here to avoid collision. No code semantics changed from the original branch.
+
 ## [5.3.26] - 2026-04-18
 
 ### Fixed
