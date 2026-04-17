@@ -2,6 +2,14 @@
 
 All notable changes to the ra skill will be documented in this file.
 
+## [1.0.3] - 2026-04-17
+
+### Changed
+- **Performance**: `install.sh` removes redundant post-`cmp -s` shasum block and replaces `$(cat .source-repo)` with bash builtin `$(< .source-repo)` — eliminates ~2 forks per install (CPT-20).
+
+### Note on version renumbering
+- CPT-20's source branch bumped 1.0.0 → 1.0.1 in isolation. By merge time, 1.0.1 (CPT-27) and 1.0.2 (CPT-19) had both shipped, so the Merger renumbered CPT-20 to 1.0.3. No code semantics changed.
+
 ## [1.0.2] - 2026-04-17
 
 ### Changed

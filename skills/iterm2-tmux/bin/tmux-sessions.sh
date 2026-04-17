@@ -15,6 +15,7 @@ fi
 
 [[ -d "$REPOS_DIR" ]] || { echo "[ERROR] Repos dir not found: $REPOS_DIR" >&2; exit 1; }
 
+# Sets global _SAFE_NAME instead of echoing — avoids subshell fork per call
 sanitize_name() {
   local n="$1"
   n="${n//\./-}"
@@ -22,7 +23,7 @@ sanitize_name() {
   n="${n//=/-}"
   n="${n//+/-}"
   n="${n// /-}"
-  echo "$n"
+  _SAFE_NAME="$n"
 }
 
 if ! tmux start-server 2>/dev/null; then
@@ -33,7 +34,8 @@ fi
 for dir in "$REPOS_DIR"/*/; do
   [[ -d "$dir" ]] || continue
   name="$(basename "$dir")"
-  safe_name="$(sanitize_name "$name")"
+  sanitize_name "$name"
+  safe_name="$_SAFE_NAME"
   if ! tmux has-session -t "=$safe_name" 2>/dev/null; then
     if ! tmux new-session -d -s "$safe_name" 2>/dev/null; then
       echo "[WARN] Failed to create session '$safe_name', skipping." >&2

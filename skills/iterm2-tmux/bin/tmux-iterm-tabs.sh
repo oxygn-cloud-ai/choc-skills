@@ -19,6 +19,7 @@ BG_DIR="$SCRIPT_DIR/.session-backgrounds"
 BG_GENERATOR="$SCRIPT_DIR/gen-session-bg.py"
 export PATH="/opt/homebrew/bin:$PATH"
 
+# Sets global _SAFE_NAME instead of echoing — avoids subshell fork per call
 sanitize_name() {
   local n="$1"
   n="${n//\./-}"
@@ -26,7 +27,7 @@ sanitize_name() {
   n="${n//=/-}"
   n="${n//+/-}"
   n="${n// /-}"
-  echo "$n"
+  _SAFE_NAME="$n"
 }
 
 sanitize_for_applescript() {
@@ -43,12 +44,8 @@ lookup_label() {
     local name safe
     name="${dir%/}"
     name="${name##*/}"
-    # Inline sanitize_name logic (avoids subshell fork per iteration)
-    safe="${name//\./-}"
-    safe="${safe//:/-}"
-    safe="${safe//=/-}"
-    safe="${safe//+/-}"
-    safe="${safe// /-}"
+    sanitize_name "$name"
+    safe="$_SAFE_NAME"
     if [[ "$safe" == "$session" ]]; then
       echo "$name"
       return

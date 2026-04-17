@@ -103,7 +103,7 @@ for dir in "${SKILLS_DIR}"/*/; do
 
   # --- Check: routing table matches commands/ directory ---
   if [ -d "${dir}/commands" ]; then
-    skill_md_content=$(cat "$skill_file")
+    skill_md_content=$(< "$skill_file")
     cmd_warnings=0
     for cmd_file in "${dir}/commands"/*.md; do
       [ -f "$cmd_file" ] || continue

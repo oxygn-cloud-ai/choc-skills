@@ -177,7 +177,10 @@ phase_publication() {
     cat "$WORK_DIR/logs"/publish_*.log >> "$LOG_FILE" 2>/dev/null
 
     local succeeded failed
-    succeeded=$(ls "$WORK_DIR/jira-results" 2>/dev/null | wc -l | tr -d ' ')
+    # Use bash glob array instead of ls|wc|tr (3 forks → 0)
+    local -a result_files=("$WORK_DIR/jira-results"/*)
+    [ -e "${result_files[0]}" ] || result_files=()
+    succeeded=${#result_files[@]}
     failed=$((total - succeeded))
 
     log "Publication complete: $succeeded succeeded, $failed failed"
@@ -194,8 +197,13 @@ phase_completion() {
     local total_risks filtered published failed
     total_risks=$(jq '.total' "$WORK_DIR/discovery.json")
     filtered=$(jq '.to_process // .total' "$WORK_DIR/filter-result.json")
-    published=$(ls "$WORK_DIR/jira-results" 2>/dev/null | wc -l | tr -d ' ')
-    failed=$(ls "$WORK_DIR/jira-errors" 2>/dev/null | wc -l | tr -d ' ')
+    # Use bash glob arrays instead of ls|wc|tr (3 forks → 0)
+    local -a published_files=("$WORK_DIR/jira-results"/*)
+    local -a error_files=("$WORK_DIR/jira-errors"/*)
+    [ -e "${published_files[0]}" ] || published_files=()
+    [ -e "${error_files[0]}" ] || error_files=()
+    published=${#published_files[@]}
+    failed=${#error_files[@]}
 
     # Pre-compute failed risks list
     local failed_list=""

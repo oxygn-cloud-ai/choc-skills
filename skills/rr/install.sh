@@ -165,7 +165,7 @@ if [ "${1:-}" = "--check" ]; then
 
   # Source repo marker
   if [ -f "${SKILL_TARGET}/.source-repo" ]; then
-    repo=$(cat "${SKILL_TARGET}/.source-repo")
+    repo=$(< "${SKILL_TARGET}/.source-repo")
     ok "Source repo: ${repo}"
   else
     warn "Source repo marker not found (update subcommand won't work)"
@@ -310,14 +310,9 @@ done < <(find "$REFERENCES_SOURCE" -type f -print0)
 ok "References: ${ref_count} files -> ${SKILL_TARGET}/references/"
 
 # 7. Verify SKILL.md copy
+# cmp -s provides byte-level equality check — SHA256 is redundant
 if ! cmp -s "${SKILL_SOURCE}" "${SKILL_TARGET}/SKILL.md"; then
   err "Verification failed — source and installed SKILL.md differ"
-  die "Installation may be corrupt. Try again with --force"
-fi
-src_sha=$(shasum -a 256 "${SKILL_SOURCE}" | cut -d' ' -f1)
-dst_sha=$(shasum -a 256 "${SKILL_TARGET}/SKILL.md" | cut -d' ' -f1)
-if [ "$src_sha" != "$dst_sha" ]; then
-  err "SHA256 mismatch after copy"
   die "Installation may be corrupt. Try again with --force"
 fi
 

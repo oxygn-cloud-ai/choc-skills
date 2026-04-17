@@ -2,6 +2,11 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.0.2] - 2026-04-17
+
+### Changed
+- **Performance**: `bin/tmux-sessions.sh` and `bin/tmux-iterm-tabs.sh` replace per-call `sanitize_name` subshell (`$(sanitize_name "$raw")`) with `_SAFE_NAME` global-setting pattern — eliminates one fork per call site (CPT-20).
+
 ## [1.0.1] - 2026-04-13
 
 ### Fixed

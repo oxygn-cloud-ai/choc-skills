@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.6] - 2026-04-17
+
+### Changed
+- **Performance**: Shell fork waste eliminated across `install.sh`, `bin/_publish_one.sh`, and `bin/rr-finalize.sh` — redundant `shasum` after `cmp -s`, `$(cat file)` → `$(< file)`, `ls | wc | tr` → glob-array `${#arr[@]}`. Net ~10 forks saved per batch invocation (CPT-20).
+
+### Note on version renumbering
+- CPT-20's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2–5.3.5 had all shipped, so the Merger renumbered CPT-20 to 5.3.6. No code semantics changed.
+
 ## [5.3.5] - 2026-04-17
 
 ### Changed

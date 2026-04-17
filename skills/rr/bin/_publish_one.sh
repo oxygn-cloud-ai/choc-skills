@@ -34,7 +34,7 @@ if [ ! -f "$AUTH_FILE" ]; then
     echo "${risk_key}:FAILED:AUTH_FILE_MISSING" >&2
     exit 1
 fi
-JIRA_AUTH=$(cat "$AUTH_FILE")
+JIRA_AUTH=$(< "$AUTH_FILE")
 
 # Per-risk lockfile to prevent duplicate publishing
 if [ -n "${LOCK_DIR:-}" ]; then
