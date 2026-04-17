@@ -2,6 +2,11 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.6] - 2026-04-17
+
+### Fixed
+- **`chk1:fix` iteration cap trigger scope**: Round 2 of the fix→audit→fix loop no longer requires a new-regression to trigger. The cap now fires when `/chk1 quick` reports any remaining findings — new regressions OR unresolved original findings — matching the commit-message / CHANGELOG contract of "maximum of 2 fix→audit rounds total". Prior text silently denied Round 2 to the common partial-fix case (CPT-95).
+
 ## [2.4.5] - 2026-04-17
 
 ### Fixed

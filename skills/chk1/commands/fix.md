@@ -70,4 +70,4 @@ Architectural changes, missing features, test additions
 
 If the user says yes, implement the fixes using Edit/Write tools, then run `/chk1 quick` on the changes to verify the fixes don't introduce new issues.
 
-**Iteration cap:** If `/chk1 quick` finds new issues introduced by the fixes, you may attempt one additional fix round (maximum of 2 rounds total). After the second round, do not continue looping — instead, present any remaining findings as a summary list of still-open issues for the user to review manually. This prevents unbounded fix→audit→fix cycles.
+**Iteration cap:** If `/chk1 quick` finds any remaining issues — either new regressions introduced by the fixes OR unresolved original findings that Round 1 didn't land — you may attempt one additional fix round (maximum of 2 rounds total). After the second round, do not continue looping — instead, present any remaining findings as a summary list of still-open issues for the user to review manually. This prevents unbounded fix→audit→fix cycles.

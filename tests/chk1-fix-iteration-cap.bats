@@ -22,3 +22,24 @@ FIX_MD="${REPO_DIR}/skills/chk1/commands/fix.md"
   # rather than continuing to fix
   grep -qiE '(remaining|still open|outstanding|present.*summary|report.*remaining|list.*unfixed)' "$FIX_MD"
 }
+
+@test "chk1 fix.md Round 2 trigger covers both new regressions and unresolved original findings (CPT-95)" {
+  # The iteration cap's Round 2 trigger must not be narrowed to "new issues introduced"
+  # only. A partial Round 1 fix that leaves some of the original findings unresolved
+  # must also qualify for Round 2, per the CHANGELOG/commit-message contract of
+  # "maximum of 2 fix→audit rounds".
+  #
+  # Extract the Iteration cap paragraph and assert it admits the unresolved-original
+  # case (via "any remaining", "any issues", "unresolved", or equivalent), not just
+  # "new issues introduced by the fixes".
+  local cap_line
+  cap_line=$(grep -iE 'iteration cap' "$FIX_MD" | head -n1)
+  [ -n "$cap_line" ]
+  # Must not gate Round 2 solely on "new" findings
+  if echo "$cap_line" | grep -qE 'finds new issues introduced by the fixes, you may attempt'; then
+    echo "Round 2 trigger is narrowed to new regressions only — partial-fix case excluded" >&2
+    return 1
+  fi
+  # Must broaden to the any-remaining / unresolved-original case
+  echo "$cap_line" | grep -qiE '(any (remaining|issue|unresolved)|unresolved.*(original|finding)|new regression.*OR.*unresolved|remaining issue)'
+}
