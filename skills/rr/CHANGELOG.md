@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.17] - 2026-04-18
+
+### Security
+- **Credential-leak fix completed across `/rr` user surfaces** (`commands/remove.md`, `commands/board.md`): CPT-28 (v5.2.8) replaced `echo -n "$JIRA_EMAIL:$JIRA_API_KEY" | base64` with `printf '%s'` in `rr-prepare.sh`, `rr-finalize.sh`, and `_update_cpt.sh` to keep Basic-auth credentials off `ps aux`. Four call sites in `commands/*.md` were missed (3 in `remove.md`, 1 in `board.md`) — the exact same exploit class in different files, reachable via `/rr remove` and `/rr board` subcommands. Replaced all four with `printf '%s'`. Extended the regression test (`tests/rr-commands-no-credential-echo.bats`) to scan `commands/*.md` in addition to `bin/*.sh`, so future additions of the same shell base64-auth pattern are caught on both surfaces. Also added an `ra/` audit-scope test for the same pattern (CPT-102).
+
 ## [5.3.16] - 2026-04-18
 
 ### Fixed

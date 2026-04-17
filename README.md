@@ -29,7 +29,7 @@ Install a skill. Type a slash command. Get superpowers.
 | **chk2** | v2.3.16 | `/chk2` | Adversarial security audit for web services — 211 checks across 30 categories | [README](skills/chk2/README.md) |
 | **project** | v1.2.7 | `/project` | Project repository administration — create, audit, configure, status check with multi-session workflow scaffolding | [README](skills/project/README.md) |
 | **ra** | v1.0.7 | `/ra` | Bespoke risk assessment — interview-driven assessment of documents, initiatives, concepts, incidents | [README](skills/ra/README.md) |
-| **rr** | v5.3.16 | `/rr` | Risk register assessment — interactive 6-step workflow or autonomous batch mode | [README](skills/rr/README.md) |
+| **rr** | v5.3.17 | `/rr` | Risk register assessment — interactive 6-step workflow or autonomous batch mode | [README](skills/rr/README.md) |
 
 ## Standalone Tools
 

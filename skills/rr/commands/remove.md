@@ -46,7 +46,7 @@ Wait for the user to type exactly `DELETE ALL REVIEWS`. Any other response: abor
 ### Query
 
 ```bash
-JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
+JIRA_AUTH=$(printf '%s' "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 JIRA_BASE_URL="https://chocfin.atlassian.net"
 
 all_keys=""
@@ -93,7 +93,7 @@ For each ticket key provided in $ARGUMENTS:
 ### Step 1 — Verify it's a Risk (not a Review or Mitigation)
 
 ```bash
-JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
+JIRA_AUTH=$(printf '%s' "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 JIRA_BASE_URL="https://chocfin.atlassian.net"
 
 resp=$(curl -s "$JIRA_BASE_URL/rest/api/3/issue/RR-220?fields=issuetype,summary" \
@@ -161,7 +161,7 @@ Then delete (see Deletion section below).
 Delete one at a time with rate limiting:
 
 ```bash
-JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
+JIRA_AUTH=$(printf '%s' "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 JIRA_BASE_URL="https://chocfin.atlassian.net"
 
 deleted=0

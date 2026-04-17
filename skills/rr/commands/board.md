@@ -161,7 +161,7 @@ AUTH_CRED_FILE="$HOME/.claude/skills/rr/.jira-auth"
 if [ -f "$AUTH_CRED_FILE" ]; then
   JIRA_AUTH=$(cat "$AUTH_CRED_FILE")
 elif [ -n "${JIRA_EMAIL:-}" ] && [ -n "${JIRA_API_KEY:-}" ]; then
-  JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
+  JIRA_AUTH=$(printf '%s' "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 else
   echo "Error: Set JIRA_EMAIL and JIRA_API_KEY env vars, or create $AUTH_CRED_FILE" >&2
   exit 1
