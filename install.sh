@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.1.1"
+VERSION="2.1.2"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -305,7 +305,7 @@ check_health() {
       continue
     fi
 
-    ok "'${name}' v${src_ver} is healthy"
+    ok "'${name}' v${src_ver} SKILL.md verified (router/sub-commands/hooks NOT checked — run skills/${name}/install.sh --check for full health)"
   done
 
   # Check for orphaned skills (installed but not in repo)
@@ -326,7 +326,7 @@ check_health() {
     info "Run ./install.sh --update to fix outdated/missing skills"
     return 1
   else
-    ok "All ${checked} skill(s) healthy"
+    ok "All ${checked} skill(s) SKILL.md verified (scope: this checker verifies SKILL.md only; run per-skill install.sh --check for router/sub-commands/hooks)"
     return 0
   fi
 }

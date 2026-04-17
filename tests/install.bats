@@ -129,7 +129,8 @@ teardown() {
   bash "$INSTALLER" --force
   run bash "$INSTALLER" --check
   [ "$status" -eq 0 ]
-  [[ "$output" == *"healthy"* ]]
+  # CPT-78: per-skill --check scope is SKILL.md only, no longer unqualified "healthy"
+  [[ "$output" == *"SKILL.md verified"* ]]
 }
 
 # --- Uninstall ---
