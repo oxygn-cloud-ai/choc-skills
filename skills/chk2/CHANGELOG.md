@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.16] - 2026-04-18
+
+### Fixed
+- **Global `jq` pre-flight scoped to `auth`/`all` paths**: CPT-98 (v2.3.10) added a pre-flight jq check to prevent silent AU3 evidence loss, but made it unconditional — aborting every `/chk2` invocation when jq was missing. Only `/chk2 auth` (AU3 concurrent-session pipeline) and `/chk2 all` (which dispatches auth) actually use jq. Non-audit categories like `/chk2 headers`, `/chk2 tls`, `/chk2 dns`, `/chk2 fix`, and `/chk2 update` never touch jq but CPT-98's broad check still blocked them on any machine without jq — a regression from pre-CPT-98 behaviour. Pre-flight step 2 is now gated on `$ARGUMENTS` being empty, `all`, or starting with `auth`; doctor keeps reporting jq status globally so diagnostic coverage is preserved (CPT-135).
+
 ## [2.3.15] - 2026-04-18
 
 ### Fixed

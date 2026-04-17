@@ -1,6 +1,6 @@
 ---
 name: chk2
-version: 2.3.15
+version: 2.3.16
 description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk2 v2.3.15 — Adversarial Security Audit
+chk2 v2.3.16 — Adversarial Security Audit
 
 USAGE
   /chk2                Run all test categories (~211 checks)
@@ -120,7 +120,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-chk2 v2.3.15
+chk2 v2.3.16
 ```
 
 End of version output. Do not continue.
@@ -134,8 +134,10 @@ Before executing, silently verify:
 1. **curl available**: `which curl`. If not found:
    > **chk2 error**: curl is not installed or not in PATH.
 
-2. **jq available**: `which jq`. If not found:
+2. **jq available (only for `auth` and `all`)**: if `$ARGUMENTS` is empty, `all`, or starts with `auth`, run `which jq`. If not found (and only in that case):
    > **chk2 error**: jq is not installed or not in PATH. `/chk2 auth` AU3 depends on jq; running without it silently drops concurrent-session evidence. Install jq and re-run.
+   >
+   > Other categories (`/chk2 headers`, `/chk2 tls`, `/chk2 dns`, `/chk2 fix`, `/chk2 update`, etc.) don't use jq and are not blocked by this check. Run `/chk2 doctor` to see jq status regardless of which category you're running (CPT-135: scoped from CPT-98's over-broad pre-flight).
 
 3. **Target reachable**: `curl -s --max-time 10 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://myzr.io/` returns 200. If not:
    > **chk2 error**: Target https://myzr.io/ is not reachable (HTTP {code}). Check the server is running.
