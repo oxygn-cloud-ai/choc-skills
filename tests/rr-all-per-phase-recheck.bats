@@ -144,3 +144,34 @@ SUB_AGENT_PROMPT="${REPO_DIR}/skills/rr/bin/sub-agent-prompt.md"
     return 1
   }
 }
+
+# --- CPT-160: the prompt template uses {{SKILLS_DIR}} placeholders that
+#     callers (notably commands/fix.md) substitute at dispatch time to
+#     the actual skill path. CPT-157 accidentally hardcoded the five
+#     pre-load paths to ~/.claude/skills/rr/... — this bypasses caller
+#     substitution and silently loads files from the installed-default
+#     location even when the caller meant a different path (rr:fix
+#     retry vs a commit-time snapshot).
+
+@test "CPT-160: sub-agent-prompt.md contains zero hardcoded ~/.claude/skills/rr paths" {
+  # Strict invariant: every file path in the prompt template must flow
+  # through a {{...}} placeholder that callers can substitute.
+  if grep -qE '~/\.claude/skills/rr' "$SUB_AGENT_PROMPT"; then
+    echo "sub-agent-prompt.md still contains hardcoded ~/.claude/skills/rr path(s) — CPT-160 regression" >&2
+    grep -nE '~/\.claude/skills/rr' "$SUB_AGENT_PROMPT" >&2
+    return 1
+  fi
+}
+
+@test "CPT-160: all 5 workflow step files in the pre-load use {{SKILLS_DIR}} template" {
+  # Positive: every step-*.md path in the Pre-Load section must be
+  # rooted at {{SKILLS_DIR}}/references/workflow/.
+  local step missing=0
+  for step in step-1-extract step-2-adversarial step-3-rectify step-5-finalise step-6-publish; do
+    if ! grep -qE "\{\{SKILLS_DIR\}\}/references/workflow/${step}\.md" "$SUB_AGENT_PROMPT"; then
+      echo "${step}.md is not templated via {{SKILLS_DIR}} in pre-load" >&2
+      missing=$((missing + 1))
+    fi
+  done
+  [ "$missing" -eq 0 ]
+}

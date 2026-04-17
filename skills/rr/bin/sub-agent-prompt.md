@@ -19,11 +19,11 @@ Then read the batch data file using the Read tool:
 Before processing any risks, read all workflow step files once. These are static reference documents that do not change between risks — loading them once avoids 6×(N-1) redundant file reads **within a single uninterrupted session**. The per-phase re-check loop below verifies the pre-loaded content is still retrievable and re-reads on miss; without this pre-load, those re-checks have nothing to verify against and either re-read on every phase (defeating the optimization) or improvise from the one-line phase description (lossy).
 
 Read these files now and keep them in context for the batch run:
-- `~/.claude/skills/rr/references/workflow/step-1-extract.md`
-- `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`
-- `~/.claude/skills/rr/references/workflow/step-3-rectify.md`
-- `~/.claude/skills/rr/references/workflow/step-5-finalise.md`
-- `~/.claude/skills/rr/references/workflow/step-6-publish.md`
+- `{{SKILLS_DIR}}/references/workflow/step-1-extract.md`
+- `{{SKILLS_DIR}}/references/workflow/step-2-adversarial.md`
+- `{{SKILLS_DIR}}/references/workflow/step-3-rectify.md`
+- `{{SKILLS_DIR}}/references/workflow/step-5-finalise.md`
+- `{{SKILLS_DIR}}/references/workflow/step-6-publish.md`
 
 **Known limitation — auto-compaction**: Claude Code auto-compacts context as it fills. Compaction can summarise or drop the pre-loaded step content silently. The per-phase re-check protocol in the Task section below catches this and re-reads on miss (CPT-133/CPT-143). Realistic savings are per-session (until the first compaction), not per-batch — the claim holds for the first ~N risks processed before compaction, then degrades gracefully via re-read.
 

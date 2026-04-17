@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.31] - 2026-04-18
+
+### Fixed
+- **`sub-agent-prompt.md` pre-load paths now use the `{{SKILLS_DIR}}` template** (CPT-160). CPT-157's five new step-file Read paths hardcoded `~/.claude/skills/rr/references/workflow/step-*.md` instead of the `{{SKILLS_DIR}}` placeholder the rest of the prompt uses. Under default install the hardcoded path matches the substituted one and the defect is invisible — but under repo-path invocation (e.g. `rr:fix` retry against a commit-time snapshot, which explicitly constructs the prompt with the actual skill path per `commands/fix.md:99`) the Setup block reads business/regulatory/schema files from the substituted dir while the workflow step files silently load from the installed-default. That causes version skew: the sub-agent may run stale workflow instructions against a different rr version's business context. Replaced all five hardcoded paths with `{{SKILLS_DIR}}/references/workflow/step-*.md`, restoring the single-substitution-point contract callers depend on. Two bats regressions in `tests/rr-all-per-phase-recheck.bats`: strict invariant (zero `~/.claude/skills/rr` hardcodes in the prompt template) and positive-case (all 5 step files templated).
+
 ## [5.3.30] - 2026-04-18
 
 ### Fixed
