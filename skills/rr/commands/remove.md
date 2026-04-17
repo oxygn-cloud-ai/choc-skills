@@ -1,7 +1,7 @@
 ---
 name: rr:remove
 description: "Delete review tickets from Jira (testing only)"
-allowed-tools: Bash(curl *), Bash(jq *), Bash(base64 *), Bash(echo *), Bash(sleep *)
+allowed-tools: Bash(curl *), Bash(jq *), Bash(base64 *), Bash(echo *), Bash(printf *), Bash(tr *), Bash(wc *), Bash(sleep *)
 ---
 
 # rr:remove — Delete Review Tickets from Jira (TESTING ONLY)

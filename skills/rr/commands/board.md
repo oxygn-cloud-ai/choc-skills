@@ -1,7 +1,7 @@
 ---
 name: rr:board
 description: "Generate board risk oversight paper from completed assessments"
-allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(python3 *), Bash(curl *), Bash(bash *), Bash(~/.claude/skills/rr/bin/_update_cpt.sh *), Write, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(python3 *), Bash(curl *), Bash(bash *), Bash(printf *), Bash(base64 *), Bash(tr *), Bash(cat *), Bash(~/.claude/skills/rr/bin/_update_cpt.sh *), Write, AskUserQuestion
 ---
 
 # rr:board — Board Risk Oversight Paper

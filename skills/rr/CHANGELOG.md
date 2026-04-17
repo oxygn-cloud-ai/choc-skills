@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.24] - 2026-04-18
+
+### Fixed
+- **`/rr remove` and `/rr board` auth lines no longer tool-denied under CPT-32 enforcement** (CPT-146). CPT-102 correctly swapped `echo -n "$JIRA_EMAIL:$JIRA_API_KEY" | base64` for `printf '%s' ...` in four call sites across `commands/remove.md` (three — lines 49, 96, 164) and `commands/board.md` (one — line 168) to close the ps-aux credential leak. The security fix is correct, but neither file's `allowed-tools` frontmatter was extended: `printf` / `tr` / `wc` (remove.md) and `printf` / `base64` / `tr` / `cat` (board.md) were denied. Under per-command enforcement the auth line fails at first probe and every mode of `/rr remove` plus the `JIRA_EMAIL`/`JIRA_API_KEY` fallback path of `/rr board` got tool-denied — same fix-introduces-new-silent-failure pattern as CPT-101 → CPT-136 → this. Added the missing `Bash(<tool> *)` patterns to both frontmatters. Regression guards in `tests/rr-command-shell-tool-coverage.bats` (new file, 7 tests): per-file sentinels for each missing tool, plus a generic cross-check that any `rr/commands/*.md` using `printf` in its body must whitelist `Bash(printf *)` (or carry the wider `Bash(bash *)` catch-all).
+
+**Note on version renumbering**: This entry originally targeted 5.3.23 on `fix/CPT-146-rr-printf-base64-tr-allowed-tools`, but CPT-143 landed on `main` first and claimed 5.3.23. Renumbered to 5.3.24 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.23] - 2026-04-18
 
 ### Fixed
