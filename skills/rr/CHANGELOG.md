@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.13] - 2026-04-17
+
+### Fixed
+- **`/rr status` progress totals missing** (`skills/rr/commands/status.md`): CPT-32's per-command frontmatter declared only `Read, Bash(ls *), Bash(tail *)` but the command body uses `echo`, `wc`, and `tr` in four `echo "Results: $(ls … | wc -l | tr -d ' ')"` counter lines. Under enforcement those three commands were denied, so users saw the recent log tail but lost the most-useful published/failed/results section. Added `Bash(echo *), Bash(wc *), Bash(tr *)` to `allowed-tools` (CPT-111).
+- **`/rr update` security-scope consistency** (`skills/rr/commands/update.md`): frontmatter carried the wide `Bash(bash *)` pattern while the sibling `/chk2 update` uses scoped `Bash(bash install.sh *)`. Narrowed rr:update to match chk2:update, preserving CPT-25's "no unscoped bash" intent. No behavioural change to the update flow (the body already uses `bash install.sh --force` and direct `install.sh` paths, both of which are still covered) (CPT-111).
+
+**Note on version renumbering**: This entry originally targeted 5.3.12 on `fix/CPT-111-rr-status-update-allowed-tools`, but CPT-100 (rr symlink-first-run fix) landed on `main` and claimed 5.3.12 first. Renumbered to 5.3.13 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.12] - 2026-04-17
 
 ### Fixed

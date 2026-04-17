@@ -1,7 +1,7 @@
 ---
 name: rr:status
 description: "Check batch assessment progress"
-allowed-tools: Read, Bash(ls *), Bash(tail *)
+allowed-tools: Read, Bash(ls *), Bash(tail *), Bash(echo *), Bash(wc *), Bash(tr *)
 ---
 
 # rr:status — Batch Progress Check
