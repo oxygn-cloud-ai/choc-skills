@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.1.6"
+VERSION="2.1.7"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -413,6 +413,19 @@ while [ $# -gt 0 ]; do
     *)               TARGETS+=("$1"); shift ;;
   esac
 done
+
+# --- Flag combination validation ---
+# CPT-154: --orphans is an opt-in recovery path that only applies to the
+# uninstall flow (it force-cleans orphan router files when the skill dir
+# is already gone — CPT-138). Using it outside --uninstall is always a
+# user mistake (typo, or `--orphans` on its own in a wrapper script) and
+# the installer previously silently dropped the flag and proceeded to
+# install every skill. Fail fast with a clear message instead, matching
+# the CPT-123 "reject conflicting action flags at parse time" principle
+# established for per-skill installers.
+if [ "$ORPHANS_FLAG" = "true" ] && [ "$ACTION" != "uninstall" ]; then
+  die "--orphans requires --uninstall (see ./install.sh --help for usage)"
+fi
 
 # Suppress non-error output in quiet mode
 if "$QUIET"; then
