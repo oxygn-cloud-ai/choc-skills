@@ -2,6 +2,17 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.5] - 2026-04-17
+
+### Changed
+- **Performance**: `rr-prepare.sh` pagination loops in `phase_discovery` and `phase_filter` no longer re-parse accumulated JSON on each page. Each page appends its `.issues[]` to a temp file, then a single `jq -s 'add'` combines them. Reduces work from O(p×n) to O(n) on multi-page Jira responses (CPT-35).
+
+### Fixed
+- `phase_filter` temp file now cleaned up via `trap 'rm -f … ' RETURN` (was relying on explicit `rm -f` after the loop, which could leak the file on early exit) (CPT-35).
+
+### Note on version renumbering
+- CPT-35's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2–5.3.4 had all shipped, so the Merger renumbered CPT-35 to 5.3.5. No code semantics changed.
+
 ## [5.3.4] - 2026-04-17
 
 ### Changed

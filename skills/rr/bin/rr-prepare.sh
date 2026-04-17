@@ -187,7 +187,8 @@ phase_discovery() {
     local next_page_token=""
     local page=0
     local tmp_risks
-    tmp_risks=$(mktemp)
+    tmp_risks=$(mktemp "${TMPDIR:-/tmp}/rr-discovery-pages.XXXXXX")
+    trap 'rm -f "$tmp_risks"' RETURN
 
     while true; do
         page=$((page + 1))
@@ -214,13 +215,13 @@ phase_discovery() {
         fi
     done
 
+    # Combine all pages in a single jq pass — O(n) instead of O(p×n)
     local all_risks
     if [ -s "$tmp_risks" ]; then
         all_risks=$(jq -s '.' "$tmp_risks")
     else
         all_risks="[]"
     fi
-    rm -f "$tmp_risks"
 
     local risk_count
     risk_count=$(echo "$all_risks" | jq 'length')
@@ -274,7 +275,8 @@ phase_filter() {
     # Query for existing reviews this quarter (cursor-paginated)
     local jql="project = $PROJECT_KEY AND issuetype = Review AND created >= $quarter_start"
     local tmp_reviews
-    tmp_reviews=$(mktemp)
+    tmp_reviews=$(mktemp "${TMPDIR:-/tmp}/rr-reviews-pages.XXXXXX")
+    trap 'rm -f "$tmp_reviews"' RETURN
     local next_page_token=""
     while true; do
         local reviews_response
@@ -287,6 +289,14 @@ phase_filter() {
         next_page_token=$(echo "$reviews_response" | jq -r '.nextPageToken // empty')
         [ -z "$next_page_token" ] && break
     done
+    # Combine all review pages in a single jq pass — O(n) instead of O(p×n)
+    local all_reviews
+    if [ -s "$reviews_tmpfile" ]; then
+        all_reviews=$(jq -s 'add' "$reviews_tmpfile")
+    else
+        all_reviews="[]"
+    fi
+    # tmpfile cleaned up by RETURN trap
 
     # Build space-delimited set of reviewed parent keys for O(|set|) lookup.
     # Bash 3.2-compatible alternative to `declare -A` (associative arrays are
