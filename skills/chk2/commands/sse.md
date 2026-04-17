@@ -16,30 +16,48 @@ done
 ```
 
 ```python
-import concurrent.futures, time
+import concurrent.futures
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-# SE2: SSE connection limit — try 20 concurrent SSE connections
-def open_sse(i):
-    for path in ['/events', '/sse', '/stream', '/api/events']:
+# SE2: SSE connection limit — discover valid path first, then test concurrency on that path only
+# Phase 1: Probe paths sequentially to find one that responds (avoids 20x redundant 404 probes)
+sse_path = None
+for path in ['/events', '/sse', '/stream', '/api/events']:
+    try:
+        req = Request(f'https://myzr.io{path}',
+                      headers={'Accept': 'text/event-stream', 'User-Agent': 'Mozilla/5.0'})
+        resp = urlopen(req, timeout=5)
+        sse_path = path
+        break
+    except HTTPError as e:
+        if e.code != 404:
+            sse_path = path
+            break
+    except (URLError, Exception):
+        continue
+
+if sse_path is None:
+    print("SE2: No SSE endpoint found (all paths 404/unreachable)")
+else:
+    # Phase 2: Concurrent connections on the discovered path
+    def open_sse(i):
         try:
-            req = Request(f'https://myzr.io{path}',
+            req = Request(f'https://myzr.io{sse_path}',
                           headers={'Accept': 'text/event-stream', 'User-Agent': 'Mozilla/5.0'})
             resp = urlopen(req, timeout=5)
-            return {'path': path, 'status': resp.status, 'connected': True}
+            return {'status': resp.status, 'connected': True}
         except HTTPError as e:
-            return {'path': path, 'status': e.code, 'connected': False}
+            return {'status': e.code, 'connected': False}
         except (URLError, Exception) as e:
-            continue
-    return {'path': 'none', 'status': 0, 'connected': False, 'error': 'all paths failed'}
+            return {'status': 0, 'connected': False, 'error': str(e)}
 
-with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-    results = list(executor.map(open_sse, range(20)))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        results = list(executor.map(open_sse, range(20)))
 
-connected = sum(1 for r in results if r.get('connected'))
-statuses = set(r.get('status') for r in results)
-print(f"SE2: {connected}/20 SSE connections succeeded, statuses: {statuses}")
+    connected = sum(1 for r in results if r.get('connected'))
+    statuses = set(r.get('status') for r in results)
+    print(f"SE2: {connected}/20 SSE connections to {sse_path} succeeded, statuses: {statuses}")
 ```
 
 ```bash

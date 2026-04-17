@@ -19,9 +19,9 @@ NEW_SID=$(curl -s "https://${TARGET:-myzr.io}/api" -X POST -H "Content-Type: app
 # Try polling with old session
 curl -s "https://${TARGET:-myzr.io}/api" -X POST -H "Content-Type: application/json" -d "{\"action\":\"poll\",\"sessionId\":\"$OLD_SID\"}" -H "User-Agent: Mozilla/5.0"
 
-# AU3: Concurrent session limits — create 20+ sessions
+# AU3: Concurrent session limits — create 20+ sessions (uses jq instead of python3 to avoid 22 interpreter startups)
 for i in $(seq 1 22); do
-  curl -s "https://${TARGET:-myzr.io}/api" -X POST -H "Content-Type: application/json" -d '{"action":"new-game"}' -H "User-Agent: Mozilla/5.0" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'{i}: {d.get(\"sessionId\",\"DENIED\")[:8]}... status={d.get(\"status\",\"?\")}')" 2>/dev/null
+  curl -s "https://${TARGET:-myzr.io}/api" -X POST -H "Content-Type: application/json" -d '{"action":"new-game"}' -H "User-Agent: Mozilla/5.0" | jq -r --arg i "$i" '"\($i): \(.sessionId // "DENIED" | .[:8])... status=\(.status // "?")"' 2>/dev/null
 done
 
 # AU4: Session timeout — create session and note for manual timeout check

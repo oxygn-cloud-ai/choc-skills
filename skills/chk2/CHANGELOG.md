@@ -2,6 +2,16 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.1] - 2026-04-17
+
+### Changed
+- **Performance**: RE1 Slowloris test uses ThreadPoolExecutor for concurrent connections (was serial with 30s sleep) — saves ~24s per run (CPT-16)
+- **Performance**: AU3 session test uses jq instead of python3 for JSON parsing (eliminates 22 interpreter startups) (CPT-16)
+- **Performance**: SE2 SSE test discovers valid path first, then tests concurrency on that path only (avoids 20x redundant 404 probes) (CPT-16)
+
+### Note on version renumbering
+- CPT-16's source branch bumped 2.2.0 → 2.2.1 in isolation. By merge time, 2.3.0 (CPT-8) had already shipped, so the Merger renumbered CPT-16 to 2.3.1. No code semantics changed.
+
 ## [2.3.0] - 2026-04-14
 
 ### Changed
