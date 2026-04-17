@@ -115,7 +115,7 @@ s.close()
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/scale.md`:
 
 ```markdown
 ### Scaling

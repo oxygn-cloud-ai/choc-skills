@@ -105,7 +105,7 @@ for label, path in paths.items():
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/backend.md`:
 
 ```markdown
 ### Backend

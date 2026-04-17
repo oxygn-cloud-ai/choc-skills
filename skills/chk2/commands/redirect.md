@@ -39,7 +39,7 @@ curl -sIL "http://${TARGET:-myzr.io}/" -H "User-Agent: Mozilla/5.0" | grep -iE "
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/redirect.md`:
 
 ```markdown
 ### Redirect

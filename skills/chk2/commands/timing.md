@@ -108,7 +108,7 @@ print(f"TM4: {unique_sessions} unique sessions from 10 concurrent requests")
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/timing.md`:
 
 ```markdown
 ### Timing

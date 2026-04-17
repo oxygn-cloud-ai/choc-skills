@@ -46,7 +46,7 @@ curl -s "https://${TARGET:-myzr.io}/api" -X POST \
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/transport.md`:
 
 ```markdown
 ### Transport

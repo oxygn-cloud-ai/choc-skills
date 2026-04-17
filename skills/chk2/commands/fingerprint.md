@@ -43,7 +43,7 @@ curl -s "https://hstspreload.org/api/v2/status?domain=${TARGET:-myzr.io}" -H "Us
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/fingerprint.md`:
 
 ```markdown
 ### Fingerprint

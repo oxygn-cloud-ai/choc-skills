@@ -39,7 +39,7 @@ curl -sI "https://${TARGET:-myzr.io}/" -H "User-Agent: Mozilla/5.0" | grep -i se
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/cookies.md`:
 
 ```markdown
 ### Cookies

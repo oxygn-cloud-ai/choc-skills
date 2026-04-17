@@ -41,7 +41,7 @@ curl -sI "http://myzr.io/" | head -5
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/headers.md`:
 
 ```markdown
 ### Headers

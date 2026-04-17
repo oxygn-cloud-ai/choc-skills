@@ -70,7 +70,7 @@ curl -sI "https://myzr.io/" -H "User-Agent: Mozilla/5.0" | grep -i "alt-svc"
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/tls.md`:
 
 ```markdown
 ### TLS

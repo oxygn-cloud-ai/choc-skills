@@ -131,7 +131,7 @@ if len(session_ids) >= 2:
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/business.md`:
 
 ```markdown
 ### Business Logic

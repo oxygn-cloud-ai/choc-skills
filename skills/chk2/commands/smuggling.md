@@ -54,7 +54,7 @@ curl -s -o /dev/null -w "%{http_code}" --http2 "https://${TARGET:-myzr.io}/" \
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/smuggling.md`:
 
 ```markdown
 ### Smuggling

@@ -105,7 +105,7 @@ echo " (kid SQL injection)"
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/jwt.md`:
 
 ```markdown
 ### JWT

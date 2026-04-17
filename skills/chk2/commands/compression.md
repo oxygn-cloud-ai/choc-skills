@@ -64,7 +64,7 @@ sys.stdout.buffer.write(compressed)
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/compression.md`:
 
 ```markdown
 ### Compression

@@ -44,7 +44,7 @@ curl -sI "https://${TARGET:-myzr.io}/api" -X DELETE -H "User-Agent: Mozilla/5.0"
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/negotiation.md`:
 
 ```markdown
 ### Negotiation

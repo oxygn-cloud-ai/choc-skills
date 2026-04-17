@@ -63,7 +63,7 @@ curl -s "https://${TARGET:-myzr.io}/api" -X POST -H "Content-Type: application/j
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/auth.md`:
 
 ```markdown
 ### Auth

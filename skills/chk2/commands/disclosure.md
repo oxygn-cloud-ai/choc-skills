@@ -50,7 +50,7 @@ curl -s "https://myzr.io/robots.txt" -H "User-Agent: Mozilla/5.0"
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/disclosure.md`:
 
 ```markdown
 ### Disclosure

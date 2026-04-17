@@ -40,7 +40,7 @@ curl -sI "https://${TARGET:-myzr.io}/?param=%0d%0aX-Injected:%20evil" -H "User-A
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/hardening.md`:
 
 ```markdown
 ### Hardening

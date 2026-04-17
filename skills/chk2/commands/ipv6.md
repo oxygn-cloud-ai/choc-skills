@@ -71,7 +71,7 @@ echo "$ERROR_BODY" | grep -iE '[0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4}){7}|([0-9a-fA-
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/ipv6.md`:
 
 ```markdown
 ### IPv6

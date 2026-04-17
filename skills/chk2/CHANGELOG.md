@@ -2,6 +2,14 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.7] - 2026-04-17
+
+### Fixed
+- **P1 race condition**: `/chk2:all` parallel waves (6 concurrent Agents) previously appended to a single `SECURITY_CHECK.md`, causing silent findings loss under the classic lost-update pattern. Each category sub-skill now writes its section to its own `SECURITY_CHECK.parts/<category>.md` file (one writer per file, no race). The orchestrator (`/chk2:all`) merges parts into `SECURITY_CHECK.md` in deterministic wave order after all waves complete. `/chk2:quick` uses the same pattern for consistency (CPT-88).
+
+### Note on version renumbering
+- CPT-88 source branch targeted 2.3.5; 2.3.5 (CPT-76), 2.3.6 (CPT-77) shipped earlier this cycle, so renumbered to 2.3.7.
+
 ## [2.3.6] - 2026-04-17
 
 ### Fixed

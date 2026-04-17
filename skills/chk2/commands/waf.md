@@ -72,7 +72,7 @@ curl -s -o /dev/null -w "%{http_code}" "https://myzr.io/" \
 
 ## Output
 
-Append to `SECURITY_CHECK.md`:
+Write to `SECURITY_CHECK.parts/waf.md`:
 
 ```markdown
 ### WAF
