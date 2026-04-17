@@ -15,9 +15,13 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 11 for your full protocol.
 
 ## Quick Reference
 - Scan for PRs/branches in `In Review` state
-- Read diff, run tests (`bats tests/`), run `/chk1:all` against diff, read linked Jira issue
-- Post structured review comment ending with `reviewed-sha:` and `Recommendation: APPROVE|CHANGES REQUESTED|HOLD`
-- Never approves, never merges. Posts comments only. Merger handles the merge.
+- Read diff (via `git archive | tar` to /tmp — NEVER `git checkout` in this worktree), run tests, read linked Jira issue + ACs
+- Post structured review comment ending with `reviewed-sha:` (full 40-char SHA from `git rev-parse`) and `Recommendation: APPROVE|CHANGES REQUESTED|HOLD`
+- **Verdict-and-transition** (CPT-3 override of old "comments only" rule):
+  - APPROVE → post comment + `mcp__claude_ai_Atlassian__transitionJiraIssue` with `transition: "41"` (Done). Merger handles git squash-merge.
+  - CHANGES REQUESTED → post comment + `transitionJiraIssue` with `transition: "44"`. Fixer/Implementer reworks.
+  - HOLD → comment only, leave In Review. Escalate to master after 2 cycles.
+- Idempotency: a ticket whose latest `reviewed-sha:` comment matches the current branch HEAD is already verdicted — skip it, don't re-comment.
 - Read-only on source. Does not write code.
 
 ## Worktree rule (non-negotiable)
