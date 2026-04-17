@@ -114,6 +114,52 @@ for dir in "${SKILLS_DIR}"/*/; do
     skill_errors=$((skill_errors + internal_drift))
   fi
 
+  # --- CPT-134: root README.md skills-table version matches frontmatter ---
+  # CPT-92 caught SKILL.md internal drift but didn't cover either README
+  # location. The root README skills-table row is the first place most users
+  # look for version — silent drift there misleads anyone picking up the repo.
+  root_readme="${REPO_DIR}/README.md"
+  if [ -f "$root_readme" ]; then
+    root_row_ver=$(grep -E "\\| \\*\\*${name}\\*\\*" "$root_readme" \
+                   | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 | sed 's/^v//')
+    if [ -z "$root_row_ver" ]; then
+      warn "${name}: not listed in root README skills table"
+      warnings=$((warnings + 1))
+    elif [ "$root_row_ver" = "$fm_version" ]; then
+      pass "Root README skills-table version matches frontmatter"
+    else
+      fail "Root README skills-table says v${root_row_ver}, frontmatter says ${fm_version}"
+      skill_errors=$((skill_errors + 1))
+    fi
+  fi
+
+  # --- CPT-134: per-skill README version matches frontmatter ---
+  # Accepts either:
+  #   Current: **X.Y.Z**                         (canonical form)
+  #   ## Version\n\nX.Y.Z                        (legacy ra-style bare form)
+  # Both must match frontmatter; missing-declaration is fine (README doesn't
+  # need to advertise version, but if it does, it must be correct).
+  per_readme="${dir}README.md"
+  if [ -f "$per_readme" ]; then
+    readme_ver=$(grep -oE 'Current: \*\*[0-9]+\.[0-9]+\.[0-9]+\*\*' "$per_readme" \
+                 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    if [ -z "$readme_ver" ]; then
+      readme_ver=$(awk '
+        /^## Version/ {hit=1; next}
+        hit && /^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$/ {print; exit}
+      ' "$per_readme" | tr -d '[:space:]')
+    fi
+    if [ -z "$readme_ver" ]; then
+      # README exists but declares no version — acceptable
+      :
+    elif [ "$readme_ver" = "$fm_version" ]; then
+      pass "Per-skill README version matches frontmatter"
+    else
+      fail "Per-skill README version ${readme_ver} does not match frontmatter ${fm_version}"
+      skill_errors=$((skill_errors + 1))
+    fi
+  fi
+
   # --- Check: required subcommands ---
   # Skills can define subcommands either inline (### help) or via command files (commands/help.md)
   for subcmd in help doctor version; do

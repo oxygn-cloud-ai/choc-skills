@@ -2,6 +2,13 @@
 
 All notable changes to the ra skill will be documented in this file.
 
+## [1.0.7] - 2026-04-18
+
+### Fixed
+- **Stale `Current` version in `skills/ra/README.md`**: the README displayed `1.0.0` long after the frontmatter moved on (reached 1.0.5 via CPT-77). CPT-92's version-sync validator checked only the `Current: **X.Y.Z**` form that chk1/chk2/project/rr use, but ra's README used a bare `## Version\n\nX.Y.Z` form, so the drift passed silently. Normalised ra's README to the canonical `Current: **X.Y.Z**` form and updated to the now-current value. Extended `scripts/validate-skills.sh` to check per-skill READMEs (both forms) and the root README skills-table row; `tests/version-sync.bats` now discovers skills dynamically from `skills/*/SKILL.md` rather than a hardcoded array, so any newly added skill is automatically covered (CPT-134).
+
+**Note on version renumbering**: This entry originally targeted 1.0.6 on `fix/CPT-134-validator-drift-ra-stale`, but CPT-123 (conflicting-flag detection) landed on `main` and claimed 1.0.6 first. Renumbered to 1.0.7 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [1.0.6] - 2026-04-17
 
 ### Fixed

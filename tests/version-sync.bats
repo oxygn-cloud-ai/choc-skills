@@ -14,7 +14,18 @@
 
 REPO_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 
-SKILL_NAMES=(chk1 chk2 project ra rr)
+# CPT-134: discover skills dynamically (same filter install.sh uses) so a new
+# skill added to skills/ is automatically covered by these drift checks. The
+# previous hardcoded SKILL_NAMES=(chk1 chk2 project ra rr) silently dropped
+# coverage on any skill that was subsequently added.
+SKILL_NAMES=()
+while IFS= read -r _sn_dir; do
+  _sn_name="$(basename "$_sn_dir")"
+  [[ "$_sn_name" == _* ]] && continue
+  [ -f "${_sn_dir}/SKILL.md" ] || continue
+  SKILL_NAMES+=("$_sn_name")
+done < <(printf '%s\n' "${REPO_DIR}"/skills/*/)
+unset _sn_dir _sn_name
 
 # Extract frontmatter version for a skill.
 fm_version() {
@@ -64,18 +75,25 @@ fm_version() {
 }
 
 @test "per-skill README.md Current version matches SKILL.md frontmatter (when present)" {
+  # CPT-134: accept both the canonical "Current: **X.Y.Z**" form AND the
+  # legacy bare form (`## Version\n\nX.Y.Z`). The previous test silently
+  # skipped ra because ra's README used the bare form — ra/README.md was
+  # left stale at 1.0.0 while frontmatter said 1.0.5.
   local drift=()
   for name in "${SKILL_NAMES[@]}"; do
     local readme="$REPO_DIR/skills/$name/README.md"
     [ -f "$readme" ] || continue
-    # Find "Current: **X.Y.Z**" if present
     local cur
     cur=$(grep -Eo 'Current: \*\*[0-9]+\.[0-9]+\.[0-9]+\*\*' "$readme" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-    [ -n "$cur" ] || continue  # no "Current:" line — that's fine
+    if [ -z "$cur" ]; then
+      # Fall back to bare "X.Y.Z" on a line after a "## Version" heading
+      cur=$(awk '/^## Version/{hit=1; next} hit && /^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$/{print; exit}' "$readme" | tr -d '[:space:]')
+    fi
+    [ -n "$cur" ] || continue  # README declares no version — acceptable
     local fm
     fm="$(fm_version "$name")"
     if [ "$cur" != "$fm" ]; then
-      drift+=("$name/README.md: Current **$cur** does not match frontmatter $fm")
+      drift+=("$name/README.md: version $cur does not match frontmatter $fm")
     fi
   done
   if [ ${#drift[@]} -gt 0 ]; then
