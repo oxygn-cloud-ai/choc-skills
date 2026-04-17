@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.18] - 2026-04-18
+
+### Fixed
+- **Nested first-run `RR_WORK_DIR` now works** (`rr-prepare.sh`, `rr-finalize.sh`): CPT-100 canonicalized only the immediate parent of `WORK_DIR`, which handled the default `$HOME/rr-work` case but not nested paths like `$HOME/new/subdir/rr-work` where intermediate segments are also missing on first run. In that case `dirname` returned a non-existent directory, the `[ -d ]` gate skipped the realpath step, and the script FATALed with the same path-allowlist message CPT-100 was written to fix. Replaced the single-level `dirname` with a walk-up loop (`_rr_resolve_work_dir_with_missing_tail` helper) that probes upward until an existing ancestor is found, canonicalizes that, and recombines the missing tail. Applied identically in both scripts; handles any depth of missing segments (CPT-137).
+
+**Note on version renumbering**: This entry originally targeted 5.3.17 on `fix/CPT-137-rr-nested-first-run`, but CPT-102 (credential-leak completion) landed on `main` and claimed 5.3.17 first. Renumbered to 5.3.18 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.17] - 2026-04-18
 
 ### Security

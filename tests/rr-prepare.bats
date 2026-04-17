@@ -195,33 +195,104 @@ _cpt100_setup_symlinked_home() {
 
 @test "rr-prepare.sh canonicalizes WORK_DIR parent when WORK_DIR does not exist (CPT-100)" {
   # Source-level assertion: the fix must canonicalize the parent directory
-  # of WORK_DIR when WORK_DIR itself doesn't exist yet. Expected patterns:
-  # - `$(dirname "$WORK_DIR")` paired with `realpath ... basename ...`
-  # - OR an equivalent `if [ -e "$WORK_DIR" ]; then ... else parent realpath`
-  # Refuse the known-buggy form outright.
+  # of WORK_DIR when WORK_DIR itself doesn't exist yet. Accepted shapes:
+  # - `$(dirname "$WORK_DIR")` directly (CPT-100 original shape)
+  # - `dirname "$probe"` in a walk-up helper that takes WORK_DIR (CPT-137
+  #   generalisation — any depth, not just one level)
+  # Refuse the known-buggy CPT-26 bare-gated shape outright.
   local src="$RR_PREPARE"
 
-  # Must NOT contain the bare gated realpath without a parent-dir fallback.
-  # Detect the buggy shape: a single `[ -e "$WORK_DIR" ] && WORK_DIR=` line
-  # not followed shortly by a dirname/parent canonicalization.
   if grep -qE '^[[:space:]]*\[ -e "\$WORK_DIR" \] && WORK_DIR="\$\(realpath "\$WORK_DIR"\)"[[:space:]]*$' "$src"; then
-    if ! grep -qE 'dirname "\$WORK_DIR"' "$src"; then
-      echo "rr-prepare.sh still uses the CPT-26 bare gated realpath without a parent-dir fallback" >&2
-      return 1
-    fi
+    echo "rr-prepare.sh still uses the CPT-26 bare gated realpath without a parent-dir fallback" >&2
+    return 1
   fi
 
-  # Must contain a dirname-based canonicalization
-  grep -qE 'dirname "\$WORK_DIR"' "$src"
+  # Must contain a dirname call in the WORK_DIR resolution path.
+  grep -qE 'dirname ' "$src" || {
+    echo "rr-prepare.sh has no dirname call — parent canonicalization missing" >&2
+    return 1
+  }
 }
 
 @test "rr-finalize.sh canonicalizes WORK_DIR parent when WORK_DIR does not exist (CPT-100)" {
   local src="$RR_FINALIZE"
   if grep -qE '^[[:space:]]*\[ -e "\$WORK_DIR" \] && WORK_DIR="\$\(realpath "\$WORK_DIR"\)"[[:space:]]*$' "$src"; then
-    if ! grep -qE 'dirname "\$WORK_DIR"' "$src"; then
-      echo "rr-finalize.sh still uses the CPT-26 bare gated realpath without a parent-dir fallback" >&2
-      return 1
-    fi
+    echo "rr-finalize.sh still uses the CPT-26 bare gated realpath without a parent-dir fallback" >&2
+    return 1
   fi
-  grep -qE 'dirname "\$WORK_DIR"' "$src"
+  grep -qE 'dirname ' "$src" || {
+    echo "rr-finalize.sh has no dirname call — parent canonicalization missing" >&2
+    return 1
+  }
+}
+
+# --- CPT-137: nested first-run (multiple missing path segments) ---
+#
+# CPT-100 fixed the single-level case (HOME/rr-work where only rr-work is
+# missing) by canonicalizing WORK_DIR's parent. It didn't handle the
+# nested case (HOME/new/subdir/rr-work where intermediate segments are
+# also missing): `dirname` returns HOME/new/subdir which doesn't exist,
+# the if-[-d] branch is skipped, WORK_DIR stays unresolved, case guard
+# FATALs for the same reason CPT-100 was written to fix.
+#
+# Remediation: walk up until we hit a directory that DOES exist, realpath
+# that, then recombine the tail we skipped. Applied in both rr-prepare.sh
+# and rr-finalize.sh.
+
+@test "rr-prepare succeeds on first run when WORK_DIR has nested missing parents on symlinked HOME (CPT-137)" {
+  if ! _cpt100_setup_symlinked_home "$HOME"; then
+    skip "this platform's HOME has no distinct-canonical-form outside /tmp (typical on Linux)"
+  fi
+
+  # Nested missing path: HOME exists (via setup), but none of new/deeply/nested
+  # /rr-work along the way exist. CPT-100's single-level dirname returns
+  # HOME/new/deeply/nested — not a dir — and the realpath gate is skipped.
+  export RR_WORK_DIR="$HOME/new/deeply/nested/rr-work"
+  [ ! -e "$RR_WORK_DIR" ]
+  [ ! -d "$(dirname "$RR_WORK_DIR")" ]
+
+  run "$RR_PREPARE" --reset
+
+  echo "status=$status" >&2
+  echo "output=$output" >&2
+  [[ "$output" != *"FATAL: RR_WORK_DIR must be under"* ]]
+}
+
+@test "rr-finalize succeeds on first run when WORK_DIR has nested missing parents on symlinked HOME (CPT-137)" {
+  if ! _cpt100_setup_symlinked_home "$HOME"; then
+    skip "this platform's HOME has no distinct-canonical-form outside /tmp (typical on Linux)"
+  fi
+
+  export RR_WORK_DIR="$HOME/new/deeply/nested/rr-work"
+  [ ! -e "$RR_WORK_DIR" ]
+  [ ! -d "$(dirname "$RR_WORK_DIR")" ]
+
+  run "$RR_FINALIZE"
+
+  echo "status=$status" >&2
+  echo "output=$output" >&2
+  [[ "$output" != *"FATAL: RR_WORK_DIR must be under"* ]]
+}
+
+@test "rr-prepare.sh walks up to nearest existing ancestor (not just one level) (CPT-137)" {
+  # Source-level assertion: the fix must be a walk-up loop (or equivalent),
+  # not a single-level `dirname`. Detect the CPT-100 bare-single-level
+  # shape and refuse it; require a loop construct paired with dirname.
+  local src="$RR_PREPARE"
+
+  # Must contain a loop over dirname — the walk-up pattern. A bare
+  # single-level "parent=$(dirname ...)" followed by "[ -d $parent ]"
+  # is insufficient.
+  if ! grep -qE 'while.*\[ ! -d|while .*-d ' "$src"; then
+    echo "rr-prepare.sh has no walk-up loop — nested missing parents still FATAL (CPT-137)" >&2
+    return 1
+  fi
+}
+
+@test "rr-finalize.sh walks up to nearest existing ancestor (not just one level) (CPT-137)" {
+  local src="$RR_FINALIZE"
+  if ! grep -qE 'while.*\[ ! -d|while .*-d ' "$src"; then
+    echo "rr-finalize.sh has no walk-up loop — nested missing parents still FATAL (CPT-137)" >&2
+    return 1
+  fi
 }

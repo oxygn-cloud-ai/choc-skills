@@ -29,34 +29,60 @@ WORK_DIR="${RR_WORK_DIR:-${HOME}/rr-work}"
 # A symlink at $HOME/rr-work -> /outside/path would pass the case guard without this.
 # Also resolve HOME for consistent comparison (macOS: /var -> /private/var).
 #
-# First-run handling (CPT-100): when WORK_DIR doesn't exist yet we cannot resolve
-# it directly, but we can canonicalize its PARENT so the case guard compares like
-# against like. Otherwise, on hosts where HOME has a distinct canonical form
-# (macOS /var -> /private/var, autofs mounts, firmlinked network homes), the
-# unresolved `$HOME/rr-work` never matches `$(realpath $HOME)/*` and the script
-# FATALs before the first run can create the directory.
+# First-run handling (CPT-100 + CPT-137): when WORK_DIR doesn't exist yet we
+# cannot resolve it directly, but we can canonicalize its NEAREST EXISTING
+# ANCESTOR and recombine the missing tail. On hosts where HOME has a distinct
+# canonical form (macOS /var -> /private/var, autofs mounts, firmlinked network
+# homes), the unresolved `$HOME/rr-work` never matches `$(realpath $HOME)/*`
+# and the script FATALs before the first run can create the directory.
+#
+# CPT-100 resolved only the immediate parent. CPT-137 generalises to any
+# depth: walk up $_rr_probe until a directory that DOES exist, recording
+# skipped segments in $_rr_remainder, then realpath the ancestor and
+# recombine. Handles $HOME/rr-work (one missing segment), $HOME/new/sub/rr-work
+# (three missing segments), and arbitrarily deeper variants without extra logic.
+_rr_resolve_work_dir_with_missing_tail() {
+    # Prints the canonicalized path for "$1" using the nearest existing
+    # ancestor. Second arg "yes" uses realpath; "no" uses `cd … && pwd -P`
+    # for the no-realpath fallback branch below.
+    local target="$1"
+    local use_realpath="$2"
+    local probe remainder
+    probe="$target"
+    remainder=""
+    while [ ! -d "$probe" ]; do
+        remainder="/$(basename "$probe")$remainder"
+        probe="$(dirname "$probe")"
+        [ "$probe" = "/" ] && break
+    done
+    if [ -d "$probe" ]; then
+        if [ "$use_realpath" = "yes" ]; then
+            printf '%s%s\n' "$(realpath "$probe")" "$remainder"
+        else
+            printf '%s%s\n' "$(cd "$probe" && pwd -P)" "$remainder"
+        fi
+    else
+        # No existing ancestor found (shouldn't happen since / always exists,
+        # but kept for defensiveness). Return unchanged so the case guard's
+        # FATAL surfaces a useful error rather than silent mis-canonicalization.
+        printf '%s\n' "$target"
+    fi
+}
+
 RESOLVED_HOME="$HOME"
 if command -v realpath >/dev/null 2>&1; then
     RESOLVED_HOME="$(realpath "$HOME")"
     if [ -e "$WORK_DIR" ]; then
         WORK_DIR="$(realpath "$WORK_DIR")"
     else
-        _rr_parent="$(dirname "$WORK_DIR")"
-        if [ -d "$_rr_parent" ]; then
-            WORK_DIR="$(realpath "$_rr_parent")/$(basename "$WORK_DIR")"
-        fi
-        unset _rr_parent
+        WORK_DIR="$(_rr_resolve_work_dir_with_missing_tail "$WORK_DIR" yes)"
     fi
 elif [ -d "$WORK_DIR" ]; then
     RESOLVED_HOME="$(cd "$HOME" && pwd -P)"
     WORK_DIR="$(cd "$WORK_DIR" && pwd -P)"
 else
     RESOLVED_HOME="$(cd "$HOME" && pwd -P)"
-    _rr_parent="$(dirname "$WORK_DIR")"
-    if [ -d "$_rr_parent" ]; then
-        WORK_DIR="$(cd "$_rr_parent" && pwd -P)/$(basename "$WORK_DIR")"
-    fi
-    unset _rr_parent
+    WORK_DIR="$(_rr_resolve_work_dir_with_missing_tail "$WORK_DIR" no)"
 fi
 
 # Validate WORK_DIR is under $HOME or /tmp to prevent accidental operations elsewhere

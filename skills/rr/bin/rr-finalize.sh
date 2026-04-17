@@ -25,31 +25,47 @@ WORK_DIR="${RR_WORK_DIR:-${HOME}/rr-work}"
 # Resolve symlinks before validation to prevent symlink traversal attacks (CPT-26).
 # Also resolve HOME for consistent comparison (macOS: /var -> /private/var).
 #
-# First-run handling (CPT-100): when WORK_DIR doesn't exist yet we cannot resolve
-# it directly, but we can canonicalize its PARENT so the case guard compares like
-# against like. See rr-prepare.sh for the full rationale.
+# First-run handling (CPT-100 + CPT-137): when WORK_DIR doesn't exist yet we
+# cannot resolve it directly, but we can canonicalize its NEAREST EXISTING
+# ANCESTOR and recombine the missing tail. See rr-prepare.sh for the full
+# rationale. CPT-137 generalises CPT-100 from single-level to walk-up so
+# nested first-run paths (`$HOME/new/sub/rr-work`) work too.
+_rr_resolve_work_dir_with_missing_tail() {
+    local target="$1"
+    local use_realpath="$2"
+    local probe remainder
+    probe="$target"
+    remainder=""
+    while [ ! -d "$probe" ]; do
+        remainder="/$(basename "$probe")$remainder"
+        probe="$(dirname "$probe")"
+        [ "$probe" = "/" ] && break
+    done
+    if [ -d "$probe" ]; then
+        if [ "$use_realpath" = "yes" ]; then
+            printf '%s%s\n' "$(realpath "$probe")" "$remainder"
+        else
+            printf '%s%s\n' "$(cd "$probe" && pwd -P)" "$remainder"
+        fi
+    else
+        printf '%s\n' "$target"
+    fi
+}
+
 RESOLVED_HOME="$HOME"
 if command -v realpath >/dev/null 2>&1; then
     RESOLVED_HOME="$(realpath "$HOME")"
     if [ -e "$WORK_DIR" ]; then
         WORK_DIR="$(realpath "$WORK_DIR")"
     else
-        _rr_parent="$(dirname "$WORK_DIR")"
-        if [ -d "$_rr_parent" ]; then
-            WORK_DIR="$(realpath "$_rr_parent")/$(basename "$WORK_DIR")"
-        fi
-        unset _rr_parent
+        WORK_DIR="$(_rr_resolve_work_dir_with_missing_tail "$WORK_DIR" yes)"
     fi
 elif [ -d "$WORK_DIR" ]; then
     RESOLVED_HOME="$(cd "$HOME" && pwd -P)"
     WORK_DIR="$(cd "$WORK_DIR" && pwd -P)"
 else
     RESOLVED_HOME="$(cd "$HOME" && pwd -P)"
-    _rr_parent="$(dirname "$WORK_DIR")"
-    if [ -d "$_rr_parent" ]; then
-        WORK_DIR="$(cd "$_rr_parent" && pwd -P)/$(basename "$WORK_DIR")"
-    fi
-    unset _rr_parent
+    WORK_DIR="$(_rr_resolve_work_dir_with_missing_tail "$WORK_DIR" no)"
 fi
 
 # Validate WORK_DIR is under $HOME or /tmp to prevent accidental operations elsewhere
