@@ -1,6 +1,6 @@
 ---
 name: chk1
-version: 2.4.3
+version: 2.4.4
 description: Adversarial Implementation Audit Mandate. Use when auditing recently implemented changes for bugs, risks, omissions, deviations, and unintended modifications. Fault-finding audit, not validation.
 user-invocable: true
 disable-model-invocation: true

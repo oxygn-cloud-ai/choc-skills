@@ -2,6 +2,11 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.3] - 2026-04-17
+
+### Fixed
+- **Argument parsing**: `install.sh` now uses an order-independent while-loop parser instead of positional `$1` checks. `-f --uninstall` (and other flag combinations) now uninstalls instead of silently re-installing. Unknown flags now exit non-zero (CPT-76).
+
 ## [1.2.2] - 2026-04-17
 
 ### Changed

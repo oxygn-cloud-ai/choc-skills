@@ -28,18 +28,24 @@ COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
 
-# --force is accepted for command-line symmetry with the root install.sh, but
-# this per-skill installer has no interactive prompts — cp always overwrites —
-# so the flag is a no-op. Kept in the arg parser so wrapper scripts that pass
-# --force continue to work.
-for arg in "$@"; do
-  case "$arg" in
-    -f|--force) : ;;
+# --- Parse arguments (order-independent; CPT-76) ---
+# --force is a no-op for project (cp always overwrites, no interactive prompt)
+# but accepted for command-line symmetry with the root install.sh.
+ACTION="install"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --help|-h)        ACTION="help"; shift ;;
+    --version|-v)     ACTION="version"; shift ;;
+    --uninstall)      ACTION="uninstall"; shift ;;
+    --check|--doctor) ACTION="check"; shift ;;
+    --force|-f)       shift ;;
+    -*)               die "Unknown option: $1 (try --help)" ;;
+    *)                die "Unexpected argument: $1 (try --help)" ;;
   esac
 done
 
 # --- Help ---
-if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+if [ "$ACTION" = "help" ]; then
   cat <<EOF
 ${BOLD}project skill installer${RESET}
 
@@ -65,14 +71,14 @@ EOF
 fi
 
 # --- Version ---
-if [ "${1:-}" = "--version" ] || [ "${1:-}" = "-v" ]; then
+if [ "$ACTION" = "version" ]; then
   ver=$(grep -m1 '^version:' "$SKILL_SOURCE" 2>/dev/null | sed 's/^version: *//' || true)
   echo "project v${ver:-unknown}"
   exit 0
 fi
 
 # --- Uninstall ---
-if [ "${1:-}" = "--uninstall" ]; then
+if [ "$ACTION" = "uninstall" ]; then
   info "Uninstalling project..."
   [ -d "$SKILL_TARGET" ] && rm -rf "$SKILL_TARGET" && ok "Removed ${SKILL_TARGET}" || warn "Skill not installed"
   [ -d "$COMMANDS_TARGET" ] && rm -rf "$COMMANDS_TARGET" && ok "Removed ${COMMANDS_TARGET}" || warn "Commands not installed"
@@ -83,7 +89,7 @@ if [ "${1:-}" = "--uninstall" ]; then
 fi
 
 # --- Health check ---
-if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
+if [ "$ACTION" = "check" ]; then
   printf "\n${BOLD}project installation health check${RESET}\n\n"
   issues=0
 

@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.8] - 2026-04-17
+
+### Fixed
+- **Argument parsing**: `install.sh` now uses an order-independent while-loop parser instead of positional `$1` checks. `-f --uninstall` (and other flag combinations) now uninstalls instead of silently re-installing. Unknown flags now exit non-zero (CPT-76).
+
+### Note on version renumbering
+- CPT-76's source branch bumped 5.3.6 → 5.3.7 in isolation. By merge time, 5.3.7 (CPT-117) had already shipped, so the Merger renumbered CPT-76 to 5.3.8. No code semantics changed.
+
 ## [5.3.7] - 2026-04-17
 
 ### Fixed

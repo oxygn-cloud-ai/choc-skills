@@ -28,15 +28,22 @@ SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
 FORCE=false
 
-# --- Flags ---
-for arg in "$@"; do
-  case "$arg" in
-    -f|--force) FORCE=true ;;
+# --- Parse arguments (order-independent; CPT-76) ---
+ACTION="install"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --help|-h)        ACTION="help"; shift ;;
+    --version|-v)     ACTION="version"; shift ;;
+    --uninstall)      ACTION="uninstall"; shift ;;
+    --check|--doctor) ACTION="check"; shift ;;
+    --force|-f)       FORCE=true; shift ;;
+    -*)               die "Unknown option: $1 (try --help)" ;;
+    *)                die "Unexpected argument: $1 (try --help)" ;;
   esac
 done
 
 # --- Help ---
-if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+if [ "$ACTION" = "help" ]; then
   cat <<EOF
 ${BOLD}chk2 skill installer${RESET}
 
@@ -56,14 +63,14 @@ EOF
 fi
 
 # --- Version ---
-if [ "${1:-}" = "--version" ] || [ "${1:-}" = "-v" ]; then
+if [ "$ACTION" = "version" ]; then
   ver=$(grep -m1 '^version:' "$SKILL_SOURCE" 2>/dev/null | sed 's/^version: *//' || true)
   echo "chk2 v${ver:-unknown}"
   exit 0
 fi
 
 # --- Uninstall ---
-if [ "${1:-}" = "--uninstall" ]; then
+if [ "$ACTION" = "uninstall" ]; then
   info "Uninstalling chk2..."
   if [ -d "$SKILL_TARGET" ]; then
     rm -rf "$SKILL_TARGET"
@@ -87,7 +94,7 @@ if [ "${1:-}" = "--uninstall" ]; then
 fi
 
 # --- Health check ---
-if [ "${1:-}" = "--check" ]; then
+if [ "$ACTION" = "check" ]; then
   printf "\n${BOLD}chk2 installation health check${RESET}\n\n"
   issues=0
 
