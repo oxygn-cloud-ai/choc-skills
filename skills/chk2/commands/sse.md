@@ -27,14 +27,17 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 # SE2: SSE connection limit — discover valid path first, then test concurrency on that path only
-# Phase 1: Probe paths sequentially to find one that responds (avoids 20x redundant 404 probes)
+# Phase 1: Probe paths sequentially to find one that responds (avoids 20x redundant 404 probes).
+# The probe response MUST be closed before Phase 2 opens concurrent connections on the same
+# path — otherwise a stale probe holds a connection slot and Phase 2 undercounts by one
+# (CPT-99). `with urlopen(...) as resp` guarantees closure on every exit path, including break.
 sse_path = None
 for path in ['/events', '/sse', '/stream', '/api/events']:
     try:
         req = Request(f'https://myzr.io{path}',
                       headers={'Accept': 'text/event-stream', 'User-Agent': 'Mozilla/5.0'})
-        resp = urlopen(req, timeout=5)
-        sse_path = path
+        with urlopen(req, timeout=5) as resp:
+            sse_path = path
         break
     except HTTPError as e:
         if e.code != 404:

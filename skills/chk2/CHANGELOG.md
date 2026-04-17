@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.11] - 2026-04-17
+
+### Fixed
+- **SSE Phase 1 probe not closed before Phase 2**: `skills/chk2/commands/sse.md` SE2 two-phase SSE connection-limit test opened a discovery probe in Phase 1 without closing it deterministically. Python GC eventually closed the socket, but on servers with a concurrent SSE cap (e.g. 20) the stale probe held slot 0 into Phase 2, so Phase 2's 20 concurrent opens got only 19 slots and SE2 reported "19/20 succeeded" — an artificial, measurement-created finding. Probe is now wrapped in `with urlopen(req, timeout=5) as resp:` so it closes on every exit path (including `break`) (CPT-99).
+
+**Note on version renumbering**: This entry originally targeted 2.3.10 on `fix/CPT-99-chk2-sse-probe-close`, but CPT-98 (chk2 doctor jq check) landed on `main` and claimed 2.3.10 first. Renumbered to 2.3.11 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.10] - 2026-04-17
 
 ### Fixed
