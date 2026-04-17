@@ -1,7 +1,7 @@
 ---
 name: ra:assess
 description: "Interactive bespoke risk assessment — interview, ingest, assess, adversarial review, discuss, output"
-allowed-tools: Read, Grep, Glob, Bash(mkdir *), Bash(date *), Bash(shasum *), Bash(ls *), Write, Edit, Agent, AskUserQuestion, WebSearch, WebFetch
+allowed-tools: Read, Grep, Glob, Bash(mkdir *), Bash(date *), Bash(shasum *), Bash(ls *), Bash(echo *), Write, Edit, Agent, AskUserQuestion, WebSearch, WebFetch
 ---
 
 # ra:assess — Interactive Risk Assessment

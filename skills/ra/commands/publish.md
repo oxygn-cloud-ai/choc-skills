@@ -1,7 +1,7 @@
 ---
 name: ra:publish
 description: "Publish a completed assessment to Jira RA project"
-allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(jq *), Bash(ls *), Bash(mkdir *), Write, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(jq *), Bash(ls *), Bash(mkdir *), Bash(echo *), Write, AskUserQuestion
 ---
 
 # ra:publish — Publish Assessment to Jira

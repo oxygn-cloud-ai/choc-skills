@@ -1,6 +1,6 @@
 ---
 name: ra
-version: 1.0.8
+version: 1.0.9
 description: "Bespoke risk assessment for Chocolate Finance. Invoke with /ra to start an interactive assessment, or /ra:publish to push results to Jira."
 user-invocable: true
 disable-model-invocation: true

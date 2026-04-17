@@ -1,7 +1,7 @@
 ---
 name: rr:review
 description: "Single risk assessment — interview, ingest, assess, adversarial review, discuss, output"
-allowed-tools: Read, Grep, Glob, Bash(mkdir *), Bash(date *), Bash(ls *), Write, Edit, Agent, AskUserQuestion, WebSearch
+allowed-tools: Read, Grep, Glob, Bash(mkdir *), Bash(date *), Bash(ls *), Bash(echo *), Write, Edit, Agent, AskUserQuestion, WebSearch
 ---
 
 # rr:review — Single Risk Assessment

@@ -2,6 +2,11 @@
 
 All notable changes to the ra skill will be documented in this file.
 
+## [1.0.9] - 2026-04-18
+
+### Fixed
+- **ra command allowed-tools now permit reading the env vars referenced by the CPT-103 MCP-substitution preamble** (CPT-149, companion fix to the rr v5.3.25 entry — rr renumbered from 5.3.24 to 5.3.25 as part of the merge sequence because CPT-146 claimed 5.3.24 on `main` first). Added `Bash(echo *)` to `skills/ra/commands/publish.md` (preamble in the command body) and `skills/ra/commands/assess.md` (loads `references/workflow/step-2-ingest.md`, which carries the preamble). Without it, the CPT-103 preamble's instruction to substitute `$JIRA_CLOUD_ID` via `echo "$JIRA_CLOUD_ID"` was denied by CPT-32 per-command enforcement. Covered by `tests/mcp-substitution-env-read-tool.bats`.
+
 ## [1.0.8] - 2026-04-18
 
 ### Fixed

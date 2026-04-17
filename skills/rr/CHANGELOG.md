@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.25] - 2026-04-18
+
+### Fixed
+- **rr command allowed-tools now permit reading the env vars referenced by the CPT-103 MCP-substitution preamble** (CPT-149). CPT-103 added an "IMPORTANT: MCP call-spec variable substitution" preamble to 8 rr/ra files instructing Claude to substitute `$JIRA_CLOUD_ID` (and `$RR_ASSIGNEE_ID`) with the output of `echo "$JIRA_CLOUD_ID"` before calling MCP tools. Under CPT-32 per-command allowed-tools enforcement, the preamble was unactionable for any command whose frontmatter did not permit some shell primitive that can read env vars — the `echo "$VAR"` call would be denied, Claude would either pass the literal placeholder string or hang. Added `Bash(echo *)` to `skills/rr/SKILL.md` (inline workflow fallback path) and `skills/rr/commands/review.md` (loads `references/workflow/step-1-extract.md`, `references/jira-config.md`, `references/workflow/step-6-publish.md`). `skills/rr/commands/board.md` was already covered via its existing `Bash(bash *)` entry. `tests/mcp-substitution-env-read-tool.bats` adds 6 regressions: 5 per-file sentinels asserting an env-reading primitive (`Bash(echo *)`, `Bash(printenv *)`, `Bash(env *)`, or `Bash(bash *)`) appears in the allowed-tools line, plus a generic cross-check over every rr/ra command file whose body carries the preamble.
+
+**Note on version renumbering**: This entry originally targeted 5.3.24 on `fix/CPT-149-echo-for-mcp-substitution`, but CPT-146 landed on `main` first and claimed 5.3.24. Renumbered to 5.3.25 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.24] - 2026-04-18
 
 ### Fixed
