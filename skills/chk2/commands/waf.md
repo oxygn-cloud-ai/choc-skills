@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(echo *), Write
 
 # chk2:waf — WAF Rules and Rate Limiting
 
-Test Cloudflare WAF and rate limiting on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test Cloudflare WAF and rate limiting on https://myzr.io. Write results to `SECURITY_CHECK.parts/waf.md` (see **Output** for format).
 
 ## Tests
 

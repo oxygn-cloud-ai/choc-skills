@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(echo *), Bash(dig *), Write
 
 # chk2:infra — Cloudflare Infrastructure
 
-Test Cloudflare configuration and infrastructure security on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test Cloudflare configuration and infrastructure security on https://myzr.io. Write results to `SECURITY_CHECK.parts/infra.md` (see **Output** for format).
 
 ## Tests
 

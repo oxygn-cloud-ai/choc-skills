@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:api — API Fuzzing, Injection, Type Confusion
 
-Test API input validation on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test API input validation on https://myzr.io. Write results to `SECURITY_CHECK.parts/api.md` (see **Output** for format).
 
 If you hit rate limits (429 or 1015), wait 65 seconds before continuing.
 

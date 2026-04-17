@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:cache — Cache Security
 
-Test cache security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test cache security on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/cache.md` (see **Output** for format).
 
 ## Tests
 

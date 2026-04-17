@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:scale — Scaling and Resource Limits
 
-Test connection limits and payload handling on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test connection limits and payload handling on https://myzr.io. Write results to `SECURITY_CHECK.parts/scale.md` (see **Output** for format).
 
 If you hit rate limits (429 or 1015), wait 65 seconds before continuing.
 

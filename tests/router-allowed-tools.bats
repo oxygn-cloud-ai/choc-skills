@@ -250,3 +250,43 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   echo "offenders:$offenders"
   [ -z "$offenders" ]
 }
+
+# --- CPT-125: opening paragraph of each category sub-skill must not contradict
+#     the Output block. CPT-88 switched sub-skills to write per-category part
+#     files (SECURITY_CHECK.parts/<cat>.md) but left the opening paragraph of
+#     every category file still saying "Append results to SECURITY_CHECK.md" —
+#     an agent reading top-to-bottom may follow either instruction, leaving the
+#     concurrent-write race CPT-88 was meant to close reachable.
+#
+#     The fix here narrowly removes the contradictory opening sentence. The
+#     authoritative output-path instruction stays in the `## Output` block.
+
+@test "no chk2 category sub-skill instructs 'Append results to SECURITY_CHECK.md' in the intro (CPT-125)" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/chk2/commands/*.md; do
+    name=$(basename "$f")
+    # Orchestrators (all.md, quick.md) legitimately own SECURITY_CHECK.md via
+    # the merge step — skip them.
+    case "$name" in all.md|quick.md) continue ;; esac
+    if grep -qE 'Append results to `SECURITY_CHECK\.md`' "$f"; then
+      offenders="$offenders $name"
+    fi
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}
+
+@test "chk2 category sub-skills reference the correct SECURITY_CHECK.parts path in the Output block (CPT-125)" {
+  # Each category sub-skill's Output block must mention `SECURITY_CHECK.parts/`,
+  # which is where the sub-skill actually writes (orchestrators merge later).
+  offenders=""
+  for f in "$REPO_ROOT"/skills/chk2/commands/*.md; do
+    name=$(basename "$f")
+    case "$name" in all.md|quick.md|fix.md|github.md|update.md|help.md|doctor.md|version.md) continue ;; esac
+    if ! grep -q 'SECURITY_CHECK\.parts/' "$f"; then
+      offenders="$offenders $name"
+    fi
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}

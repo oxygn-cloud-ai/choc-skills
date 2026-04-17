@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:ws — WebSocket Security
 
-Test WebSocket security on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test WebSocket security on https://myzr.io. Write results to `SECURITY_CHECK.parts/ws.md` (see **Output** for format).
 
 Requires python3 with `websockets` package. Create a fresh game session first via API.
 

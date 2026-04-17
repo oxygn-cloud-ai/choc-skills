@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:disclosure — Information Disclosure
 
-Test for information leakage on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test for information leakage on https://myzr.io. Write results to `SECURITY_CHECK.parts/disclosure.md` (see **Output** for format).
 
 ## Tests
 

@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(echo *), Write
 
 # chk2:headers — HTTP Security Headers
 
-Test HTTP security headers on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test HTTP security headers on https://myzr.io. Write results to `SECURITY_CHECK.parts/headers.md` (see **Output** for format).
 
 ## Tests
 

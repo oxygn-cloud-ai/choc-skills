@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(echo *), Write
 
 # chk2:graphql — GraphQL Security
 
-Test for GraphQL-related vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test for GraphQL-related vulnerabilities on https://myzr.io. Write results to `SECURITY_CHECK.parts/graphql.md` (see **Output** for format).
 
 ## Tests
 

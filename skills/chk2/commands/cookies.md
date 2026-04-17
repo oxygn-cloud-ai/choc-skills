@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(echo *), Write
 
 # chk2:cookies — Cookie Security
 
-Test cookie security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test cookie security on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/cookies.md` (see **Output** for format).
 
 ## Tests
 

@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(python3 *), Bash(echo *
 
 # chk2:compression — Compression Attacks
 
-Test for compression-related vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test for compression-related vulnerabilities on https://myzr.io. Write results to `SECURITY_CHECK.parts/compression.md` (see **Output** for format).
 
 ## Tests
 

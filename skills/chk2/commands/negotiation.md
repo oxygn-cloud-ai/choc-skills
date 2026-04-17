@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:negotiation — Content Negotiation
 
-Test content negotiation security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test content negotiation security on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/negotiation.md` (see **Output** for format).
 
 ## Tests
 

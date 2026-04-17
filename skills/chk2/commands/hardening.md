@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:hardening — Server Hardening
 
-Test server hardening on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test server hardening on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/hardening.md` (see **Output** for format).
 
 ## Tests
 

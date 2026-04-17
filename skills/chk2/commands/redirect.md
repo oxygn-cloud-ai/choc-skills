@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(echo *), Write
 
 # chk2:redirect — Open Redirect and Redirect Chain Security
 
-Test redirect security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test redirect security on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/redirect.md` (see **Output** for format).
 
 ## Tests
 

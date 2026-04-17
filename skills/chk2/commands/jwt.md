@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(base64 *), Bash(echo *)
 
 # chk2:jwt — JWT Security
 
-Test for JWT-related vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test for JWT-related vulnerabilities on https://myzr.io. Write results to `SECURITY_CHECK.parts/jwt.md` (see **Output** for format).
 
 ## Tests
 

@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.19] - 2026-04-18
+
+### Fixed
+- **Contradictory opening-paragraph instruction in 30 category sub-skills** (CPT-125). CPT-88 switched sub-skills to write per-category part files (`SECURITY_CHECK.parts/<cat>.md`) via each file's `## Output` block, but left the opening paragraph of every category command still saying "Append results to `SECURITY_CHECK.md`". An agent reading top-to-bottom saw both instructions and could legitimately follow either — keeping the concurrent-write race that CPT-88 was written to close reachable under `/chk2:all`. Replaced the opening-paragraph sentence across all 30 category files with the per-category parts path (`Write results to \`SECURITY_CHECK.parts/<cat>.md\` (see **Output** for format).`), so the intro now agrees with the Output block rather than contradicting it. Added two regression tests in `tests/router-allowed-tools.bats`: forbid the old "Append results to `SECURITY_CHECK.md`" phrase in any category file, and require the `SECURITY_CHECK.parts/` path in every category file's Output block.
+
+**Note on version renumbering**: This entry originally targeted 2.3.18 on `fix/CPT-125-chk2-category-intro-contradiction`, but CPT-119 (install.sh pattern widen) landed on `main` and claimed 2.3.18 first. Renumbered to 2.3.19 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.18] - 2026-04-18
 
 ### Fixed

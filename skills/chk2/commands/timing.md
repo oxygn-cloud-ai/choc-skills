@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:timing — Timing Attacks and Race Conditions
 
-Test for timing-based vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test for timing-based vulnerabilities on https://myzr.io. Write results to `SECURITY_CHECK.parts/timing.md` (see **Output** for format).
 
 ## Tests
 

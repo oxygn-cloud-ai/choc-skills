@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(echo *), Write
 
 # chk2:tls — TLS/SSL Configuration
 
-Test TLS configuration on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test TLS configuration on https://myzr.io. Write results to `SECURITY_CHECK.parts/tls.md` (see **Output** for format).
 
 ## Tests
 

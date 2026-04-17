@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(echo *), Write
 
 # chk2:fingerprint — Browser Fingerprinting and Isolation Headers
 
-Test fingerprinting-resistance and cross-origin isolation headers on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test fingerprinting-resistance and cross-origin isolation headers on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/fingerprint.md` (see **Output** for format).
 
 ## Tests
 

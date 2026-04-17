@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(dig *), Bash(curl *), Bash(echo *), Write
 
 # chk2:ipv6 — IPv6 Security
 
-Test IPv6-related security on https://myzr.io. Append results to `SECURITY_CHECK.md`.
+Test IPv6-related security on https://myzr.io. Write results to `SECURITY_CHECK.parts/ipv6.md` (see **Output** for format).
 
 ## Tests
 

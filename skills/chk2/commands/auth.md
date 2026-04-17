@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
 
 # chk2:auth — Authentication and Session Security
 
-Test authentication and session security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test authentication and session security on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/auth.md` (see **Output** for format).
 
 ## Tests
 

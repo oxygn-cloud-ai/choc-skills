@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(echo *), Write
 
 # chk2:smuggling — HTTP Request Smuggling
 
-Test HTTP request smuggling defenses on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test HTTP request smuggling defenses on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/smuggling.md` (see **Output** for format).
 
 ## Tests
 

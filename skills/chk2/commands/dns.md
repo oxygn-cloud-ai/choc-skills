@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(dig *), Bash(curl *), Bash(host *), Bash(nmap *), Bash
 
 # chk2:dns — DNS and Email Security
 
-Test DNS configuration for myzr.io. Append results to `SECURITY_CHECK.md`.
+Test DNS configuration for myzr.io. Write results to `SECURITY_CHECK.parts/dns.md` (see **Output** for format).
 
 ## Tests
 

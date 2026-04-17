@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(echo *), Write
 
 # chk2:transport — Transport Layer Security
 
-Test transport layer configuration on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.
+Test transport layer configuration on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/transport.md` (see **Output** for format).
 
 ## Tests
 
