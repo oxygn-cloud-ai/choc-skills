@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.22] - 2026-04-18
+
+### Fixed
+- **`chk2:reporting` RC4 no longer silently loses evidence under per-command enforcement** (CPT-136). CPT-101 (v2.3.12) closed an RCE in the reporting.md RC4 check by switching from `python3 -c "...'$exp_date'..."` interpolation to `printf '%s' "$exp_date" | python3 -c "...sys.stdin.read().strip()..."` stdin delivery — correct security fix, but `printf` was not in the `allowed-tools` frontmatter. Under CPT-32 per-command enforcement, `printf` was denied and the RC4 pipeline failed to execute, producing zero Expires evidence. The RCE was closed, but the check it guarded silently stopped reporting — the same fix-introduces-new-silent-failure pattern CPT-88/98/110/115/119/128 all hit. Added `Bash(printf *)` to `allowed-tools`. Regression sentinel in `tests/router-allowed-tools.bats`.
+
+**Note on version renumbering**: This entry originally targeted 2.3.20 on `fix/CPT-136-chk2-reporting-printf-allowed-tools`, but CPT-126 (v2.3.20) and CPT-127 (v2.3.21) landed on `main` first. Renumbered to 2.3.22 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.21] - 2026-04-18
 
 ### Fixed

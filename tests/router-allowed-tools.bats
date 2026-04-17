@@ -189,6 +189,16 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 # --- chk2 sub-commands should not have Bash(bash *) catch-all ---
 # (rr sub-commands may need it for shell script invocation)
 
+# --- CPT-136: CPT-101 fix introduced printf in reporting.md body without
+#     extending allowed-tools. Under per-command enforcement RC4 is denied
+#     → silent evidence loss (same fix-introduces-new-silent-failure pattern
+#     as CPT-88/98). Guard:
+
+@test "chk2:reporting frontmatter whitelists printf (CPT-136)" {
+  line=$(grep '^allowed-tools:' "$REPO_ROOT/skills/chk2/commands/reporting.md")
+  [[ "$line" == *"Bash(printf"* ]]
+}
+
 @test "no chk2 sub-command has Bash(bash *) catch-all" {
   offenders=""
   for f in "$REPO_ROOT"/skills/chk2/commands/*.md; do

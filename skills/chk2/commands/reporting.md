@@ -1,7 +1,7 @@
 ---
 name: chk2:reporting
 description: "Test security reporting configuration"
-allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Bash(printf *), Write
 ---
 
 # chk2:reporting — Security Reporting Headers
