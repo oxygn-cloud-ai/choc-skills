@@ -13,6 +13,7 @@ Run a fast, passive security check of https://myzr.io. No active testing, no ses
 1. Initialize the output tree:
    - `mkdir -p SECURITY_CHECK.parts`
    - `rm -f SECURITY_CHECK.parts/*.md`
+   - `touch SECURITY_CHECK.parts/.orchestrated` (marker that suppresses each sub-skill's standalone-merge step — CPT-126)
    - Start a fresh `SECURITY_CHECK.md` with header (date, "Tests run: quick")
 
 2. Run these categories in order (each writes to `SECURITY_CHECK.parts/<category>.md`):
@@ -28,6 +29,7 @@ Run a fast, passive security check of https://myzr.io. No active testing, no ses
      part="SECURITY_CHECK.parts/${category}.md"
      [ -f "$part" ] && { cat "$part" >> SECURITY_CHECK.md; echo "" >> SECURITY_CHECK.md; }
    done
+   rm -f SECURITY_CHECK.parts/.orchestrated
    ```
 
 4. Append summary table and recommendations to `SECURITY_CHECK.md`

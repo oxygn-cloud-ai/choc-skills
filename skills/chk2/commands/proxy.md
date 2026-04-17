@@ -61,6 +61,8 @@ Write to `SECURITY_CHECK.parts/proxy.md`:
 
 Ask the user: **Do you want help fixing the proxy/CDN issues found?** If yes, invoke `/chk2:fix` with context about which proxy tests failed.
 
+**Standalone merge** (CPT-126): check if `SECURITY_CHECK.parts/.orchestrated` exists. If it does NOT (standalone invocation, not dispatched by `/chk2:all` / `/chk2:quick`), also write the same content to `SECURITY_CHECK.md` using the Write tool so downstream `/chk2:fix` and `/chk2 github` can read it. If the marker IS present, skip this step — the orchestrator will merge all parts after its waves complete.
+
 ## Status signal
 
 End your response with exactly one of these lines (orchestrator parses only this last signal — do not include any other "CHK2-STATUS:" text in your response):

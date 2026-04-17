@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.20] - 2026-04-18
+
+### Fixed
+- **Standalone `/chk2 <category>` runs now produce `SECURITY_CHECK.md`** (CPT-126). CPT-88 (v2.3.7) moved per-category output into `SECURITY_CHECK.parts/<cat>.md` for race-safety under parallel `/chk2:all` waves, but only the `/chk2:all` and `/chk2:quick` orchestrators merge parts into `SECURITY_CHECK.md`. Direct invocations like `/chk2 tls` produced only the parts file, leaving `SECURITY_CHECK.md` unchanged — and downstream `/chk2:fix` and `/chk2 github` (which consume `SECURITY_CHECK.md`) silently broke. Added a marker-file protocol: orchestrators `touch SECURITY_CHECK.parts/.orchestrated` at init and `rm -f` it after the merge; every category sub-skill's Output block now checks the marker and writes a standalone `SECURITY_CHECK.md` from its part file when the marker is absent. Under orchestration the marker suppresses the standalone write so there's no double-append. Regression guards in `tests/router-allowed-tools.bats` require both orchestrators to create+remove the marker and require every category sub-skill to carry the `Standalone merge (CPT-126)` anchor phrase with a `SECURITY_CHECK.parts/.orchestrated` check.
+
+**Note on version renumbering**: This entry originally targeted 2.3.18 on `fix/CPT-126-chk2-standalone-security-check-md`, but CPT-119 (v2.3.18) and CPT-125 (v2.3.19) landed on `main` first. Renumbered to 2.3.20 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.19] - 2026-04-18
 
 ### Fixed

@@ -290,3 +290,53 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   echo "offenders:$offenders"
   [ -z "$offenders" ]
 }
+
+# --- CPT-126: standalone /chk2 category runs must still produce SECURITY_CHECK.md ---
+#
+# Post-CPT-88, category sub-skills write only to SECURITY_CHECK.parts/<cat>.md.
+# The merge into SECURITY_CHECK.md happens only inside /chk2:all and /chk2:quick
+# orchestrators. Direct invocations like `/chk2 tls` bypass the orchestrator, so
+# SECURITY_CHECK.md is never produced and downstream /chk2:fix / /chk2 github
+# (which read SECURITY_CHECK.md) fail.
+#
+# Fix: each orchestrator creates a .orchestrated marker at start and removes it
+# after the merge step. Each sub-skill Output block conditionally copies its
+# part file to SECURITY_CHECK.md when the marker is absent (standalone mode).
+
+@test "chk2:all orchestrator creates the .orchestrated marker in step 1 (CPT-126)" {
+  grep -q 'SECURITY_CHECK\.parts/\.orchestrated' "$REPO_ROOT/skills/chk2/commands/all.md"
+}
+
+@test "chk2:all orchestrator removes the .orchestrated marker after merge (CPT-126)" {
+  grep -qE 'rm [^#]*SECURITY_CHECK\.parts/\.orchestrated' "$REPO_ROOT/skills/chk2/commands/all.md"
+}
+
+@test "chk2:quick orchestrator creates the .orchestrated marker in step 1 (CPT-126)" {
+  grep -q 'SECURITY_CHECK\.parts/\.orchestrated' "$REPO_ROOT/skills/chk2/commands/quick.md"
+}
+
+@test "chk2:quick orchestrator removes the .orchestrated marker after merge (CPT-126)" {
+  grep -qE 'rm [^#]*SECURITY_CHECK\.parts/\.orchestrated' "$REPO_ROOT/skills/chk2/commands/quick.md"
+}
+
+@test "every chk2 category sub-skill has a standalone-merge step gated on .orchestrated (CPT-126)" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/chk2/commands/*.md; do
+    name=$(basename "$f")
+    # Orchestrators / utilities do not need the standalone-merge block.
+    case "$name" in all.md|quick.md|fix.md|github.md|update.md|help.md|doctor.md|version.md) continue ;; esac
+    # The Output block must contain the marker-existence check AND an
+    # instruction to write to SECURITY_CHECK.md in the standalone case.
+    if ! grep -q 'SECURITY_CHECK\.parts/\.orchestrated' "$f"; then
+      offenders="$offenders $name"
+      continue
+    fi
+    # "Standalone merge" anchor phrase MUST appear — it's the literal marker
+    # the fix adds to every sub-skill's Output block.
+    if ! grep -q 'Standalone merge' "$f"; then
+      offenders="$offenders $name"
+    fi
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}

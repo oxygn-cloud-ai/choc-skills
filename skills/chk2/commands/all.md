@@ -17,6 +17,7 @@ Parallel Agent waves (six concurrent writers) cannot safely share a single `SECU
 1. Initialize the output tree:
    - Create the parts directory: `mkdir -p SECURITY_CHECK.parts`
    - Remove any stale per-category files from a previous run: `rm -f SECURITY_CHECK.parts/*.md`
+   - Create the `.orchestrated` marker so sub-skills know to skip the standalone-merge step (CPT-126): `touch SECURITY_CHECK.parts/.orchestrated`
    - Start a fresh `SECURITY_CHECK.md` with the header:
 ```markdown
 # Security Check — myzr.io
@@ -103,9 +104,10 @@ Parallel Agent waves (six concurrent writers) cannot safely share a single `SECU
        echo "" >> SECURITY_CHECK.md
      fi
    done
+   rm -f SECURITY_CHECK.parts/.orchestrated
    ```
 
-   Aborted/skipped waves will have no part files — their categories are simply absent from the merged output, and step 4 below records them as SKIPPED in the summary.
+   Aborted/skipped waves will have no part files — their categories are simply absent from the merged output, and step 4 below records them as SKIPPED in the summary. The final `rm -f …/.orchestrated` clears the marker so future standalone runs (`/chk2 tls` etc.) correctly produce their own `SECURITY_CHECK.md` (CPT-126).
 
 4. After merging, append a summary table and recommendations section to `SECURITY_CHECK.md`:
 
