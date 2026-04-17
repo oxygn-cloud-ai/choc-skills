@@ -2,6 +2,12 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.0] - 2026-04-14
+
+### Changed
+- `/chk2:all` now dispatches 30 categories in 5 parallel waves of 6 using Agent tool calls instead of running all sequentially. Reduces wall-clock time from ~30+ min to ~5-10 min. (CPT-8)
+- Added circuit breaker: 3 consecutive waves hitting rate limits aborts remaining waves
+
 ## [2.2.0] - 2026-04-09
 
 ### Changed
