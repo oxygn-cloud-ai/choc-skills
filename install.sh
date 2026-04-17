@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.1.7"
+VERSION="2.1.8"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -57,7 +57,7 @@ ${BOLD}USAGE${RESET}
                                   name — CPT-138)
   ./install.sh --update           Reinstall all (no prompts)
   ./install.sh --check            Verify installation health
-  ./install.sh --list             List available skills
+  ./install.sh --list             List available skills + standalone companion tools
   ./install.sh --dry-run          Show what would happen without changing anything
   ./install.sh --changelog        Show changelog
   ./install.sh --version          Show version
@@ -108,6 +108,35 @@ list_skills() {
     warn "No skills found in ${SKILLS_DIR}"
   else
     printf "  ${DIM}%d skill(s) available${RESET}\n\n" "$count"
+  fi
+
+  # CPT-80: advertise standalone companion tools under skills/ that ship
+  # their own install.sh but are NOT Claude skills (no SKILL.md, no slash
+  # commands). The root installer does not install them (install_skill()
+  # skips dirs without SKILL.md), so without this listing they are
+  # invisible to anyone discovering skills via the root CLI even though
+  # they are documented in README.md.
+  local standalone_count=0
+  local standalone_list=""
+  for dir in "${SKILLS_DIR}"/*/; do
+    [ -d "$dir" ] || continue
+    local name
+    name="$(basename "$dir")"
+    [[ "$name" == _* ]] && continue
+    [ -f "${dir}/install.sh" ] || continue
+    [ -f "${dir}/SKILL.md" ] && continue
+    standalone_count=$((standalone_count + 1))
+    local desc=""
+    if [ -f "${dir}/README.md" ]; then
+      desc=$(awk '/^# /{seen_title=1; next} seen_title && NF && !/^#/ {print; exit}' "${dir}/README.md" | cut -c1-70)
+    fi
+    standalone_list+=$(printf "  ${BOLD}%-14s${RESET} %-70s ${YELLOW}[standalone]${RESET}" "$name" "$desc")$'\n'
+  done
+  if [ "$standalone_count" -gt 0 ]; then
+    printf "${BOLD}Companion tools${RESET} (standalone — run ${BOLD}skills/<name>/install.sh${RESET} directly):\n\n"
+    printf "%s" "$standalone_list"
+    echo ""
+    printf "  ${DIM}%d companion tool(s) available${RESET}\n\n" "$standalone_count"
   fi
 }
 
