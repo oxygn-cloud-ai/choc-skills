@@ -2,6 +2,13 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.10] - 2026-04-18
+
+### Fixed
+- **`/project:status` role-detection block now distinguishes `sessions.roles=[]` from "key absent", and no longer uses `local` at top level** (CPT-156). CPT-139 added a three-layer precedence for the expected-role set but carried two defects: (1) `jq -r '.sessions.roles[]? // empty'` emits zero lines for both `{"roles":[]}` and `{}`-no-key, so a project explicitly declaring "no expected roles" silently fell through to the full MSA catalog; (2) Layer 2/3 declared `local project_type=""` at the top level of the bash snippet — `local` is function-only and bash rejects it outside a function (`bash: line 0: local: can only be used in a function`, exit 1), aborting the whole role-detection under `set -e`. Added a `SESSIONS_ROLES_DECLARED` sentinel gated on `jq -e '.sessions | has("roles")'` so present-but-empty is honoured; replaced `local project_type=""` with a plain assignment. Seven bats regressions in `tests/project-status-role-detection.bats`: runtime tests exercise the extracted bash block against `{"roles":[]}` → empty ROLES, `{}` → MSA fallback, `{"roles":["master","fixer"]}` → verbatim, plus static checks asserting the sentinel pattern and no-`local` invariants.
+
+**Note on version renumbering**: CPT-141 is on an open branch targeting 1.2.10. Taking 1.2.10 here because CPT-141 hasn't landed yet — if the merger resolves differently, this entry renumbers. No code semantics changed.
+
 ## [1.2.9] - 2026-04-18
 
 ### Fixed

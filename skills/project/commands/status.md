@@ -36,17 +36,30 @@ Derive the **expected** role list with this precedence (CPT-139 — the set-diff
 
 ```bash
 ROLES=()
+# CPT-156: distinguish "key present but empty" from "key absent". jq's
+# `.sessions.roles[]? // empty` collapses both to zero lines — the
+# sentinel below keeps them apart so `{"sessions":{"roles":[]}}` is
+# honoured as "no expected roles" rather than silently falling through
+# to the full MSA catalog.
+SESSIONS_ROLES_DECLARED=0
 
 # Layer 1: PROJECT_CONFIG.json .sessions.roles
 if [ -f PROJECT_CONFIG.json ] && command -v jq >/dev/null 2>&1; then
-  while IFS= read -r role; do
-    [ -n "$role" ] && ROLES+=("$role")
-  done < <(jq -r '.sessions.roles[]? // empty' PROJECT_CONFIG.json 2>/dev/null)
+  if jq -e '.sessions | has("roles")' PROJECT_CONFIG.json >/dev/null 2>&1; then
+    SESSIONS_ROLES_DECLARED=1
+    while IFS= read -r role; do
+      [ -n "$role" ] && ROLES+=("$role")
+    done < <(jq -r '.sessions.roles[]? // empty' PROJECT_CONFIG.json 2>/dev/null)
+  fi
 fi
 
-# Layer 2 + 3: PROJECT_CONFIG.json .project.type, else full MSA
-if [ ${#ROLES[@]} -eq 0 ] && [ -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md ]; then
-  local project_type=""
+# Layer 2 + 3: PROJECT_CONFIG.json .project.type, else full MSA.
+# Fires ONLY when Layer 1's key was ABSENT (not when it was present-
+# but-empty). CPT-156: `project_type` is a plain assignment, not `local`
+# — this block runs at top level when Claude executes the status bash
+# snippet, and bash rejects `local` outside a function with exit 1.
+if [ "$SESSIONS_ROLES_DECLARED" != "1" ] && [ ${#ROLES[@]} -eq 0 ] && [ -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md ]; then
+  project_type=""
   if [ -f PROJECT_CONFIG.json ] && command -v jq >/dev/null 2>&1; then
     project_type=$(jq -r '.project.type // .project_type // .projectType // empty' PROJECT_CONFIG.json 2>/dev/null)
   fi
