@@ -142,9 +142,11 @@ TMPSCRIPT=$(mktemp /tmp/tmux-iterm.XXXXXX) || {
 trap 'rm -f "$TMPSCRIPT"' EXIT
 
 first_label="$(lookup_label "$first")"
-# Strip control characters then escape AppleScript-significant characters
+# Sanitize the AppleScript label only; keep $first raw so the tmux target
+# passed to `tmux attach -t` still resolves for sessions with exotic names
+# (CPT-105: CPT-29 conflated AppleScript-literal safety with tmux-identifier
+# safety and broke attach for control-char session names).
 first_label="$(sanitize_for_applescript "$first_label")"
-first="$(sanitize_for_applescript "$first")"
 safe_first_label="${first_label//\\/\\\\}"
 safe_first_label="${safe_first_label//\"/\\\"}"
 safe_first="${first//\\/\\\\}"
@@ -163,9 +165,9 @@ HEADER
 idx=1
 for s in "${rest[@]}"; do
   label="$(lookup_label "$s")"
-  # Strip control characters then escape AppleScript-significant characters
+  # Sanitize the AppleScript label only; keep $s raw so the tmux target
+  # passed to `tmux attach -t` still resolves (CPT-105).
   label="$(sanitize_for_applescript "$label")"
-  s="$(sanitize_for_applescript "$s")"
   safe_label="${label//\\/\\\\}"
   safe_label="${safe_label//\"/\\\"}"
   safe_s="${s//\\/\\\\}"

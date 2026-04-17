@@ -92,3 +92,64 @@ call_sanitize() {
   # Ensure the iterm2-tmux script uses sanitize_for_applescript before AppleScript generation
   grep -q 'sanitize_for_applescript' "$SCRIPT"
 }
+
+# --- CPT-105: tmux target identifier must remain raw (only AppleScript label sanitized) ---
+#
+# CPT-29 sanitised both the label and the tmux identifier. Sanitising the identifier
+# breaks `tmux attach -t "$SESSION"` for any session whose name actually contained a
+# control character, silently failing attach in exactly the cases the patch targeted.
+# The fix is: sanitise only the label (AppleScript-literal safety); leave the tmux
+# target raw so tmux still resolves it.
+
+@test "CPT-105: first session — tmux target is NOT reassigned to the sanitised form" {
+  # The buggy line `first="$(sanitize_for_applescript "$first")"` must be absent.
+  run grep -nE '^[[:space:]]*first="\$\(sanitize_for_applescript[[:space:]]+"\$first"\)"' "$SCRIPT"
+  [ "$status" -ne 0 ]
+}
+
+@test "CPT-105: rest loop — tmux target is NOT reassigned to the sanitised form" {
+  # The buggy line `s="$(sanitize_for_applescript "$s")"` must be absent.
+  run grep -nE '^[[:space:]]*s="\$\(sanitize_for_applescript[[:space:]]+"\$s"\)"' "$SCRIPT"
+  [ "$status" -ne 0 ]
+}
+
+@test "CPT-105: first session label sanitisation is preserved" {
+  grep -qE 'first_label="\$\(sanitize_for_applescript[[:space:]]+"\$first_label"\)"' "$SCRIPT"
+}
+
+@test "CPT-105: rest loop label sanitisation is preserved" {
+  grep -qE '[[:space:]]label="\$\(sanitize_for_applescript[[:space:]]+"\$label"\)"' "$SCRIPT"
+}
+
+@test "CPT-105: safe_first derives from raw \$first so control chars survive" {
+  # Execute the ACTUAL first-session variable-assignment block that ships in
+  # the script with an injected control-char session. If the buggy
+  # `first="$(sanitize_for_applescript "$first")"` reassignment lives in the
+  # script, safe_first will have its ESC stripped and the assertion will fail.
+
+  # Extract the block from `first_label="$(lookup_label...` up to (but not
+  # including) the `cat > "$TMPSCRIPT"` heredoc.
+  local snippet
+  snippet=$(awk '/^first_label="\$\(lookup_label/{flag=1} /^cat > /{flag=0} flag' "$SCRIPT")
+  [[ -n "$snippet" ]]
+
+  run bash -c '
+    set -euo pipefail
+    eval "$(sed -n "/^sanitize_for_applescript()/,/^}/p" "'"$SCRIPT"'")"
+
+    # Stub lookup_label: return the raw session name (no repo match).
+    lookup_label() { printf "%s" "$1"; }
+
+    first=$'"'"'myses\x1bX'"'"'
+
+    # Execute the real first-session block.
+    '"$snippet"'
+
+    printf "LABEL=[%s]\n" "$safe_first_label"
+    printf "TARGET_HEX=" ; printf "%s" "$safe_first" | od -An -tx1 | tr -d " \n" ; printf "\n"
+  '
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"LABEL=[mysesX]"* ]]
+  # 6d79736573 = "myses", 1b = ESC, 58 = "X"
+  [[ "$output" == *"TARGET_HEX=6d797365731b58"* ]]
+}

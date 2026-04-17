@@ -2,6 +2,11 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.0.3] - 2026-04-17
+
+### Fixed
+- **Regression (CPT-105)**: `bin/tmux-iterm-tabs.sh` no longer sanitises the tmux session identifier passed to `tmux attach -t` — only the user-visible AppleScript label is sanitised. CPT-29 conflated AppleScript-literal safety with tmux-identifier safety; the combined sanitisation made sessions whose names contained control characters unreachable via the generated attach command. AppleScript-injection prevention from CPT-29 is preserved via the label-only sanitisation and the existing `\` / `"` escaping of the interpolated identifier.
+
 ## [1.0.2] - 2026-04-17
 
 ### Changed
