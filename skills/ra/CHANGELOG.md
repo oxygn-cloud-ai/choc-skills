@@ -2,6 +2,13 @@
 
 All notable changes to the ra skill will be documented in this file.
 
+## [1.0.8] - 2026-04-18
+
+### Fixed
+- **MCP call-spec `$JIRA_CLOUD_ID` now reliably substituted**: same class as the companion rr fix (CPT-103). Added an "IMPORTANT: MCP call-spec variable substitution" preamble to every ra file using the pattern (`references/jira-config.md`, `references/workflow/step-2-ingest.md`, `commands/publish.md`) so Claude substitutes the env var value before passing `cloudId` to MCP rather than sending the literal string.
+
+**Note on version renumbering**: This entry originally targeted 1.0.7 on `fix/CPT-103-mcp-cloudid-preamble`, but CPT-134 (validator drift + ra README normalisation) landed on `main` and claimed 1.0.7 first. Renumbered to 1.0.8 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [1.0.7] - 2026-04-18
 
 ### Fixed

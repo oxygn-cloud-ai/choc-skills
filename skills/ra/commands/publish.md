@@ -6,6 +6,10 @@ allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(jq *), Bash(ls *), Bash(mkdi
 
 # ra:publish — Publish Assessment to Jira
 
+## IMPORTANT: MCP call-spec variable substitution (CPT-103)
+
+The MCP call specs below reference `$JIRA_CLOUD_ID` (and `$RR_ASSIGNEE_ID`) as placeholders. **The MCP layer does not expand shell variables** — parameter strings are passed literally. Before calling any MCP tool, Claude MUST substitute the placeholder with the value from the corresponding environment variable (e.g. via `echo "$JIRA_CLOUD_ID"`). Do NOT pass the literal string `"$JIRA_CLOUD_ID"` as the `cloudId` parameter.
+
 Context from user: $ARGUMENTS
 
 ## Parse Arguments

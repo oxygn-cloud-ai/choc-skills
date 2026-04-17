@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.19] - 2026-04-18
+
+### Fixed
+- **MCP call-spec `$JIRA_CLOUD_ID` now reliably substituted**: CPT-27 (v5.2.7) replaced hardcoded Atlassian Cloud IDs with `$JIRA_CLOUD_ID` across rr references — correct in shell contexts but broken in MCP call specs embedded in markdown (the MCP layer does not expand shell variables, so Claude could pass the literal `"$JIRA_CLOUD_ID"` as the `cloudId` parameter and Atlassian would reject it as an invalid UUID). Added an "IMPORTANT: MCP call-spec variable substitution" preamble to every rr file using the pattern (`references/jira-config.md`, `references/matter-jira-config.md`, `references/workflow/step-1-extract.md`, `references/workflow/step-6-publish.md`, `commands/board.md`) explicitly directing Claude to substitute the env var value before calling the MCP tool. Shell contexts untouched — `$JIRA_CLOUD_ID` continues to expand as before in bin scripts and doctor output (CPT-103).
+
+**Note on version renumbering**: This entry originally targeted 5.3.17 on `fix/CPT-103-mcp-cloudid-preamble`, but CPT-102 (credential-leak) and CPT-137 (nested first-run) landed on `main` and claimed 5.3.17 / 5.3.18 first. Renumbered to 5.3.19 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.18] - 2026-04-18
 
 ### Fixed

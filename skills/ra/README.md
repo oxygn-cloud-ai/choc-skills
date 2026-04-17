@@ -102,7 +102,7 @@ cd skills/ra && ./install.sh --uninstall
 
 ## Version
 
-Current: **1.0.7**
+Current: **1.0.8**
 
 ## License
 

@@ -6,6 +6,10 @@ allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(python3 *), Bash(curl *), Bash
 
 # rr:board — Board Risk Oversight Paper
 
+## IMPORTANT: MCP call-spec variable substitution (CPT-103)
+
+The MCP call spec in Phase 4 references `$JIRA_CLOUD_ID` as a placeholder. **The MCP layer does not expand shell variables** — parameter strings are passed literally. Before calling the MCP tool, Claude MUST substitute the placeholder with the value from the `$JIRA_CLOUD_ID` environment variable (e.g. via `echo "$JIRA_CLOUD_ID"`). Do NOT pass the literal string `"$JIRA_CLOUD_ID"` as the `cloudId` parameter.
+
 Context from user: $ARGUMENTS
 
 ## Parse Arguments

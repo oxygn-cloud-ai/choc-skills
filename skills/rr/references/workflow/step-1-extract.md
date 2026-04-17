@@ -10,6 +10,12 @@ This step retrieves the target risk from Jira, exports it, and produces the init
 
 ---
 
+## IMPORTANT: MCP call-spec variable substitution (CPT-103)
+
+The MCP call specs in this file reference `$JIRA_CLOUD_ID` as a placeholder. **The MCP layer does not expand shell variables** — parameter strings are passed literally. Before calling any MCP tool, Claude MUST substitute the placeholder with the value from the `$JIRA_CLOUD_ID` environment variable (e.g. via `echo "$JIRA_CLOUD_ID"`). Do NOT pass the literal string `"$JIRA_CLOUD_ID"` as the `cloudId` parameter.
+
+---
+
 ## 1a. Identify and Retrieve the Target Risk
 
 The user will provide one of:
