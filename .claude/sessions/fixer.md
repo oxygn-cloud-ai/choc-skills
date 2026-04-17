@@ -21,6 +21,9 @@ Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 4 for your full protocol.
 - 3-strikes rule: 3 failed attempts escalates to human via Master
 - Push branch, update Jira to `In Review`. Never merge.
 
+## Commit rule (absolute — global CLAUDE.md)
+**NEVER add `Co-Authored-By: Claude`, `Co-Authored-By: Claude Opus <version>`, `Generated with Claude Code`, `🤖 Generated with ...`, or ANY AI/Claude attribution to commit messages.** Rule applies to every commit, every PR, every changelog entry. No exceptions. If a heredoc template or tool default includes such a trailer, strip it before committing. Before every `git push`, verify with `git log -1 --format=%B` — the output must contain zero `Co-Authored-By` lines. Reviewer has sent tickets to `Changes Requested` on 2026-04-17 for exactly this violation. If you slip up: `git -c commit.gpgsign=false commit --amend` + targeted heredoc + `git push --force-with-lease` on the same feature/fix branch (never on main).
+
 ## Worktree rule (non-negotiable)
 Do NOT create new git worktrees. The 11 role worktrees are fixed — you work in yours. Feature/fix work is a **branch** created inside this worktree via `git checkout -b feature/CPT-<n>-<slug>` or `git checkout -b fix/CPT-<n>`, never `git worktree add`. See `~/.claude/MULTI_SESSION_ARCHITECTURE.md` §7.1. Attempts to `git worktree add` are hard-blocked by a `PreToolUse` hook unless the human inlines `GIT_WORKTREE_OVERRIDE=1` — do not use that override yourself.
 
