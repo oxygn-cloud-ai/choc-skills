@@ -37,6 +37,8 @@ mkdir -p ${RR_OUTPUT_DIR:-~/rr-output}
 
 ## Workflow
 
+The reference files loaded above are already in context for all step files below. Do not re-read them when step files reference the same schemas or business context.
+
 Execute each step by reading the step file and following its instructions exactly. All output files are written to the output directory using the file naming convention: `<key>_<date>_<type>.json`.
 
 ### Step 1 — Extract and Draft

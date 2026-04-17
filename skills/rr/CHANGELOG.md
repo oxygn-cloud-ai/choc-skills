@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.2] - 2026-04-17
+
+### Changed
+- **Performance**: `review.md` marks reference files as already-in-context for downstream step files, avoiding redundant reads (CPT-19).
+
+### Note on version renumbering
+- CPT-19's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2–5.3.1 had all shipped, so the Merger renumbered CPT-19 to 5.3.2. No code semantics changed.
+
 ## [5.3.1] - 2026-04-17
 
 ### Fixed

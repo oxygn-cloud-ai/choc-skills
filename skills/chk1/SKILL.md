@@ -1,6 +1,6 @@
 ---
 name: chk1
-version: 2.4.1
+version: 2.4.2
 description: Adversarial Implementation Audit Mandate. Use when auditing recently implemented changes for bugs, risks, omissions, deviations, and unintended modifications. Fault-finding audit, not validation.
 user-invocable: true
 disable-model-invocation: true
@@ -208,7 +208,7 @@ If $ARGUMENTS is provided and is not a subcommand (help/doctor/version):
    - If using Co-Authored-By tags, treat consecutive commits with the same co-author as one session.
    - If no clear boundary is found, default to the most recent commit only and note:
      > **chk1 note**: Could not auto-detect implementation boundary. Auditing only the most recent commit. Use `/chk1 <commit>..<commit>` to specify a wider range.
-3. Run `git diff <base>..<head> --stat` to list all modified files.
+3. Use the `git diff --stat` output from pre-flight check 4 (already in context) for the file list — do not re-run it.
 4. Run `git diff <base>..<head>` to obtain the full diff.
 5. If an implementation plan exists (e.g., PLAN.md or similar in the working directory), read it to establish the approved scope.
 

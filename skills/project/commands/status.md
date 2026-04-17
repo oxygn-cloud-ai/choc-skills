@@ -23,11 +23,18 @@ If not in a git repo, say "Not in a git repository. Navigate to a project and tr
 
 ## Step 2: Verify dependencies and read references
 
-Verify dependencies exist before reading:
+Verify dependencies exist (do not read the full files — extract only what is needed):
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
 - `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: WARN and continue (skip label/CI standard comparison)
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role list and expected worktree layout (if available).
+Derive the expected role list from `.worktrees/` directories (do not read full `MULTI_SESSION_ARCHITECTURE.md` — the role list is the directory listing):
+```bash
+ROLES=()
+for wt in .worktrees/*/; do
+  [ -d "$wt" ] && ROLES+=("$(basename "$wt")")
+done
+```
+
 Read the project's `CLAUDE.md` and `GITHUB_CONFIG.md` if they exist.
 
 ## Step 3: Gather data

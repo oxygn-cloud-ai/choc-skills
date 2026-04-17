@@ -42,9 +42,8 @@ Context from user: $ARGUMENTS
       ```bash
       curl -sL "$REPO/skills/chk1/SKILL.md" -o ~/.claude/skills/chk1/SKILL.md
       mkdir -p ~/.claude/commands/chk1
-      for f in all quick security scope architecture fix github update; do
-        curl -sL "$REPO/skills/chk1/commands/${f}.md" -o ~/.claude/commands/chk1/${f}.md
-      done
+      echo "all quick security scope architecture fix github update" | tr ' ' '\n' | \
+        xargs -P 4 -I{} curl -sL "$REPO/skills/chk1/commands/{}.md" -o ~/.claude/commands/chk1/{}.md
       ```
 
    f. Report the result:

@@ -2,6 +2,14 @@
 
 All notable changes to the ra skill will be documented in this file.
 
+## [1.0.2] - 2026-04-17
+
+### Changed
+- **Performance**: `assess.md` marks reference files as already-in-context for downstream step files, avoiding redundant reads (CPT-19).
+
+### Note on version renumbering
+- CPT-19's source branch bumped 1.0.0 → 1.0.1 in isolation. By merge time, 1.0.1 (CPT-27) had already shipped, so the Merger renumbered CPT-19 to 1.0.2. No code semantics changed.
+
 ## [1.0.1] - 2026-04-14
 
 ### Fixed

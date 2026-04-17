@@ -2,6 +2,15 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.2] - 2026-04-17
+
+### Changed
+- **Performance**: `status.md` derives role list from `.worktrees/` directories instead of reading full `MULTI_SESSION_ARCHITECTURE.md` each invocation (CPT-19).
+- **Performance**: `new.md` Steps 6 and 11 reference Step 1 context instead of re-reading scaffolded config files (CPT-19).
+
+### Note on version renumbering
+- CPT-19's source branch bumped 1.2.0 → 1.2.1 in isolation. By merge time, 1.2.1 (CPT-17) had already shipped, so the Merger renumbered CPT-19 to 1.2.2. No code semantics changed.
+
 ## [1.2.1] - 2026-04-14
 
 ### Changed

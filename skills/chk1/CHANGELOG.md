@@ -2,6 +2,15 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.2] - 2026-04-17
+
+### Changed
+- **Performance**: `all.md` no longer re-reads SKILL.md (already loaded by router). `SKILL.md` scope detection references pre-flight `git diff --stat` instead of re-running (CPT-19).
+- **Performance**: `update.md` parallelises curl downloads with `xargs -P 4` (was sequential `for` loop) (CPT-19).
+
+### Note on version renumbering
+- CPT-19's source branch bumped 2.4.0 → 2.4.1 in isolation. By merge time, 2.4.1 (CPT-13) had already shipped, so the Merger renumbered CPT-19 to 2.4.2. No code semantics changed.
+
 ## [2.4.1] - 2026-04-14
 
 ### Fixed

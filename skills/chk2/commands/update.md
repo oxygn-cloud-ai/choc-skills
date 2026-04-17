@@ -48,12 +48,11 @@ Context from user: $ARGUMENTS
       ```bash
       curl -sL "$REPO/skills/chk2/SKILL.md" -o ~/.claude/skills/chk2/SKILL.md
       mkdir -p ~/.claude/commands/chk2
-      for f in all quick headers tls dns cors api ws waf infra brute scale disclosure \
-               fix github update cookies cache smuggling auth transport redirect \
-               fingerprint timing compression jwt graphql sse ipv6 reporting hardening \
-               negotiation proxy business backend; do
-        curl -sL "$REPO/skills/chk2/commands/${f}.md" -o ~/.claude/commands/chk2/${f}.md
-      done
+      echo "all quick headers tls dns cors api ws waf infra brute scale disclosure \
+            fix github update cookies cache smuggling auth transport redirect \
+            fingerprint timing compression jwt graphql sse ipv6 reporting hardening \
+            negotiation proxy business backend" | tr ' ' '\n' | grep -v '^$' | \
+        xargs -P 4 -I{} curl -sL "$REPO/skills/chk2/commands/{}.md" -o ~/.claude/commands/chk2/{}.md
       ```
 
    f. Report the result:

@@ -118,7 +118,7 @@ Create these files at the repo root:
 
 ## Step 6: Create GitHub labels
 
-Read label definitions from `~/.claude/GITHUB_CONFIG.md` section 2.
+Use the label definitions already in context from Step 1 (do not re-read `~/.claude/GITHUB_CONFIG.md`).
 
 For Software projects — full set:
 ```bash
@@ -226,7 +226,7 @@ Add a brief quick-reference section specific to each role (3-5 bullet points sum
 
 Create `.github/workflows/test.yml` with:
 - Language-appropriate test job
-- `notify-failure` job from `~/.claude/GITHUB_CONFIG.md` section 3 reference implementation
+- `notify-failure` job (use the reference implementation already in context from Step 1)
 - `notify-recovery` job
 
 Adapt the `needs:` list to match the actual test job name(s).

@@ -4,9 +4,10 @@ Run all 8 audit sections against the detected or specified scope. This is the de
 
 ## Instructions
 
-1. Read the main skill file at `~/.claude/skills/chk1/SKILL.md`
-2. Execute the full audit as defined there (all 8 sections)
-3. Follow the scope detection, pre-flight checks, and output format exactly as specified
+The main skill file (`~/.claude/skills/chk1/SKILL.md`) is already in context — it was loaded to route to this command. Do not re-read it.
+
+1. Execute the full audit as defined in SKILL.md (all 8 sections)
+2. Follow the scope detection, pre-flight checks, and output format exactly as specified
 
 ## After
 

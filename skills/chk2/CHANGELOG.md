@@ -2,6 +2,14 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.4] - 2026-04-17
+
+### Changed
+- **Performance**: `update.md` parallelises curl downloads with `xargs -P 4` (was sequential `for` loop over 35 command files) (CPT-19).
+
+### Note on version renumbering
+- CPT-19's source branch bumped 2.2.0 → 2.2.1 in isolation. By merge time, 2.3.0–2.3.3 had all shipped, so the Merger renumbered CPT-19 to 2.3.4. No code semantics changed.
+
 ## [2.3.3] - 2026-04-17
 
 ### Changed
