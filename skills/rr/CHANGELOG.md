@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.2] - 2026-04-14
+
+### Fixed
+- Sequential mode: workflow step files (step-1 through step-6) are now pre-loaded once before the per-risk loop instead of re-read for every risk. Eliminates 6×(N-1) redundant file reads for a register of N risks. (CPT-9)
+
 ## [5.2.1] - 2026-04-12
 
 ### Fixed

@@ -235,18 +235,29 @@ Check if `${RR_OUTPUT_DIR:-~/rr-output}/rr-progress.md` exists.
 
 4. Confirm with user before starting
 
+### Pre-Load Workflow Steps
+
+Before processing any risks, read all workflow step files once. These are static reference documents that do not change between risks — loading them once avoids 6×(N-1) redundant file reads for a register of N risks.
+
+Read these files now and keep them in context for the entire batch run:
+- `~/.claude/skills/rr/references/workflow/step-1-extract.md`
+- `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`
+- `~/.claude/skills/rr/references/workflow/step-3-rectify.md`
+- `~/.claude/skills/rr/references/workflow/step-5-finalise.md`
+- `~/.claude/skills/rr/references/workflow/step-6-publish.md`
+
 ### Process Each Risk
 
 For each pending risk in the progress file:
 
 1. Update status to `current` in progress file
-2. Read all workflow step files and execute the full 6-step workflow inline:
-   - Step 1: Extract and draft (read `~/.claude/skills/rr/references/workflow/step-1-extract.md`)
-   - Step 2: Adversarial review (read `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`)
-   - Step 3: Rectified assessment (read `~/.claude/skills/rr/references/workflow/step-3-rectify.md`)
+2. Execute the full 6-step workflow using the pre-loaded step content from the setup phase above:
+   - Step 1: Extract and draft (use pre-loaded step-1-extract content)
+   - Step 2: Adversarial review (use pre-loaded step-2-adversarial content)
+   - Step 3: Rectified assessment (use pre-loaded step-3-rectify content)
    - Step 4: Discussion — **in batch mode, skip interactive discussion** and auto-resolve based on adversarial findings
-   - Step 5: Final assessment (read `~/.claude/skills/rr/references/workflow/step-5-finalise.md`)
-   - Step 6: Publish to Jira (read `~/.claude/skills/rr/references/workflow/step-6-publish.md`)
+   - Step 5: Final assessment (use pre-loaded step-5-finalise content)
+   - Step 6: Publish to Jira (use pre-loaded step-6-publish content)
 3. After completion: update progress file — set status to `done` with timestamp
 4. Mark next risk as `current`
 5. After each risk: check context capacity
