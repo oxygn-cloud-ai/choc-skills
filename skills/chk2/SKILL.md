@@ -1,6 +1,6 @@
 ---
 name: chk2
-version: 2.3.8
+version: 2.3.9
 description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
@@ -91,7 +91,7 @@ If $ARGUMENTS equals "doctor", "--doctor", or "check", run environment diagnosti
 3. Verify `openssl` is available: `which openssl`
 4. Verify `python3` is available: `which python3`
 5. Verify `websockets` python package: `python3 -c "import websockets" 2>&1`
-6. Verify target is reachable: `curl -s -o /dev/null -w "%{http_code}" https://myzr.io/`
+6. Verify target is reachable: `curl -s --max-time 10 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://myzr.io/`
 7. Verify sub-command files exist: `ls ~/.claude/commands/chk2/*.md`
 8. Report installed skill version
 
@@ -132,7 +132,7 @@ Before executing, silently verify:
 1. **curl available**: `which curl`. If not found:
    > **chk2 error**: curl is not installed or not in PATH.
 
-2. **Target reachable**: `curl -s -o /dev/null -w "%{http_code}" https://myzr.io/` returns 200. If not:
+2. **Target reachable**: `curl -s --max-time 10 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://myzr.io/` returns 200. If not:
    > **chk2 error**: Target https://myzr.io/ is not reachable (HTTP {code}). Check the server is running.
 
 3. **Sub-commands installed**: `ls ~/.claude/commands/chk2/*.md` finds files. If not:

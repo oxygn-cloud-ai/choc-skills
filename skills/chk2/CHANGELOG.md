@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.9] - 2026-04-17
+
+### Fixed
+- **Hang on unreachable target**: `chk2 doctor` target-reachability curl and the inline pre-flight curl lacked `--max-time` / `--connect-timeout`, causing up to 120-300s blocks on DNS timeouts or TCP black-holes before reporting unreachable. Added `--max-time 10 --connect-timeout 5` to both invocations in `SKILL.md`. Doctor/pre-flight now fail within ~10s on unreachable targets (CPT-63).
+
 ## [2.3.8] - 2026-04-17
 
 ### Fixed
