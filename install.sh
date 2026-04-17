@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.1.0"
+VERSION="2.1.1"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -247,6 +247,11 @@ uninstall_skill() {
   if [ -d "$target" ]; then
     die "Failed to remove ${target} — check permissions"
   fi
+
+  # Clean up router file and subcommand directory if they exist
+  local commands_base="${HOME}/.claude/commands"
+  [ -f "${commands_base}/${name:?}.md" ] && rm -f "${commands_base}/${name:?}.md"
+  [ -d "${commands_base}/${name:?}" ] && rm -rf "${commands_base}/${name:?}"
 
   ok "Uninstalled '${name}'"
 }

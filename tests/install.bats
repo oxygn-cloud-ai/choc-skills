@@ -138,12 +138,26 @@ teardown() {
   bash "$INSTALLER" --force
   # Sanity check: at least one skill got installed
   [ -d "${HOME}/.claude/skills/${SKILLS[0]}" ]
+  # Simulate per-skill installs: create router files and command dirs
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    mkdir -p "${HOME}/.claude/commands/${skill}"
+    echo "router" > "${HOME}/.claude/commands/${skill}.md"
+    echo "sub-cmd" > "${HOME}/.claude/commands/${skill}/help.md"
+  done
   run bash "$INSTALLER" --uninstall --all --force
   [ "$status" -eq 0 ]
-  local skill
   for skill in "${SKILLS[@]}"; do
     [ ! -d "${HOME}/.claude/skills/${skill}" ] || {
       echo "Skill '$skill' still present after --uninstall --all --force" >&2
+      return 1
+    }
+    [ ! -f "${HOME}/.claude/commands/${skill}.md" ] || {
+      echo "Router '${skill}.md' still present after --uninstall --all --force" >&2
+      return 1
+    }
+    [ ! -d "${HOME}/.claude/commands/${skill}" ] || {
+      echo "Commands dir '${skill}/' still present after --uninstall --all --force" >&2
       return 1
     }
   done
@@ -155,15 +169,37 @@ teardown() {
 
   bash "$INSTALLER" --force
   local target="${SKILLS[0]}"
+  # Simulate per-skill installs: create router + command dirs for all
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    mkdir -p "${HOME}/.claude/commands/${skill}"
+    echo "router" > "${HOME}/.claude/commands/${skill}.md"
+    echo "sub-cmd" > "${HOME}/.claude/commands/${skill}/help.md"
+  done
   run bash "$INSTALLER" --uninstall --force "$target"
   [ "$status" -eq 0 ]
   [ ! -d "${HOME}/.claude/skills/${target}" ]
-  # Every OTHER skill must still be present
-  local skill
+  [ ! -f "${HOME}/.claude/commands/${target}.md" ] || {
+    echo "Router '${target}.md' still present after uninstalling '$target'" >&2
+    return 1
+  }
+  [ ! -d "${HOME}/.claude/commands/${target}" ] || {
+    echo "Commands dir '${target}/' still present after uninstalling '$target'" >&2
+    return 1
+  }
+  # Every OTHER skill must still be present (skills + router + commands)
   for skill in "${SKILLS[@]}"; do
     [ "$skill" = "$target" ] && continue
     [ -f "${HOME}/.claude/skills/${skill}/SKILL.md" ] || {
       echo "Skill '$skill' missing after uninstalling only '$target'" >&2
+      return 1
+    }
+    [ -f "${HOME}/.claude/commands/${skill}.md" ] || {
+      echo "Router '${skill}.md' missing after uninstalling only '$target'" >&2
+      return 1
+    }
+    [ -d "${HOME}/.claude/commands/${skill}" ] || {
+      echo "Commands dir '${skill}/' missing after uninstalling only '$target'" >&2
       return 1
     }
   done
