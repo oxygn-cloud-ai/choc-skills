@@ -64,22 +64,38 @@ _preflight_block() {
   }
 }
 
-@test "jq dependency is enforced for /chk2 auth code path (CPT-135)" {
-  # /chk2 auth MUST still refuse to run without jq, because AU3 literally
-  # depends on it. The guard can live in auth.md, in the pre-flight
-  # (conditional on auth), or in all.md's dispatcher — any of those is
-  # acceptable.
+@test "jq dependency is enforced for /chk2 auth code path on the ACTUAL execution path (CPT-135, CPT-144)" {
+  # CPT-144: the installed router (~/.claude/commands/chk2.md) routes
+  # `(empty)` and `all` DIRECTLY to /chk2:all. SKILL.md is only loaded for
+  # help/doctor/version. A jq guard living ONLY in SKILL.md pre-flight is
+  # therefore bypassed on the primary invocation. The guard must live on
+  # the execution path — commands/all.md or commands/auth.md.
   local auth_md="${REPO_DIR}/skills/chk2/commands/auth.md"
   local all_md="${REPO_DIR}/skills/chk2/commands/all.md"
 
   local guarded=0
   [ -f "$auth_md" ] && grep -qE 'which jq|jq.*not.*installed|jq.*missing|jq.*available' "$auth_md" && guarded=1
   [ -f "$all_md" ] && grep -qE 'which jq|jq.*not.*installed|jq.*missing|jq.*available' "$all_md" && guarded=1
-  # Also accept conditional guard in SKILL.md pre-flight
-  _preflight_block | grep -qiE 'jq.*(auth|all)|when.*auth.*jq|only.*auth.*jq|auth.*jq|all.*jq' && guarded=1
+  # Deliberately NOT accepting SKILL.md pre-flight as coverage — the router
+  # bypasses it (CPT-144).
 
   [ "$guarded" -eq 1 ] || {
-    echo "jq dependency for /chk2 auth is no longer enforced anywhere — regression from CPT-98 overcorrection" >&2
+    echo "jq guard is missing from commands/auth.md AND commands/all.md — SKILL.md pre-flight is bypassed by the router on /chk2 and /chk2 all, so the CPT-98 silent-evidence-loss protection is gone (CPT-144)" >&2
     return 1
   }
+}
+
+@test "chk2:all frontmatter whitelists Bash(which *) when its body uses 'which jq' (CPT-144)" {
+  # If commands/all.md carries the jq guard via `which jq`, its per-command
+  # allowed-tools frontmatter must whitelist Bash(which *) — otherwise the
+  # guard itself will be tool-denied under CPT-32 enforcement and silently
+  # skip, restoring the original CPT-98 failure mode.
+  local all_md="${REPO_DIR}/skills/chk2/commands/all.md"
+  [ -f "$all_md" ] || skip "all.md not present"
+  if grep -qE 'which jq' "$all_md"; then
+    grep -E '^allowed-tools:' "$all_md" | grep -qE 'Bash\(which' || {
+      echo "commands/all.md uses 'which jq' but frontmatter lacks Bash(which *) — guard will be tool-denied (CPT-144)" >&2
+      return 1
+    }
+  fi
 }

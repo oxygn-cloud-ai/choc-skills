@@ -1,12 +1,20 @@
 ---
 name: chk2:auth
 description: "Test authentication and session security"
-allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Bash(which *), Write
 ---
 
 # chk2:auth — Authentication and Session Security
 
 Test authentication and session security on https://${TARGET:-myzr.io}. Write results to `SECURITY_CHECK.parts/auth.md` (see **Output** for format).
+
+## Pre-flight
+
+**jq available** (CPT-144 — the installed router can dispatch `/chk2 auth` directly, bypassing SKILL.md's pre-flight). Before running any tests, verify jq is available via `which jq`. If jq is NOT found:
+
+> **chk2 error**: jq is not installed or not in PATH. AU3 (concurrent-session limit check) depends on jq; running without it silently drops AU3 evidence. Install jq (`brew install jq` on macOS, `apt install jq` on Debian/Ubuntu) and re-run.
+
+Abort with the error above and do NOT proceed to AU1.
 
 ## Tests
 

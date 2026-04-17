@@ -1,12 +1,20 @@
 ---
 name: chk2:all
 description: "Run all security check categories"
-allowed-tools: Read, Write, Bash(mkdir *), Bash(cat *), Bash(rm *), Agent, AskUserQuestion
+allowed-tools: Read, Write, Bash(mkdir *), Bash(cat *), Bash(rm *), Bash(which *), Agent, AskUserQuestion
 ---
 
 # chk2:all — Run All Security Checks
 
 Run every test category against https://myzr.io using parallel Agent dispatch. Final results are assembled into `SECURITY_CHECK.md` in the repo root.
+
+## Pre-flight
+
+**jq available** (CPT-144 — SKILL.md's pre-flight is bypassed by the installed router on `/chk2` and `/chk2 all`, so the guard must live here to protect the primary execution path). Before dispatching any wave, verify jq is available via `which jq`. If jq is NOT found:
+
+> **chk2 error**: jq is not installed or not in PATH. `/chk2:all` dispatches `/chk2:auth` (Wave 4) whose AU3 concurrent-session pipeline depends on jq; running without it silently drops AU3 evidence. Install jq (`brew install jq` on macOS, `apt install jq` on Debian/Ubuntu) and re-run.
+
+Abort with the error above and do NOT proceed to Wave 1 when jq is missing.
 
 ## Why per-category part files
 

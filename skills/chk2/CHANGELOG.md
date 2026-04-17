@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.23] - 2026-04-18
+
+### Fixed
+- **jq guard now lives on the actual execution path** (CPT-144). CPT-135 scoped the jq pre-flight correctly (conditional on `$ARGUMENTS` being empty, `all`, or starting with `auth`) but placed the gate in `skills/chk2/SKILL.md`. The installed router (`~/.claude/commands/chk2.md`) routes `(empty)` and `all` DIRECTLY to `/chk2:all` via the Skill tool, which loads `commands/all.md` — SKILL.md is only read for `help`/`doctor`/`version`. So the CPT-98 silent-evidence-loss protection was effectively undone on the primary invocation pattern: `/chk2` and `/chk2 all` could proceed to Wave 4 (`/chk2:auth`), AU3's jq pipeline ran with `2>/dev/null`, and AU3 evidence silently disappeared again. Moved the jq guard into a dedicated `## Pre-flight` section at the head of both `commands/all.md` (checks before parallel-wave dispatch) and `commands/auth.md` (checks before AU1). Added `Bash(which *)` to both frontmatters so the guard itself doesn't get tool-denied under CPT-32 enforcement. Narrowed `tests/chk2-jq-preflight-scope.bats` test 4 to REQUIRE the guard in `commands/all.md` or `commands/auth.md` (no longer accepts SKILL.md pre-flight as coverage), plus a new test 5 asserting `Bash(which *)` is whitelisted when the body uses `which jq`.
+
 ## [2.3.22] - 2026-04-18
 
 ### Fixed
