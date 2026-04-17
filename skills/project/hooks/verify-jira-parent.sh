@@ -1,5 +1,6 @@
 #!/bin/bash
 # verify-jira-parent.sh — Claude Code PreToolUse hook
+# Implements: MULTI_SESSION_ARCHITECTURE.md:§5
 #
 # Blocks Jira createJiraIssue / editJiraIssue calls when the proposed parent
 # epic does NOT match the current project's PROJECT_CONFIG.json jira.epicKey.

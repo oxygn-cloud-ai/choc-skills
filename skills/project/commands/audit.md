@@ -42,22 +42,25 @@ For each check, report PASS, FAIL, WARN, or SKIP with details.
 
 ### Checks (run all, adapt expectations to project type):
 
-1. **GitHub repo exists**: `git remote get-url origin` succeeds
-2. **Jira epic configured**: CLAUDE.md or PROJECT_CONFIG.json contains a CPT-<N> or Jira epic reference
-3. **Required docs present**: README.md, CLAUDE.md, PROJECT_CONFIG.json (always). ARCHITECTURE.md, PHILOSOPHY.md (Software or if present).
-4. **Session worktrees present**: Per architecture doc — 11 for Software, 8 for Non-Software. Check `git worktree list`.
-5. **Session startup prompts**: `.claude/sessions/<role>.md` exists for each expected role
-6. **Branch protection on main**: Derive `OWNER_REPO` from `git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||'`, then `gh api "repos/$OWNER_REPO/branches/main/protection"` succeeds. SKIP for Non-Software if documented deviation.
-7. **CI workflow exists** (Software only): `.github/workflows/test.yml` or similar. SKIP for Non-Software.
-8. **notify-failure job** (Software only): grep for `notify-failure` in workflow files.
-9. **notify-recovery job** (Software only): grep for `notify-recovery` in workflow files.
-10. **GitHub Issues disabled**: `gh repo view --json hasIssuesEnabled --jq .hasIssuesEnabled` returns `false` (Jira is source of truth).
-11. **No GitHub labels**: `gh label list --json name --jq 'length'` returns 0 (labels are vestigial — Jira handles priority/category).
+1. **GitHub repo exists**: `git remote get-url origin` succeeds <!-- Implements: PROJECT_STANDARDS.md:§1 -->
+2. **Jira epic configured**: CLAUDE.md or PROJECT_CONFIG.json contains a CPT-<N> or Jira epic reference <!-- Implements: MULTI_SESSION_ARCHITECTURE.md:§5 -->
+3. **Required docs present**: README.md, CLAUDE.md, PROJECT_CONFIG.json (always). ARCHITECTURE.md, PHILOSOPHY.md (Software or if present). <!-- Implements: PROJECT_STANDARDS.md:§6 -->
+4. **Session worktrees present**: Per architecture doc — 11 for Software, 8 for Non-Software. Check `git worktree list`. <!-- Implements: PROJECT_STANDARDS.md:§7 -->
+5. **Session startup prompts**: `.claude/sessions/<role>.md` exists for each expected role <!-- Implements: PROJECT_STANDARDS.md:§7 -->
+6. **Branch protection on main**: Derive `OWNER_REPO` from `git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||'`, then `gh api "repos/$OWNER_REPO/branches/main/protection"` succeeds. SKIP for Non-Software if documented deviation. <!-- Implements: PROJECT_STANDARDS.md:§1 -->
+7. **CI workflow exists** (Software only): `.github/workflows/test.yml` or similar. SKIP for Non-Software. <!-- Implements: PROJECT_STANDARDS.md:§3 -->
+8. **notify-failure job** (Software only): grep for `notify-failure` in workflow files. <!-- Implements: PROJECT_STANDARDS.md:§3 -->
+9. **notify-recovery job** (Software only): grep for `notify-recovery` in workflow files. <!-- Implements: PROJECT_STANDARDS.md:§3 -->
+10. **GitHub Issues disabled**: `gh repo view --json hasIssuesEnabled --jq .hasIssuesEnabled` returns `false` (Jira is source of truth). <!-- Implements: PROJECT_STANDARDS.md:§2 -->
+11. **No GitHub labels**: `gh label list --json name --jq 'length'` returns 0 (labels are vestigial — Jira handles priority/category). <!-- Implements: PROJECT_STANDARDS.md:§2 -->
 12. **Loop configuration**: for every role in `sessions.roles` that is loop-capable (master, triager, reviewer, merger, chk1, chk2, fixer, implementer), `sessions.loops.<role>` exists in PROJECT_CONFIG.json with a non-negative `intervalMinutes`. On-demand roles (planner, performance, playtester) must NOT have loop entries.
 13. **Loop prompt files**: for every role with `intervalMinutes > 0`, the prompt file exists at `.worktrees/<role>/<prompt-path>` (default `loops/loop.md`).
 14. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
-15. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.
-16. **No unauthorised worktrees**: per MULTI_SESSION_ARCHITECTURE.md §7.1, the only worktrees permitted are the role worktrees named in `sessions.roles` (plus the main repo). Iterate `git worktree list --porcelain`, extract each worktree's `worktree <path>` line, and for each one under `.worktrees/<name>/`, assert `<name>` is a member of `sessions.roles`. FAIL on any `<name>` not in the role list. Also FAIL on any role worktree whose HEAD branch is not `session/<role>` (feature/fix work must be a branch INSIDE the role worktree, never as a new or re-pointed worktree).
+15. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage. <!-- Implements: PROJECT_STANDARDS.md:§5 -->
+16. **No unauthorised worktrees**: per MULTI_SESSION_ARCHITECTURE.md §7.1, the only worktrees permitted are the role worktrees named in `sessions.roles` (plus the main repo). Iterate `git worktree list --porcelain`, extract each worktree's `worktree <path>` line, and for each one under `.worktrees/<name>/`, assert `<name>` is a member of `sessions.roles`. FAIL on any `<name>` not in the role list. Also FAIL on any role worktree whose HEAD branch is not `session/<role>` (feature/fix work must be a branch INSIDE the role worktree, never as a new or re-pointed worktree). <!-- Implements: MULTI_SESSION_ARCHITECTURE.md:§7.1 -->
+
+<!-- Checks 12, 13, 14 are operational conveniences not directly backed by a §N.N rule in the standards docs; they are documented in this command file's own contract. -->
+
 
 ## Step 5: Display report
 

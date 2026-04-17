@@ -1,11 +1,11 @@
 ---
 name: project
-version: 2.1.1
+version: 2.2.0
 description: Project repository administration — create new, audit, configure, status check. Multi-session workflow scaffolding per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/PROJECT_STANDARDS.md.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(gh *), Bash(git *), Bash(mkdir *), Bash(cp *), Bash(mv *), Bash(sed *), Bash(cat *), Bash(chmod *), Bash(touch *), Bash(ls *), Bash(test *), Bash(basename *), Bash(dirname *), Bash(stat *), Bash(date *), Bash(python3 *), Bash(npm *), Bash(find *), Write, Edit, AskUserQuestion
-argument-hint: [status | new | launch | audit | config | update | help | doctor | version]
+allowed-tools: Read, Grep, Glob, Bash(gh *), Bash(git *), Bash(mkdir *), Bash(cp *), Bash(mv *), Bash(sed *), Bash(cat *), Bash(chmod *), Bash(touch *), Bash(ls *), Bash(test *), Bash(basename *), Bash(dirname *), Bash(stat *), Bash(date *), Bash(python3 *), Bash(npm *), Bash(find *), Bash(shasum *), Bash(jq *), Bash(awk *), Bash(grep *), Write, Edit, AskUserQuestion
+argument-hint: [status | new | launch | audit | config | update | help | doctor | version | self-audit]
 ---
 
 # project — Project Repository Administration

@@ -1,5 +1,6 @@
 #!/bin/bash
 # block-worktree-add.sh — Claude Code PreToolUse hook
+# Implements: MULTI_SESSION_ARCHITECTURE.md:§7.1
 #
 # Blocks `git worktree add` unless the command inlines GIT_WORKTREE_OVERRIDE=1.
 # Exit 0 = allow the tool call; exit 2 = block (stderr is shown to Claude).

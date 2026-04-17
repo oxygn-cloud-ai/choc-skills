@@ -2,6 +2,41 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.2.0] - 2026-04-17
+
+### Added (CPT-59 — /project:self-audit)
+
+New colon-subcommand **`/project:self-audit`** — recursive / meta audit of the `/project` skill against its own standards. Closes the cave-inversion class of errors by verifying rules ↔ mechanisms bidirectionally.
+
+- `commands/self-audit.md` — command contract + 5-check documentation
+- `bin/project-self-audit.sh` — ~400-line shell implementation (portable: `shasum`, `mkdir`, no `flock`)
+- `CLAUDE.md` — new "Cite convention" section establishing the `# Implements: <doc>:§<section>` header format
+- Existing hooks updated with citations:
+  - `hooks/block-worktree-add.sh` → `MULTI_SESSION_ARCHITECTURE.md:§7.1`
+  - `hooks/verify-jira-parent.sh` → `MULTI_SESSION_ARCHITECTURE.md:§5`
+- `commands/audit.md` — 12 of 16 numbered checks annotated with `<!-- Implements: ... -->` inline comments (checks 12/13/14 left unannotated — operational conveniences not backed by a §N.N rule)
+- `tests/project-self-audit.bats` — 18 tests covering structure, cite presence, clean-install exit codes, synthetic drift (DRIFT/ORPHAN/MANIFEST), JSON output, unknown-flag handling
+- `SKILL.md` — router table + `allowed-tools` extended with `shasum`, `jq`, `awk`, `grep`
+- `install.sh` router heredoc — `self-audit` entry
+
+### Check summary
+
+| Check | Name | Detects |
+|-------|------|---------|
+| A | Install parity | DRIFT (source↔target shasum), MISSING, ORPHAN, NOT-REGISTERED in settings.json |
+| B | Rules → Mechanisms | Enforcement rule in standards docs with no citing mechanism |
+| C | Mechanisms → Rules | `# Implements:` citation pointing at a non-existent section |
+| D | Install manifest | Source file under hooks/bin/commands with no `install.sh` code path |
+| E | Standards compliance | `validate-skills.sh` + `validate-config.sh` non-zero exit |
+
+### Blocker note — CPT-58
+
+CPT-58 (install.sh --check parity mode) is marked Jira Done but not yet on `origin/main` as of 2026-04-17. Check A is implemented **inline** in `project-self-audit.sh` using the same shasum-based parity logic CPT-58 will provide, so self-audit works independently of install.sh version. Follow-up can convert Check A to delegate to `install.sh --check` once CPT-58 lands.
+
+### AC coverage — full
+
+All CPT-59 ACs covered: new command file, SKILL.md routing, router documentation, cite convention in CLAUDE.md, existing hooks + audit.md citations, dogfood output, JSON output, bats for known-drift, version bump + CHANGELOG + CHECKSUMS + validators pass.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

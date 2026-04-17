@@ -289,6 +289,7 @@ Route to the appropriate sub-command. Every subcommand is a colon-command file u
 | (empty) or `status` | Run `/project:status` |
 | `new` | Run `/project:new` |
 | `audit` | Run `/project:audit` |
+| `self-audit` | Run `/project:self-audit` |
 | `config` | Run `/project:config` |
 | `launch` (with optional flags) | Run `/project:launch` passing flags |
 | `update`, `--update`, `upgrade` | Run `/project:update` |

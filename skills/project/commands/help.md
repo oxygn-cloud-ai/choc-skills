@@ -20,6 +20,7 @@ USAGE
   /project launch --all     Launch all projects in TMUX_REPOS_DIR
   /project launch --dry-run Preview without launching
   /project audit            Audit against global standards, report gaps
+  /project self-audit       Recursive audit of the /project skill itself (5 checks)
   /project config           Change project config: worktrees, Jira, CI, loops
   /project update           Update to latest version
   /project help             Display this usage guide
