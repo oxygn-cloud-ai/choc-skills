@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.12] - 2026-04-17
+
+### Fixed
+- **First-run on symlinked `$HOME` no longer FATALs** (`rr-prepare.sh`, `rr-finalize.sh`): CPT-26's path allowlist canonicalized `$HOME` eagerly but gated `WORK_DIR` canonicalization on `[ -e "$WORK_DIR" ]`. On hosts where `$HOME` has a distinct canonical form (macOS `/var/folders/...` → `/private/var/folders/...`, autofs mounts, firmlinked network homes), a first-time user's `$HOME/rr-work` stayed unresolved while `RESOLVED_HOME` was canonical, so the case guard never matched and the script aborted with `FATAL: RR_WORK_DIR must be under $HOME or /tmp`. Both scripts now canonicalize the **parent directory** of `WORK_DIR` when `WORK_DIR` itself doesn't exist yet, preserving CPT-26's symlink-traversal protection while letting first-run users through (CPT-100).
+
 ## [5.3.11] - 2026-04-17
 
 ### Fixed

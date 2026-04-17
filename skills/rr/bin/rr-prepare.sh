@@ -28,13 +28,35 @@ WORK_DIR="${RR_WORK_DIR:-${HOME}/rr-work}"
 # Resolve symlinks before validation to prevent symlink traversal attacks (CPT-26).
 # A symlink at $HOME/rr-work -> /outside/path would pass the case guard without this.
 # Also resolve HOME for consistent comparison (macOS: /var -> /private/var).
+#
+# First-run handling (CPT-100): when WORK_DIR doesn't exist yet we cannot resolve
+# it directly, but we can canonicalize its PARENT so the case guard compares like
+# against like. Otherwise, on hosts where HOME has a distinct canonical form
+# (macOS /var -> /private/var, autofs mounts, firmlinked network homes), the
+# unresolved `$HOME/rr-work` never matches `$(realpath $HOME)/*` and the script
+# FATALs before the first run can create the directory.
 RESOLVED_HOME="$HOME"
 if command -v realpath >/dev/null 2>&1; then
     RESOLVED_HOME="$(realpath "$HOME")"
-    [ -e "$WORK_DIR" ] && WORK_DIR="$(realpath "$WORK_DIR")"
+    if [ -e "$WORK_DIR" ]; then
+        WORK_DIR="$(realpath "$WORK_DIR")"
+    else
+        _rr_parent="$(dirname "$WORK_DIR")"
+        if [ -d "$_rr_parent" ]; then
+            WORK_DIR="$(realpath "$_rr_parent")/$(basename "$WORK_DIR")"
+        fi
+        unset _rr_parent
+    fi
 elif [ -d "$WORK_DIR" ]; then
     RESOLVED_HOME="$(cd "$HOME" && pwd -P)"
     WORK_DIR="$(cd "$WORK_DIR" && pwd -P)"
+else
+    RESOLVED_HOME="$(cd "$HOME" && pwd -P)"
+    _rr_parent="$(dirname "$WORK_DIR")"
+    if [ -d "$_rr_parent" ]; then
+        WORK_DIR="$(cd "$_rr_parent" && pwd -P)/$(basename "$WORK_DIR")"
+    fi
+    unset _rr_parent
 fi
 
 # Validate WORK_DIR is under $HOME or /tmp to prevent accidental operations elsewhere
