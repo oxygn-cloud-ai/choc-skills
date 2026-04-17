@@ -3,8 +3,16 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
 
 permissions:
   contents: read
@@ -26,8 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Make scripts executable
-        run: chmod +x scripts/*.sh
       - name: Validate all skill definitions
         run: ./scripts/validate-skills.sh
 
@@ -65,8 +71,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Make scripts executable
-        run: chmod +x scripts/*.sh
       - name: Regenerate checksums
         run: ./scripts/generate-checksums.sh
       - name: Verify checksums match committed file
@@ -123,8 +127,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Install BATS
-        run: sudo apt-get update && sudo apt-get install -y bats
-      - name: Make scripts executable
-        run: chmod +x scripts/*.sh install.sh
+        uses: bats-core/bats-action@3.0.0
+        with:
+          bats-version: 1.11.1
       - name: Run BATS tests
         run: bats tests/

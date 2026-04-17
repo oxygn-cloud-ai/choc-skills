@@ -14,22 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Validate skills
-        run: |
-          chmod +x scripts/*.sh
-          ./scripts/validate-skills.sh
-
-      - name: Install all skills
-        run: ./install.sh --force
-
-      - name: Health check
-        run: ./install.sh --check
+        # Validation and install already passed in CI — no need to re-run here
 
       - name: Generate checksums
-        run: |
-          chmod +x scripts/generate-checksums.sh
-          ./scripts/generate-checksums.sh
+        run: ./scripts/generate-checksums.sh
 
       - name: Extract version from tag
         id: version

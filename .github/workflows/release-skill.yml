@@ -39,10 +39,24 @@ jobs:
             exit 1
           fi
 
-      - name: Validate all skill definitions
+      - name: Validate tagged skill
+        env:
+          SKILL: ${{ steps.parse.outputs.skill }}
         run: |
-          chmod +x scripts/*.sh
-          ./scripts/validate-skills.sh
+          # Validate only the tagged skill, not all skills
+          SKILL_DIR="skills/${SKILL}"
+          if [ ! -f "${SKILL_DIR}/SKILL.md" ]; then
+            echo "Error: ${SKILL_DIR}/SKILL.md not found"
+            exit 1
+          fi
+          # Check required frontmatter fields
+          for field in name version description; do
+            if ! grep -q "^${field}:" "${SKILL_DIR}/SKILL.md"; then
+              echo "Error: missing '${field}:' in ${SKILL_DIR}/SKILL.md"
+              exit 1
+            fi
+          done
+          echo "OK: ${SKILL} validated"
 
       - name: Extract per-skill changelog
         env:
@@ -61,9 +75,7 @@ jobs:
           fi
 
       - name: Generate checksums
-        run: |
-          chmod +x scripts/generate-checksums.sh
-          ./scripts/generate-checksums.sh
+        run: ./scripts/generate-checksums.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
