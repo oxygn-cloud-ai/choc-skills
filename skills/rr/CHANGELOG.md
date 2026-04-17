@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.14] - 2026-04-17
+
+### Fixed
+- **Retry-After header actually honoured now** (`skills/rr/bin/_publish_one.sh`): CPT-33 (v5.3.4) claimed to honour the `Retry-After` header on 429/503/529 retries but only read a `.retryAfter` JSON body field via jq. Jira sends rate-limit hints in the HTTP response header (RFC 7231 §7.1.3), so the body lookup returned empty and the code silently fell back to 2/4/8s exponential backoff — under parallel `xargs -P` workers against a throttled Jira endpoint, the ignored server-mandated delay caused premature `MAX_PUBLISH_RETRIES` exhaustion. Fixed: the curl POST now writes headers to a tempfile via `-D`, the 429/503/529 arm parses `Retry-After:` case-insensitively (last-occurrence wins per RFC §4), accepts bare-integer seconds, falls back to body `.retryAfter` (kept as secondary for API variants that return it there), then to exp backoff. The CPT-33 CHANGELOG wording ("Honours `Retry-After` header when present") is now accurate rather than aspirational (CPT-118).
+
 ## [5.3.13] - 2026-04-17
 
 ### Fixed

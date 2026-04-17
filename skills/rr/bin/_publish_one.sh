@@ -360,11 +360,20 @@ payload=$(jq -n \
 # CREATE JIRA ISSUE — with retry and backoff
 #=============================================================================
 
+# CPT-118: capture response headers alongside body+code so 429/503/529
+# retries can honour the Retry-After RESPONSE HEADER (Jira's actual
+# rate-limit signal). CPT-33 previously parsed only a body `.retryAfter`
+# field that Jira never sets, so the retry path silently fell through
+# to exponential backoff and ignored the server-mandated delay.
+attempt_headers=$(mktemp "${TMPDIR:-/tmp}/rr-publish-headers.XXXXXX")
+trap 'rm -f "$attempt_headers"' EXIT
+
 attempt=0
 while [ $attempt -lt $MAX_PUBLISH_RETRIES ]; do
     attempt=$((attempt + 1))
 
-    response=$(curl -s -w "\n%{http_code}" -X POST "$JIRA_BASE_URL/rest/api/3/issue" \
+    : > "$attempt_headers"  # truncate between attempts so last run is unambiguous
+    response=$(curl -s -D "$attempt_headers" -w "\n%{http_code}" -X POST "$JIRA_BASE_URL/rest/api/3/issue" \
         -H "Authorization: Basic $JIRA_AUTH" \
         -H "Content-Type: application/json" \
         -d "$payload" \
@@ -426,12 +435,37 @@ while [ $attempt -lt $MAX_PUBLISH_RETRIES ]; do
             exit 0
             ;;
         429|503|529)
-            # Exponential backoff with random jitter to avoid thundering herd
-            # under xargs -P parallel workers
-            retry_after=$(echo "$http_body" | jq -r '.retryAfter // empty' 2>/dev/null)
-            if [ -n "$retry_after" ] && [ "$retry_after" -gt 0 ] 2>/dev/null; then
+            # Retry-After precedence (CPT-118): HTTP response header first
+            # (what Jira actually sends, RFC 7231 §7.1.3), then body
+            # `.retryAfter` (rare API variant, kept as secondary for
+            # APIs that surface it there), then exponential backoff with
+            # random jitter to avoid thundering-herd under xargs -P
+            # parallel workers.
+            retry_after=""
+
+            # (1) Parse Retry-After: <N> header. Case-insensitive match;
+            # take the last occurrence (RFC §4 last-header-wins semantics);
+            # only accept bare-integer seconds (HTTP-date form is RFC-legal
+            # but uncommon on rate-limit responses — fall through to body/exp
+            # backoff rather than computing seconds-until-date portably).
+            retry_after_header=$(grep -iE '^Retry-After:' "$attempt_headers" 2>/dev/null \
+                | tail -1 | sed 's/^[^:]*:[[:space:]]*//;s/[[:space:]]*\r\{0,1\}$//')
+            if [[ "$retry_after_header" =~ ^[0-9]+$ ]] && [ "$retry_after_header" -gt 0 ]; then
+                retry_after="$retry_after_header"
+            fi
+
+            # (2) Fallback: body `.retryAfter` field
+            if [ -z "$retry_after" ]; then
+                retry_after_body=$(echo "$http_body" | jq -r '.retryAfter // empty' 2>/dev/null)
+                if [ -n "$retry_after_body" ] && [ "$retry_after_body" -gt 0 ] 2>/dev/null; then
+                    retry_after="$retry_after_body"
+                fi
+            fi
+
+            if [ -n "$retry_after" ]; then
                 sleep_time=$((retry_after + RANDOM % 5))
             else
+                # (3) Exponential backoff with random jitter
                 base_sleep=$((1 << attempt))  # 2, 4, 8 seconds
                 jitter=$((RANDOM % (base_sleep + 1)))
                 sleep_time=$((base_sleep + jitter))
