@@ -120,8 +120,13 @@ for dir in "${SKILLS_DIR}"/*/; do
   # look for version — silent drift there misleads anyone picking up the repo.
   root_readme="${REPO_DIR}/README.md"
   if [ -f "$root_readme" ]; then
+    # CPT-145: `|| true` guards against set -euo pipefail aborting when the
+    # skill is not listed in the root README — that's the exact case this
+    # block's "not listed" warning is designed to handle. Without the guard
+    # the first grep exits 1, the pipeline fails, and the validator aborts
+    # before the downstream `if [ -z "$root_row_ver" ]` warn branch can run.
     root_row_ver=$(grep -E "\\| \\*\\*${name}\\*\\*" "$root_readme" \
-                   | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 | sed 's/^v//')
+                   | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 | sed 's/^v//' || true)
     if [ -z "$root_row_ver" ]; then
       warn "${name}: not listed in root README skills table"
       warnings=$((warnings + 1))
@@ -141,8 +146,12 @@ for dir in "${SKILLS_DIR}"/*/; do
   # need to advertise version, but if it does, it must be correct).
   per_readme="${dir}README.md"
   if [ -f "$per_readme" ]; then
+    # CPT-145: `|| true` keeps the set -euo pipefail validator alive when
+    # the README lacks the canonical `Current: **X.Y.Z**` form. The awk
+    # fallback below handles the legacy `## Version\nX.Y.Z` shape, but the
+    # fallback is unreachable if grep exits 1 first and aborts the script.
     readme_ver=$(grep -oE 'Current: \*\*[0-9]+\.[0-9]+\.[0-9]+\*\*' "$per_readme" \
-                 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+                 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
     if [ -z "$readme_ver" ]; then
       readme_ver=$(awk '
         /^## Version/ {hit=1; next}
