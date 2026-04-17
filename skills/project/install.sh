@@ -64,7 +64,7 @@ ${BOLD}INSTALLS TO${RESET}
 
 ${BOLD}REQUIREMENTS${RESET}
   ~/.claude/MULTI_SESSION_ARCHITECTURE.md  (runtime reference)
-  ~/.claude/GITHUB_CONFIG.md               (runtime reference)
+  ~/.claude/PROJECT_STANDARDS.md           (runtime reference — label/CI/branch-protection narrative; per-project config lives in PROJECT_CONFIG.json)
   git, gh (authenticated)
 EOF
   exit 0
@@ -119,11 +119,24 @@ if [ "$ACTION" = "check" ]; then
     err "${HOME}/.claude/MULTI_SESSION_ARCHITECTURE.md missing (required at runtime)"; issues=$((issues + 1))
   fi
 
-  if [ -f "${HOME}/.claude/GITHUB_CONFIG.md" ]; then
-    ok "Global GitHub config present"
+  # CPT-124: GITHUB_CONFIG.md was retired in favour of PROJECT_STANDARDS.md
+  # (narrative) and PROJECT_CONFIG.json (per-project). CPT-77's exit-nonzero
+  # contract would otherwise fail every modern install that only has the
+  # new files.
+  if [ -f "${HOME}/.claude/PROJECT_STANDARDS.md" ]; then
+    ok "Global project standards present (~/.claude/PROJECT_STANDARDS.md)"
   else
-    err "${HOME}/.claude/GITHUB_CONFIG.md missing (required at runtime)"; issues=$((issues + 1))
+    err "${HOME}/.claude/PROJECT_STANDARDS.md missing (required at runtime; replaces retired GITHUB_CONFIG.md)"; issues=$((issues + 1))
   fi
+
+  # Migration nudge: flag the retired GITHUB_CONFIG.md so users don't keep
+  # editing a file that is superseded. Informational only, does not
+  # increment the issues counter.
+  stale_github_config="${HOME}/.claude/GITHUB_CONFIG.md"
+  if [ -f "$stale_github_config" ]; then
+    warn "$stale_github_config exists but is retired — safe to remove (superseded by PROJECT_STANDARDS.md + PROJECT_CONFIG.json)"
+  fi
+  unset stale_github_config
 
   if command -v git >/dev/null 2>&1; then
     ok "git: $(command -v git)"

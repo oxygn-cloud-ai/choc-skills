@@ -2,6 +2,11 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.6] - 2026-04-18
+
+### Fixed
+- **`install.sh --check` no longer fails on valid modern installs**: CPT-77 made the per-skill installer's `--check` exit non-zero when issues are reported. `skills/project/install.sh --check` still required the retired `~/.claude/GITHUB_CONFIG.md` file — superseded in the multi-session architecture by `~/.claude/PROJECT_STANDARDS.md` (narrative) and per-project `PROJECT_CONFIG.json` (machine-readable). After CPT-77 shipped, every modern install reported unhealthy and exited 1, breaking CI/automation that relied on the exit code. Migration applied across `install.sh`, `SKILL.md`, `README.md`, `commands/new.md`: all live runtime-reference uses of `GITHUB_CONFIG.md` replaced with `PROJECT_STANDARDS.md` (or `PROJECT_CONFIG.json` where per-project machine-readable config is appropriate). A migration-nudge warning in `--check` flags a stale `GITHUB_CONFIG.md` as safe to remove without incrementing the issues counter (CPT-124).
+
 ## [1.2.5] - 2026-04-17
 
 ### Fixed

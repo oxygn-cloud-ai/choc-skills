@@ -1,6 +1,6 @@
 # project — Project Repository Administration
 
-A Claude Code skill that creates, audits, configures, and reports on project repositories using the multi-session workflow defined in `~/.claude/MULTI_SESSION_ARCHITECTURE.md` and `~/.claude/GITHUB_CONFIG.md`.
+A Claude Code skill that creates, audits, configures, and reports on project repositories using the multi-session workflow defined in `~/.claude/MULTI_SESSION_ARCHITECTURE.md` and `~/.claude/PROJECT_STANDARDS.md`.
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ A Claude Code skill that creates, audits, configures, and reports on project rep
 - `git` installed and available in PATH
 - `gh` installed and authenticated (`gh auth status` succeeds)
 - `~/.claude/MULTI_SESSION_ARCHITECTURE.md` present (authoritative role/worktree/Jira definitions)
-- `~/.claude/GITHUB_CONFIG.md` present (authoritative label/CI/branch-protection spec)
+- `~/.claude/PROJECT_STANDARDS.md` present (narrative label/CI/branch-protection spec; per-project machine-readable config lives in each repo's `PROJECT_CONFIG.json`)
 
 ## Installation
 
@@ -73,7 +73,7 @@ The `project` skill administers project repositories that follow the Oxygn multi
 The skill's subcommands read these files at runtime and will fail without them:
 
 - `~/.claude/MULTI_SESSION_ARCHITECTURE.md` — role definitions, worktree layout, Jira structure, 11-session protocol
-- `~/.claude/GITHUB_CONFIG.md` — label definitions, CI templates, branch protection spec
+- `~/.claude/PROJECT_STANDARDS.md` — narrative label/CI/branch-protection spec (machine-readable per-project config lives in each repo's `PROJECT_CONFIG.json`)
 - `~/.claude/CLAUDE.md` — global rules (referenced, not required)
 
 These files are NOT installed by this skill — they're expected to exist as part of the user's Claude Code configuration. Run `/project doctor` to verify.
@@ -113,7 +113,7 @@ rm -f  ~/.claude/commands/project.md
 
 ## Version
 
-Current: **1.2.5**
+Current: **1.2.6**
 
 ## License
 
