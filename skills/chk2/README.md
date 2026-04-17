@@ -154,7 +154,7 @@ rm -rf ~/.claude/skills/chk2 ~/.claude/commands/chk2 ~/.claude/commands/chk2.md
 
 ## Version
 
-Current: **2.3.17**
+Current: **2.3.18**
 
 ## License
 

@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.18] - 2026-04-18
+
+### Fixed
+- **`chk2:update` absolute-path installer invocation restored** (CPT-119). Same class of defect as chk1:update — the narrow `Bash(bash install.sh *)` pattern introduced by CPT-39 did not match the documented absolute-path invocation `bash <repo-path>/skills/chk2/install.sh --force`. Widened to `Bash(bash *install.sh *)` which still scopes to `install.sh` invocations. `/chk2 update` now works for users with a `.source-repo` marker (the documented typical setup). See chk1 entry for full write-up; same fix applied identically.
+
+**Note on version renumbering**: This entry originally targeted 2.3.17 on `fix/CPT-119-bash-install-sh-pattern`, but CPT-110 (Agent tool declaration) landed on `main` and claimed 2.3.17 first. Renumbered to 2.3.18 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.17] - 2026-04-18
 
 ### Fixed

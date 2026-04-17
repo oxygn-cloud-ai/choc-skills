@@ -2,6 +2,11 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.9] - 2026-04-18
+
+### Fixed
+- **`chk1:update` absolute-path installer invocation restored** (CPT-119). CPT-39 added per-command `allowed-tools` frontmatter but the pattern `Bash(bash install.sh *)` literally matches only commands starting with `bash install.sh …`. The command body documents invocation as `bash <repo-path>/skills/chk1/install.sh --force` — an absolute path that starts with `bash /Volumes/…`, not `bash install.sh`. Under per-command enforcement, `/chk1 update` was silently blocked at the primary update step for every user with a local clone and `.source-repo` marker (the documented typical setup). Widened to `Bash(bash *install.sh *)` which accepts both absolute-path and bare forms while still constraining to `install.sh` invocations. Regression test in `tests/router-allowed-tools.bats` forbids the narrow pattern on any `commands/update.md` and requires a wide-enough pattern whenever the body uses `bash <path>/install.sh`.
+
 ## [2.4.8] - 2026-04-18
 
 ### Fixed

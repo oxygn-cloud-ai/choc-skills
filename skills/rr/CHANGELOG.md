@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.20] - 2026-04-18
+
+### Fixed
+- **`rr:update` `Bash(bash install.sh *)` pattern widened for consistency** (CPT-119). The rr:update body instructs direct execution (`<repo-path>/install.sh --force`) rather than `bash <path>/install.sh`, so the narrow pattern was not a live defect on rr. Widened to `Bash(bash *install.sh *)` to keep all three per-skill update commands on the same pattern and future-proof against an edit that re-introduces `bash <abs-path>/install.sh` invocation. Same fix applied across chk1:update, chk2:update, rr:update.
+
+**Note on version renumbering**: This entry originally targeted 5.3.19 on `fix/CPT-119-bash-install-sh-pattern`, but CPT-103 (MCP call-spec preamble) landed on `main` and claimed 5.3.19 first. Renumbered to 5.3.20 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.19] - 2026-04-18
 
 ### Fixed

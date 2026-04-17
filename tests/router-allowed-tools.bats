@@ -200,3 +200,53 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   echo "offenders:$offenders"
   [ -z "$offenders" ]
 }
+
+# --- CPT-119: narrow Bash(bash install.sh *) pattern blocks absolute-path invocation ---
+#
+# `bash <repo-path>/skills/<skill>/install.sh --force` (the documented primary
+# update flow when .source-repo is set) does NOT match the literal
+# `bash install.sh *` pattern because the command starts with
+# `bash /Volumes/…` not `bash install.sh`. Under per-command tool enforcement,
+# the sandbox blocks the invocation and the update silently fails. The fix is
+# to widen to `Bash(bash *install.sh *)` which matches both the absolute-path
+# and bare forms while still constraining to install.sh invocations.
+
+@test "no update command has the narrow Bash(bash install.sh *) pattern (CPT-119)" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/*/commands/update.md; do
+    [ -f "$f" ] || continue
+    allow=$(head -20 "$f" | grep '^allowed-tools:' || true)
+    # The literal narrow pattern is `Bash(bash install.sh *)` — NOT widened.
+    # The widened form is `Bash(bash *install.sh *)` (note the leading `*`).
+    # If the narrow form appears in the allowed-tools line, that's an offender.
+    if printf '%s' "$allow" | grep -qE 'Bash\(bash install\.sh \*\)'; then
+      offenders="$offenders ${f#$REPO_ROOT/}"
+    fi
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}
+
+@test "every update command has a pattern covering absolute-path bash invocation (CPT-119)" {
+  # For every update.md that instructs the model to run `bash <path>/install.sh`,
+  # the allowed-tools frontmatter MUST contain a pattern that will match such
+  # calls. Acceptable forms (both inline `allowed-tools: a, b, c` and YAML
+  # list syntax are handled):
+  #   - Bash(bash *install.sh *)  ← the canonical widening
+  #   - Bash(bash *)              ← wide bash-only catch-all
+  #   - Bash                      ← fully unrestricted Bash
+  offenders=""
+  for f in "$REPO_ROOT"/skills/*/commands/update.md; do
+    [ -f "$f" ] || continue
+    body=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm>=2' "$f")
+    # Extract the whole frontmatter block for allowed-tools inspection
+    fm=$(awk 'BEGIN{fm=0} /^---$/{fm++; if(fm==2)exit; next} fm==1' "$f")
+    if printf '%s' "$body" | grep -qE 'bash [^ ]*/install\.sh'; then
+      if ! printf '%s' "$fm" | grep -qE '(Bash\(bash \*(install\.sh \*)?\)|(^|[[:space:],-])Bash([[:space:],]|$))'; then
+        offenders="$offenders ${f#$REPO_ROOT/}"
+      fi
+    fi
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}
