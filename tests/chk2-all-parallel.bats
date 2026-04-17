@@ -62,3 +62,55 @@ ALL_MD="${REPO_DIR}/skills/chk2/commands/all.md"
   # Should mention rate limiting or 429 handling in the context of waves
   grep -qiE '(rate.?limit|429|circuit.?break|between waves|after.*wave)' "$ALL_MD"
 }
+
+# --- CPT-94: the CPT-8 tests above are structural (shape-of-markdown) and
+# under-specify the 5-waves × 6-categories design the rate-limit pacing
+# depends on. `max_consecutive <= 10` passes for 3 waves of 10, 15 waves
+# of 2, etc. — all of which break the pacing window chk2:all was built
+# around. Tighten to assert the exact wave count and per-wave category
+# count documented in commands/all.md.
+
+@test "chk2 all.md declares exactly 5 waves (CPT-94)" {
+  local wave_count
+  wave_count=$(grep -cE '^[[:space:]]+\*\*Wave [0-9]+ ' "$ALL_MD")
+  if [ "$wave_count" -ne 5 ]; then
+    echo "expected exactly 5 waves; found $wave_count" >&2
+    grep -nE '^[[:space:]]+\*\*Wave [0-9]+ ' "$ALL_MD" >&2
+    return 1
+  fi
+}
+
+@test "chk2 all.md has exactly 6 categories per wave (CPT-94)" {
+  # Parse each Wave block (from `**Wave N — ...**` to the next Wave or the
+  # "Between waves" / "Retry failures" end-of-section anchor) and count
+  # the `- /chk2:<cat>` bullet lines within. Each wave must have exactly 6.
+  local wave_idx=0
+  local offenders=""
+  while IFS=$'\t' read -r wave_line start end; do
+    wave_idx=$((wave_idx + 1))
+    local block
+    block=$(sed -n "${start},${end}p" "$ALL_MD")
+    local cat_count
+    cat_count=$(echo "$block" | grep -cE '^[[:space:]]+-[[:space:]]+`/chk2:')
+    if [ "$cat_count" -ne 6 ]; then
+      offenders="$offenders wave${wave_idx}=${cat_count}"
+    fi
+  done < <(
+    # Line numbers of each "**Wave N —" heading, paired with the start
+    # of the next Wave (or a far-out sentinel). Delimiter: tab.
+    awk '
+      /^[[:space:]]+\*\*Wave [0-9]+ /{
+        if (prev) print prev_line "\t" prev + 1 "\t" NR - 1
+        prev = NR
+        prev_line = $0
+      }
+      END {
+        if (prev) print prev_line "\t" prev + 1 "\t" NR
+      }
+    ' "$ALL_MD"
+  )
+  if [ -n "$offenders" ]; then
+    echo "wave(s) with wrong category count:$offenders" >&2
+    return 1
+  fi
+}

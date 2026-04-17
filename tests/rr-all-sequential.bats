@@ -31,21 +31,30 @@ ALL_MD="${REPO_DIR}/skills/rr/commands/all.md"
   echo "$setup_section" | grep -q 'step-6'
 }
 
-@test "per-risk loop does not instruct reading workflow step files individually" {
-  # The "Process Each Risk" section should NOT contain instructions to
-  # read individual step-N files. It should reference already-loaded content.
+@test "per-risk loop does not instruct reading workflow step files individually (CPT-94 hardened)" {
+  # The "Process Each Risk" section must NOT contain any instruction to
+  # read individual step-N.md files inside the loop — files are pre-loaded
+  # once in the setup phase and referenced from context thereafter.
+  #
+  # CPT-94: the previous shape had a nested-if outer gate that silently
+  # allowed any NEW "read step-N.md" phrasing not matching the narrow
+  # inner `^\s*- Step [0-9]:.*(read \`` anchor to pass. A future edit
+  # introducing a different "(again read step-4.md)" wording slipped
+  # through. Dropped the outer gate: ANY match of the regex in the loop
+  # section is a regression.
+  #
+  # The per-phase compaction re-check lines (CPT-133) use the shape
+  # `\`step-N.md\` heading is still retrievable (re-read on miss)` —
+  # "re-read" appears AFTER the step-N.md filename on the same line, so
+  # the regex `(read|Read).*step-[0-9].*\.md` does not match that prose.
 
   local loop_section
   loop_section=$(sed -n '/^### Process Each Risk/,/^### Progress File Status/p' "$ALL_MD")
 
-  # Should NOT contain "read" + step file path patterns inside the loop
-  # (case-insensitive "Read" or "read" followed by step file references)
   if echo "$loop_section" | grep -iqE '(read|Read).*step-[0-9].*\.md'; then
-    # Check it's not just a reference like "use the already-loaded step-1 content"
-    # It should fail if it says to READ the files (not reference them)
-    if echo "$loop_section" | grep -iqE '^\s*- Step [0-9]:.*\(read `'; then
-      return 1
-    fi
+    echo "per-risk loop instructs reading a step-N.md file — should be pre-loaded" >&2
+    echo "$loop_section" | grep -inE '(read|Read).*step-[0-9].*\.md' >&2
+    return 1
   fi
 }
 
