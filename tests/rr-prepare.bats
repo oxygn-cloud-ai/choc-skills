@@ -24,6 +24,28 @@ setup() {
   export JIRA_API_KEY="fake-key"
 }
 
+# CPT-122: runtime-probe a writable directory outside /tmp, /private/tmp, and
+# $HOME — the only kind of path the rr-prepare / rr-finalize case guard is
+# guaranteed to reject. CPT-96 introduced this probe inline for the first
+# symlink test; extracted here so all three symlink-attack tests share one
+# implementation. Echoes the path on success (exit 0), exits non-zero if no
+# suitable candidate is writable on this runner (the caller should `skip`).
+probe_attack_dir() {
+  local tag="${1:-attack}"
+  local candidate resolved_home resolved_candidate
+  resolved_home="$(realpath "$HOME" 2>/dev/null)" || resolved_home="$HOME"
+  for candidate in /dev/shm /var/tmp /opt; do
+    if [ -d "$candidate" ] && [ -w "$candidate" ]; then
+      resolved_candidate="$(realpath "$candidate" 2>/dev/null)" || resolved_candidate="$candidate"
+      case "$resolved_candidate" in
+        /tmp|/tmp/*|"$resolved_home"|"$resolved_home"/*|/private/tmp|/private/tmp/*) continue ;;
+        *) echo "$candidate/rr-test-${tag}-$$"; return 0 ;;
+      esac
+    fi
+  done
+  return 1
+}
+
 teardown() {
   [[ "$HOME" == /tmp/* || "$HOME" == /var/folders/* || "$HOME" == /private/tmp/* || "$HOME" == /private/var/* ]] || return 0
   rm -rf "$HOME"
@@ -34,28 +56,11 @@ teardown() {
 
 @test "rr-prepare --reset rejects symlink under HOME pointing outside HOME" {
   # Test premise: the resolved symlink target must be outside $HOME AND /tmp,
-  # which is what the case guard in rr-prepare.sh rejects.
-  #
-  # CPT-96: previous version used /var/tmp/* as the attack path, but on some
-  # Linux distros (including GitHub Actions ubuntu-latest) /var/tmp resolves
-  # into /tmp via symlink or bind mount, making that path match the allowed
-  # /tmp/* case. We probe at runtime for a writable location that provably
-  # resolves outside /tmp and outside $HOME.
-  local attack_dir=""
-  local candidate resolved_home resolved_candidate
-  resolved_home="$(realpath "$HOME" 2>/dev/null)" || resolved_home="$HOME"
-  for candidate in /dev/shm /var/tmp /opt; do
-    if [ -d "$candidate" ] && [ -w "$candidate" ]; then
-      # Verify this candidate does not resolve into /tmp, /private/tmp, or $HOME
-      resolved_candidate="$(realpath "$candidate" 2>/dev/null)" || resolved_candidate="$candidate"
-      case "$resolved_candidate" in
-        /tmp|/tmp/*|"$resolved_home"|"$resolved_home"/*|/private/tmp|/private/tmp/*) continue ;;
-        *) attack_dir="$candidate/rr-test-attack-$$"; break ;;
-      esac
-    fi
-  done
-
-  [ -n "$attack_dir" ] || skip "no writable location outside /tmp and \$HOME available on this system"
+  # which is what the case guard in rr-prepare.sh rejects. See probe_attack_dir
+  # for why /var/tmp is not safe to hardcode (CPT-96/CPT-122).
+  local attack_dir
+  attack_dir="$(probe_attack_dir attack)" || \
+    skip "no writable location outside /tmp and \$HOME available on this system"
 
   mkdir -p "$attack_dir"
   touch "$attack_dir/batch.log"
@@ -84,7 +89,9 @@ teardown() {
 }
 
 @test "rr-prepare rejects WORK_DIR that is a symlink resolving outside allowed paths" {
-  local attack_dir="/var/tmp/rr-test-attack2-$$"
+  local attack_dir
+  attack_dir="$(probe_attack_dir attack2)" || \
+    skip "no writable location outside /tmp and \$HOME available on this system"
   mkdir -p "$attack_dir"
   ln -sf "$attack_dir" "$HOME/rr-work"
   export RR_WORK_DIR="$HOME/rr-work"
@@ -113,7 +120,9 @@ teardown() {
 # --- rr-finalize.sh: path validation ---
 
 @test "rr-finalize rejects WORK_DIR that is a symlink resolving outside allowed paths" {
-  local attack_dir="/var/tmp/rr-test-attack3-$$"
+  local attack_dir
+  attack_dir="$(probe_attack_dir attack3)" || \
+    skip "no writable location outside /tmp and \$HOME available on this system"
   mkdir -p "$attack_dir"
   ln -sf "$attack_dir" "$HOME/rr-work"
   export RR_WORK_DIR="$HOME/rr-work"
