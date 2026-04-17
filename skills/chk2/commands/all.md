@@ -1,7 +1,7 @@
 ---
 name: chk2:all
 description: "Run all security check categories"
-allowed-tools: Read, Write, Bash(mkdir *), Bash(cat *), Bash(rm *), AskUserQuestion
+allowed-tools: Read, Write, Bash(mkdir *), Bash(cat *), Bash(rm *), Agent, AskUserQuestion
 ---
 
 # chk2:all — Run All Security Checks

@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.17] - 2026-04-18
+
+### Fixed
+- **`chk2:all` frontmatter now declares `Agent` — primary full-audit flow restored** (CPT-110). CPT-32 (v2.3.4) moved heavy tools from router-level to per-command frontmatter, but the per-command `chk2:all` frontmatter only listed `Read, Write, Bash(mkdir *), Bash(cat *), Bash(rm *), AskUserQuestion` while the command body explicitly instructs the model to launch 5 waves of parallel Agent calls (30 category dispatches). Under per-command tool enforcement, `Agent` was denied — `/chk2`, `/chk2 all`, and any category dispatched via `/chk2 all` produced nothing. Added `Agent` to `allowed-tools`. The fix also adds a generic bats regression guard that cross-checks every command file's body for imperative Agent usage (`Launch/Spawn/Dispatch/using ... Agent tool|Agent call|parallel Agent`, or the `subagent_type` code keyword) against its frontmatter, so a future command that tells the model to dispatch sub-agents without declaring the tool will fail CI at review time.
+
 ## [2.3.16] - 2026-04-18
 
 ### Fixed
