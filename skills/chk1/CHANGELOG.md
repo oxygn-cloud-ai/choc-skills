@@ -2,6 +2,14 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.5] - 2026-04-17
+
+### Fixed
+- **Exit-code contract**: `install.sh --check` now exits non-zero when issues are reported (was unconditional `exit 0`). Aligns with root `install.sh --check` behavior so CI/automation can detect unhealthy installations by exit code (CPT-77).
+
+### Note on version renumbering
+- CPT-77's source branch bumped 2.4.3 → 2.4.4 in isolation. By merge time, 2.4.4 (CPT-76) had already shipped, so the Merger renumbered CPT-77 to 2.4.5. No code semantics changed.
+
 ## [2.4.4] - 2026-04-17
 
 ### Fixed

@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.9] - 2026-04-17
+
+### Fixed
+- **Exit-code contract**: `install.sh --check` now exits non-zero when issues are reported (was unconditional `exit 0`). Aligns with root `install.sh --check` behavior (CPT-77).
+
+### Note on version renumbering
+- CPT-77 source branch targeted 5.3.7; both 5.3.7 (CPT-117) and 5.3.8 (CPT-76) shipped earlier this cycle. Renumbered to 5.3.9.
+
 ## [5.3.8] - 2026-04-17
 
 ### Fixed

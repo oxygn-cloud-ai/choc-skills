@@ -116,10 +116,11 @@ if [ "$ACTION" = "check" ]; then
   echo ""
   if [ "$issues" -eq 0 ]; then
     printf "  ${GREEN}All checks passed${RESET}\n\n"
+    exit 0
   else
     printf "  ${YELLOW}${issues} issue(s) found${RESET}\n\n"
+    exit 1
   fi
-  exit 0
 fi
 
 # --- Install ---

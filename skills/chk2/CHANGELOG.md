@@ -2,6 +2,14 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.6] - 2026-04-17
+
+### Fixed
+- **Exit-code contract**: `install.sh --check` now exits non-zero when issues are reported (was unconditional `exit 0`). Aligns with root `install.sh --check` behavior (CPT-77).
+
+### Note on version renumbering
+- CPT-77 source branch targeted 2.3.5; CPT-76 took 2.3.5 at merge time, so renumbered to 2.3.6.
+
 ## [2.3.5] - 2026-04-17
 
 ### Fixed
