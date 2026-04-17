@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.12] - 2026-04-17
+
+### Security
+- **Local RCE via server-controlled `security.txt Expires:` field**: `skills/chk2/commands/reporting.md` RC4 interpolated `$exp_date` (derived from the HTTP response body) directly into a `python3 -c "…"` source string wrapped in single-quoted Python literals. A hostile target serving `Expires: 2026-01-01'+__import__('os').popen('…').read()+'` could break out of the string literal and execute arbitrary commands as the auditor's user when `/chk2:reporting` (or `/chk2:all`, which dispatches it) runs. Replaced the interpolation with stdin delivery — `printf '%s' "$exp_date" | python3 -c "…sys.stdin.read()…"` — so the value is treated as data, not source. Injection impossible regardless of content. Regression test in `tests/chk2-reporting-expires-injection.bats` runs the hostile payload and confirms no sentinel file is created (CPT-101).
+
+**Note on version renumbering**: This entry originally targeted 2.3.11 on `fix/CPT-101-chk2-reporting-expires-rce`, but CPT-99 (SSE probe close) landed on `main` and claimed 2.3.11 first. Renumbered to 2.3.12 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.11] - 2026-04-17
 
 ### Fixed

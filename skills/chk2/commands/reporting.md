@@ -43,15 +43,22 @@ else
   echo "$SECTXT" | grep -c "BEGIN PGP SIGNATURE" || echo "No PGP signature block"
 
   # RC4: Expires field check (reuses SECTXT from RC3 — no extra curl)
+  # CPT-101: the raw Expires value is attacker-controlled (security.txt body),
+  # so it MUST be delivered to python as stdin data, not interpolated into
+  # the -c source. The previous `'$exp_date'` interpolation allowed a hostile
+  # target to break out of the Python string literal and execute arbitrary
+  # code on the auditor's workstation.
   echo "=== Expires field check ==="
   expires=$(echo "$SECTXT" | grep -i "^Expires:" | head -1)
   if [ -n "$expires" ]; then
     echo "Expires field: $expires"
     exp_date=$(echo "$expires" | sed 's/^Expires:[[:space:]]*//')
-    python3 -c "
+    printf '%s' "$exp_date" | python3 -c "
+import sys
 from datetime import datetime, timezone
+raw = sys.stdin.read().strip()
 try:
-    exp = datetime.fromisoformat('$exp_date'.replace('Z', '+00:00'))
+    exp = datetime.fromisoformat(raw.replace('Z', '+00:00'))
     now = datetime.now(timezone.utc)
     if exp < now:
         print(f'EXPIRED: {exp} is in the past')
