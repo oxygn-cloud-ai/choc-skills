@@ -72,7 +72,7 @@ teardown() {
 @test "CPT-154: ./install.sh --uninstall --orphans <name> does NOT emit the combo error" {
   # nothing installed in fake HOME so uninstall will error; but the
   # error MUST NOT be the CPT-154 combo message.
-  run bash "$INSTALLER" --uninstall --orphans somemissing 2>&1
+  run bash "$INSTALLER" --uninstall --orphans somemissing
   if echo "$output" | grep -q '\-\-orphans requires \-\-uninstall'; then
     echo "CPT-154 combo check wrongly fires when --uninstall --orphans is used together" >&2
     echo "$output" >&2
