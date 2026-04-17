@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.23] - 2026-04-18
+
+### Fixed
+- **Agent Orchestrator Mode now carries the CPT-133 per-phase compaction re-check** (CPT-143). CPT-133 added per-phase compaction re-checks to `skills/rr/commands/all.md` but only inside the Sequential Mode section. The default `/rr all` path — Agent Orchestrator Mode, activated whenever `~/.claude/skills/rr/bin/rr-prepare.sh` is executable and `JIRA_EMAIL` + `JIRA_API_KEY` are set (the entire documented batch-mode prerequisite) — is driven by `skills/rr/bin/sub-agent-prompt.md`, which CPT-133 never touched. The re-check instructions did not reach the actual execution path; the CPT-91 compaction degradation pattern continued unabated for every user with the standard setup. Mirrored the full six-phase per-phase re-check protocol into `sub-agent-prompt.md`: before each step-file-backed phase, recall a known heading from `step-1-extract.md` / `step-2-adversarial.md` / `step-3-rectify.md` / `step-5-finalise.md` / `step-6-publish.md`; re-read on miss; emit `pre-load recovered by re-read: <step-name>` to the log so per-phase drift is observable. Step 4 has no pre-loaded file (batch-mode-only logic) and has no re-check. Step 6 is retained for parity with Sequential Mode even though sub-agents don't publish directly (Phase 6 runs in the orchestrator via `rr-finalize.sh` + `_publish_one.sh`). Two bats regressions in `tests/rr-all-per-phase-recheck.bats` now enforce the same invariants on `sub-agent-prompt.md` as on `commands/all.md`: all 5 step files referenced in a verify/re-check/recall context, and the log line is step-annotated.
+
+**Note on version renumbering**: This entry originally targeted 5.3.22 on `fix/CPT-143-sub-agent-prompt-per-phase-recheck`, but CPT-140 landed on `main` first and claimed 5.3.22. Renumbered to 5.3.23 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.22] - 2026-04-18
 
 ### Fixed

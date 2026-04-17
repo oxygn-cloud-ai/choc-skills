@@ -70,3 +70,37 @@ ALL_MD="${REPO_DIR}/skills/rr/commands/all.md"
     return 1
   }
 }
+
+# --- CPT-143: CPT-133's per-phase re-check only covered Sequential Mode
+#     (commands/all.md). Agent Orchestrator Mode — the DEFAULT batch path
+#     when bin/ is available and JIRA_EMAIL/JIRA_API_KEY are set — is driven
+#     by bin/sub-agent-prompt.md, which was not touched by CPT-133. The
+#     compaction-protection invariants must hold on BOTH files.
+
+SUB_AGENT_PROMPT="${REPO_DIR}/skills/rr/bin/sub-agent-prompt.md"
+
+@test "sub-agent-prompt.md exists (sanity) (CPT-143)" {
+  [ -f "$SUB_AGENT_PROMPT" ]
+}
+
+@test "sub-agent-prompt.md carries per-phase compaction re-check for all 5 step files (CPT-143)" {
+  # Same invariant as CPT-133's concerns 1+2 but enforced on the sub-agent
+  # prompt used by the Agent Orchestrator default path.
+  local step missing=0
+  for step in step-1-extract step-2-adversarial step-3-rectify step-5-finalise step-6-publish; do
+    if ! grep -E "${step}" "$SUB_AGENT_PROMPT" | grep -qiE 'recall|re-check|re.?read|verify|retriev|heading|still'; then
+      echo "per-phase re-check missing for ${step} in sub-agent-prompt.md" >&2
+      missing=$((missing + 1))
+    fi
+  done
+  [ "$missing" -eq 0 ]
+}
+
+@test "sub-agent-prompt.md re-read log entry is step-annotated (CPT-143)" {
+  # Same observability contract as CPT-133: the log line must identify which
+  # step was recovered, not just say something drifted.
+  grep -qE 'pre-load recovered by re-read:.*step' "$SUB_AGENT_PROMPT" || {
+    echo "sub-agent-prompt.md re-read log line is not step-annotated (use 'pre-load recovered by re-read: <step>' form)" >&2
+    return 1
+  }
+}

@@ -16,12 +16,17 @@ Then read the batch data file using the Read tool:
 
 ## Task — For Each Risk
 
-For each risk in the batch:
+For each risk in the batch, execute the six-step workflow with **per-phase compaction re-checks** (CPT-143; mirrors the CPT-133 protection added to `/rr:all` Sequential Mode). Claude Code auto-compacts context as it fills. Compaction can summarise or drop pre-loaded reference content silently, and it can happen mid-workflow — a single start-of-risk check can't catch drift between Phase 2 and Phase 5. Before each step-file-backed phase, verify the corresponding pre-loaded step file is still retrievable by recalling a known heading. If the content has been compacted away, re-read that step file on demand and log `pre-load recovered by re-read: <step-name>` to the session log so per-phase degradation is observable.
 
-1. **Draft assessment** — Analyse the risk against business context and regulatory framework
-2. **Self-adversarial review** — Challenge your own assessment against the 8 criteria below
-3. **Rectify** — Address every challenge found, correct or justify with evidence
-4. **Write progress** — Write a progress file immediately after completing each risk
+- **Phase 1 — Step 1: Extract and draft.** Verify `step-1-extract.md` heading is still retrievable (re-read on miss), then analyse the risk against business context and regulatory framework and draft Assessment 1.
+- **Phase 2 — Step 2: Adversarial review.** Verify `step-2-adversarial.md` heading is still retrievable (re-read on miss), then challenge Assessment 1 against the 8 criteria below.
+- **Phase 3 — Step 3: Rectified assessment.** Verify `step-3-rectify.md` heading is still retrievable (re-read on miss), then address every challenge found, correcting or justifying with evidence.
+- **Phase 4 — Step 4: Discussion.** In batch mode skip interactive discussion and auto-resolve based on adversarial findings. (No step file is pre-loaded for Step 4 — this phase is batch-mode-only logic and has no re-check.)
+- **Phase 5 — Step 5: Final assessment.** Verify `step-5-finalise.md` heading is still retrievable (re-read on miss), then incorporate the adversarial-driven resolutions and produce the final assessment.
+- **Phase 6 — Step 6: Publish (skipped here).** Verify `step-6-publish.md` heading is still retrievable (re-read on miss) — sub-agents do not publish to Jira directly (that happens in Phase 6 of the orchestrator via `rr-finalize.sh` + `_publish_one.sh`), but the step-6 heading is retained in context for completeness and log-reviewer parity with Sequential Mode.
+- **Phase 7 — Write progress.** Write a progress file immediately after completing each risk (see below).
+
+Each `verify heading is still retrievable (re-read on miss)` line must emit, when a re-read occurred, a log entry of the form `pre-load recovered by re-read: <step-name>` so the specific step that drifted is visible in the per-batch log.
 
 ### Progress File
 
