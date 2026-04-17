@@ -2,6 +2,11 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.1] - 2026-04-14
+
+### Fixed
+- `/chk1:fix` now has a maximum of 2 fix→audit rounds. After the cap, remaining findings are presented as a summary instead of continuing to loop. (CPT-13)
+
 ## [2.4.0] - 2026-04-09
 
 ### Changed

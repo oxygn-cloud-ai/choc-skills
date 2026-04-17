@@ -63,3 +63,5 @@ Architectural changes, missing features, test additions
 > **Want me to implement these fixes now?** I can apply them directly to the codebase. I'll make one commit per fix category (immediate/quick/deeper) so they're easy to review and revert individually.
 
 If the user says yes, implement the fixes using Edit/Write tools, then run `/chk1 quick` on the changes to verify the fixes don't introduce new issues.
+
+**Iteration cap:** If `/chk1 quick` finds new issues introduced by the fixes, you may attempt one additional fix round (maximum of 2 rounds total). After the second round, do not continue looping — instead, present any remaining findings as a summary list of still-open issues for the user to review manually. This prevents unbounded fix→audit→fix cycles.
