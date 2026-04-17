@@ -319,19 +319,75 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   [ -z "$offenders" ]
 }
 
-@test "chk2 category sub-skills reference the correct SECURITY_CHECK.parts path in the Output block (CPT-125)" {
-  # Each category sub-skill's Output block must mention `SECURITY_CHECK.parts/`,
+@test "chk2 category sub-skills reference the correct SECURITY_CHECK.parts path in the Output block (CPT-125, scope-fixed CPT-151)" {
+  # Each category sub-skill's `## Output` block must mention `SECURITY_CHECK.parts/`,
   # which is where the sub-skill actually writes (orchestrators merge later).
+  #
+  # CPT-151: the grep below is deliberately scoped to just the `## Output`
+  # block (awk extracts from `## Output` up to the next `## ` heading).
+  # A whole-file grep would also match the CPT-125 intro line and the
+  # CPT-126 `## After` / `## Status signal` sections, so it would silently
+  # miss an accidental removal from the actual Output block. The new regression
+  # meta-test below proves the scope is load-bearing.
   offenders=""
   for f in "$REPO_ROOT"/skills/chk2/commands/*.md; do
     name=$(basename "$f")
     case "$name" in all.md|quick.md|fix.md|github.md|update.md|help.md|doctor.md|version.md) continue ;; esac
-    if ! grep -q 'SECURITY_CHECK\.parts/' "$f"; then
+    output_block=$(awk '/^## Output/{flag=1; next} /^## /{flag=0} flag' "$f")
+    if ! printf '%s\n' "$output_block" | grep -q 'SECURITY_CHECK\.parts/'; then
       offenders="$offenders $name"
     fi
   done
   echo "offenders:$offenders"
   [ -z "$offenders" ]
+}
+
+@test "CPT-151: Output-block scope is load-bearing — whole-file grep would miss an Output-block removal" {
+  # Synthetic category file where the `## Output` block does NOT mention
+  # SECURITY_CHECK.parts/ (simulating an accidental removal) but the
+  # `## After` block DOES (via the CPT-126 `.orchestrated` marker path).
+  #
+  # Assert:
+  #   1. The old whole-file grep "passes" this file (bug: misses the removal).
+  #   2. The new awk-scoped grep correctly flags it.
+  #
+  # If this test ever fails, the CPT-125 production test above is no longer
+  # scope-protected and CPT-151's fix has regressed.
+  local tmpfile
+  tmpfile=$(mktemp)
+  cat > "$tmpfile" <<'EOF'
+---
+name: chk2:synthetic
+---
+
+# chk2:synthetic
+
+Intro mentioning `SECURITY_CHECK.parts/synthetic.md`.
+
+## Tests
+
+Some tests here.
+
+## Output
+
+Write to `SECURITY_CHECK.md` (deliberately scrubbed — no .parts path).
+
+## After — standalone only
+
+Check `SECURITY_CHECK.parts/.orchestrated`; if absent, also write `SECURITY_CHECK.md`.
+EOF
+
+  # Old logic (whole-file grep) — incorrectly "passes"
+  run grep -q 'SECURITY_CHECK\.parts/' "$tmpfile"
+  [ "$status" -eq 0 ]
+
+  # New logic (awk-scoped to `## Output` block) — correctly flags
+  local output_block
+  output_block=$(awk '/^## Output/{flag=1; next} /^## /{flag=0} flag' "$tmpfile")
+  run bash -c 'printf "%s\n" "$1" | grep -q "SECURITY_CHECK\.parts/"' _ "$output_block"
+  [ "$status" -ne 0 ]
+
+  rm -f "$tmpfile"
 }
 
 # --- CPT-126: standalone /chk2 category runs must still produce SECURITY_CHECK.md ---

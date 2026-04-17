@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.24] - 2026-04-18
+
+### Fixed
+- **CPT-125 Output-block test now actually scoped to the `## Output` block** (CPT-151). The test in `tests/router-allowed-tools.bats` that claims "chk2 category sub-skills reference the correct SECURITY_CHECK.parts path in the Output block" used a whole-file `grep -q 'SECURITY_CHECK\.parts/'`. Three sources leak the pattern outside the `## Output` block — the CPT-125 intro line (~line 9), the CPT-126 `## After — standalone only` section (references the `.orchestrated` marker path), and the CPT-127 `## Status signal — orchestrated only` section (ditto). An accidental removal of `SECURITY_CHECK.parts/<cat>.md` from the actual `## Output` block would still pass the whole-file grep — the test name promised a property the implementation did not enforce. Rewrote the test to extract only the `## Output` block with `awk '/^## Output/{flag=1; next} /^## /{flag=0} flag'` and grep inside that slice. Added a CPT-151 regression meta-test with a synthetic category file whose `## Output` block is deliberately scrubbed but `## After` block retains the marker path — asserts the old whole-file logic "passes" (proving the bug) and the new scoped logic correctly flags. RED was verified against a real category file: temporarily scrubbing `SECURITY_CHECK.parts/tls.md` from `tls.md`'s `## Output` block flagged `tls.md` as an offender under the new logic; the pre-fix whole-file grep would have left 4 other `SECURITY_CHECK.parts/` matches in the file and silently passed. Pure test tightening; no production code touched.
+
+**Note on version renumbering**: This entry originally targeted 2.3.20 on `fix/CPT-151-chk2-test-scope-output-block`, but concurrent CPT-125/CPT-126/CPT-127/CPT-143/CPT-144 work already claimed 2.3.20-2.3.23 on `main` by the time this branch fixed the scope weakness their tests share. Renumbered to 2.3.24 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.23] - 2026-04-18
 
 ### Fixed
