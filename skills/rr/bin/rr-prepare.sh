@@ -403,7 +403,7 @@ main() {
     log "=========================================="
 
     # check_env already called at top level before cleanup
-    JIRA_AUTH=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
+    JIRA_AUTH=$(printf '%s' "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 
     # Generate run metadata with unique run_id for CPT tracking
     local run_id

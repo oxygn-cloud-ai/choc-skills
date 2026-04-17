@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.8] - 2026-04-17
+
+### Security
+- Replaced `echo -n` with `printf '%s'` for credential encoding in `rr-prepare.sh`, `rr-finalize.sh`, and `_update_cpt.sh` to prevent credentials appearing in process list via `ps aux` (CPT-28).
+
+### Note on version renumbering
+- CPT-28's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2–5.2.7 had all shipped, so the Merger renumbered CPT-28 to 5.2.8. No code semantics changed.
+
 ## [5.2.7] - 2026-04-17
 
 ### Security

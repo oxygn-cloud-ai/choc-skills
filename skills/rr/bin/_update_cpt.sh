@@ -102,7 +102,7 @@ post_comment() {
     fi
 
     local auth
-    auth=$(echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
+    auth=$(printf '%s' "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n')
 
     local comment_body
     comment_body=$(build_comment)

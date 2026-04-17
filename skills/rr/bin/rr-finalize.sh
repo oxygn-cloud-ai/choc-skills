@@ -265,7 +265,7 @@ main() {
     # Write JIRA_AUTH to a temp file (not env) for child processes
     AUTH_FILE=$(mktemp)
     chmod 600 "$AUTH_FILE"
-    echo -n "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n' > "$AUTH_FILE"
+    printf '%s' "${JIRA_EMAIL}:${JIRA_API_KEY}" | base64 | tr -d '\n' > "$AUTH_FILE"
     trap 'rm -f "$AUTH_FILE"' EXIT
     export WORK_DIR JIRA_BASE_URL AUTH_FILE PROJECT_KEY RR_QUARTER_OVERRIDE="$QUARTER_OVERRIDE"
 

@@ -262,3 +262,19 @@ teardown() {
     return 1
   fi
 }
+
+# --- Security: credential handling ---
+
+@test "rr bin scripts do not echo credentials to process list" {
+  # CPT-28: echo -n with credential vars creates visible process entries.
+  # All credential encoding must use printf (shell built-in) instead.
+  local bin_dir="${REPO_DIR}/skills/rr/bin"
+  local found=0
+  for script in "$bin_dir"/*.sh; do
+    if grep -n 'echo.*JIRA_EMAIL\|echo.*JIRA_API_KEY\|echo.*JIRA_AUTH' "$script" 2>/dev/null; then
+      echo "FAIL: $(basename "$script") uses echo with credential variables" >&2
+      found=1
+    fi
+  done
+  [ "$found" -eq 0 ]
+}
