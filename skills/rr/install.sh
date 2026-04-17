@@ -33,18 +33,27 @@ REFERENCES_SOURCE="${SCRIPT_DIR}/references"
 FORCE=false
 
 # --- Parse arguments (order-independent; CPT-76) ---
-ACTION="install"
+ACTION=""
 while [ $# -gt 0 ]; do
+  new_action=""
   case "$1" in
-    --help|-h)        ACTION="help"; shift ;;
-    --version|-v)     ACTION="version"; shift ;;
-    --uninstall)      ACTION="uninstall"; shift ;;
-    --check|--doctor) ACTION="check"; shift ;;
-    --force|-f)       FORCE=true; shift ;;
+    --help|-h)        new_action="help" ;;
+    --version|-v)     new_action="version" ;;
+    --uninstall)      new_action="uninstall" ;;
+    --check|--doctor) new_action="check" ;;
+    --force|-f)       FORCE=true; shift; continue ;;
     -*)               die "Unknown option: $1 (try --help)" ;;
     *)                die "Unexpected argument: $1 (try --help)" ;;
   esac
+  # CPT-123: conflicting action flags (help vs uninstall, etc.) die at parse
+  # time rather than silently last-wins. Same flag twice is idempotent.
+  if [ -n "$ACTION" ] && [ "$ACTION" != "$new_action" ]; then
+    die "Conflicting action flags: --${ACTION} and $1 — pick one"
+  fi
+  ACTION="$new_action"
+  shift
 done
+ACTION="${ACTION:-install}"
 
 # --- Help ---
 if [ "$ACTION" = "help" ]; then

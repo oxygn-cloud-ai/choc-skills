@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.15] - 2026-04-18
+
+### Fixed
+- **Conflicting action flags in `install.sh` now die at parse time** (CPT-123): see the chk1 entry for the full write-up. Same fix, applied identically to rr's per-skill installer.
+
+**Note on version renumbering**: This entry originally targeted 5.3.14 on `fix/CPT-123-installer-conflict-detection`, but CPT-118 (Retry-After header) landed on `main` and claimed 5.3.14 first. Renumbered to 5.3.15 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.14] - 2026-04-17
 
 ### Fixed

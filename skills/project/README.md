@@ -113,7 +113,7 @@ rm -f  ~/.claude/commands/project.md
 
 ## Version
 
-Current: **1.2.6**
+Current: **1.2.7**
 
 ## License
 

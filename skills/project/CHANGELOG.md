@@ -2,6 +2,13 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.7] - 2026-04-18
+
+### Fixed
+- **Conflicting action flags in `install.sh` now die at parse time** (CPT-123): see the chk1 entry for the full write-up. Same fix, applied identically to project's per-skill installer.
+
+**Note on version renumbering**: This entry originally targeted 1.2.5 on `fix/CPT-123-installer-conflict-detection`, but CPT-114 (project:status role-list) claimed 1.2.5 and CPT-124 (project-standards migration) claimed 1.2.6 first. Renumbered to 1.2.7 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [1.2.6] - 2026-04-18
 
 ### Fixed

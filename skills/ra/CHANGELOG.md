@@ -2,6 +2,11 @@
 
 All notable changes to the ra skill will be documented in this file.
 
+## [1.0.6] - 2026-04-17
+
+### Fixed
+- **Conflicting action flags in `install.sh` now die at parse time** (CPT-123): see the chk1 v2.4.7 entry for the full write-up. Same fix, applied identically to ra's per-skill installer.
+
 ## [1.0.5] - 2026-04-17
 
 ### Fixed

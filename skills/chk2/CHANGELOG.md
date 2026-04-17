@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.15] - 2026-04-18
+
+### Fixed
+- **Conflicting action flags in `install.sh` now die at parse time** (CPT-123): see the chk1 entry for the full write-up. Same fix, applied identically to chk2's per-skill installer; `--help --uninstall` / `--version --uninstall` / `--uninstall --check` now error out with `Conflicting action flags: --<prev> and <current> — pick one` instead of silently running the last action.
+
+**Note on version renumbering**: This entry originally targeted 2.3.14 on `fix/CPT-123-installer-conflict-detection`, but CPT-115 (update xargs allowed-tools) landed on `main` and claimed 2.3.14 first. Renumbered to 2.3.15 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.14] - 2026-04-17
 
 ### Fixed
