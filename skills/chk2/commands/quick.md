@@ -13,7 +13,7 @@ Run a fast, passive security check of https://myzr.io. No active testing, no ses
 1. Initialize the output tree:
    - `mkdir -p SECURITY_CHECK.parts`
    - `rm -f SECURITY_CHECK.parts/*.md`
-   - `touch SECURITY_CHECK.parts/.orchestrated` (marker that suppresses each sub-skill's standalone-merge step — CPT-126)
+   - Create `SECURITY_CHECK.parts/.orchestrated` using the Write tool with `content="orchestrated"` — marker that suppresses each sub-skill's standalone-merge step (CPT-126 / CPT-152 refined). Do NOT shell out to `touch`; `touch` is not in this command's `allowed-tools`.
    - Start a fresh `SECURITY_CHECK.md` with header (date, "Tests run: quick")
 
 2. Run these categories in order (each writes to `SECURITY_CHECK.parts/<category>.md`):

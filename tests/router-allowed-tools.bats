@@ -485,3 +485,43 @@ EOF
   echo "offenders:$offenders"
   [ -z "$offenders" ]
 }
+
+# --- CPT-152: the CPT-126 orchestrator marker is created via `touch` in body,
+#     but neither orchestrator's frontmatter lists Bash(touch *). Under per-command
+#     enforcement, the touch is denied → marker never created → sub-skills see
+#     no marker → they execute the standalone-merge path under /chk2:all, which
+#     reintroduces the CPT-88 race the marker was designed to close.
+#
+#     Fix: use the Write tool (already in both orchestrators' allowed-tools) to
+#     create the marker file, instead of shell touch. Keeps the allowed-tools
+#     surface minimal (triager-approved Option B in ticket comment 60301).
+
+@test "CPT-152: chk2 orchestrators do NOT use 'touch' to create the .orchestrated marker" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/chk2/commands/all.md \
+           "$REPO_ROOT"/skills/chk2/commands/quick.md; do
+    [ -f "$f" ] || continue
+    if grep -qE 'touch[[:space:]]+SECURITY_CHECK\.parts/\.orchestrated' "$f"; then
+      offenders="$offenders ${f#$REPO_ROOT/}"
+    fi
+  done
+  echo "offenders (still using touch): $offenders"
+  [ -z "$offenders" ]
+}
+
+@test "CPT-152: chk2 orchestrators instruct the Write tool for the .orchestrated marker" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/chk2/commands/all.md \
+           "$REPO_ROOT"/skills/chk2/commands/quick.md; do
+    [ -f "$f" ] || continue
+    # Within ~200 chars of a `.orchestrated` reference, the body must name the
+    # Write tool. Cross-line match allowed; case-sensitive on "Write" to avoid
+    # matching prose like "write the marker".
+    if ! awk '/\.orchestrated/{found=1} found{buf=buf $0 "\n"} END{print buf}' "$f" \
+         | grep -qE 'Write tool'; then
+      offenders="$offenders ${f#$REPO_ROOT/}"
+    fi
+  done
+  echo "offenders (no Write tool near .orchestrated): $offenders"
+  [ -z "$offenders" ]
+}

@@ -25,7 +25,7 @@ Parallel Agent waves (six concurrent writers) cannot safely share a single `SECU
 1. Initialize the output tree:
    - Create the parts directory: `mkdir -p SECURITY_CHECK.parts`
    - Remove any stale per-category files from a previous run: `rm -f SECURITY_CHECK.parts/*.md`
-   - Create the `.orchestrated` marker so sub-skills know to skip the standalone-merge step (CPT-126): `touch SECURITY_CHECK.parts/.orchestrated`
+   - Create the `.orchestrated` marker so sub-skills know to skip the standalone-merge step (CPT-126): use the Write tool with `file_path=SECURITY_CHECK.parts/.orchestrated` and `content="orchestrated"`. Do NOT shell out to `touch` — the touch binary is not in this command's `allowed-tools` and would be denied under per-command enforcement (CPT-152).
    - Start a fresh `SECURITY_CHECK.md` with the header:
 ```markdown
 # Security Check — myzr.io

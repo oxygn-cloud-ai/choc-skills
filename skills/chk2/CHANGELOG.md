@@ -2,6 +2,13 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.25] - 2026-04-18
+
+### Fixed
+- **CPT-126 `.orchestrated` marker now created via Write tool, not shell `touch`** (CPT-152). CPT-126 introduced a filesystem marker protocol (`SECURITY_CHECK.parts/.orchestrated`) so parallel-wave sub-skills could tell whether they were dispatched by an orchestrator (skip standalone merge) or invoked directly (execute standalone merge). Both orchestrator bodies created the marker with `touch SECURITY_CHECK.parts/.orchestrated`, but neither `skills/chk2/commands/all.md` nor `skills/chk2/commands/quick.md` frontmatter listed `Bash(touch *)` in `allowed-tools`. Under CPT-32 per-command enforcement the touch was tool-denied, the marker was never created, sub-skills saw no marker and executed the standalone-merge path — reintroducing the exact CPT-88 concurrent-write race the marker was designed to close, but now silently, for the primary `/chk2` and `/chk2 quick` invocations. Swapped the shell `touch` instruction for "use the Write tool with `file_path=SECURITY_CHECK.parts/.orchestrated` and `content='orchestrated'`" in both orchestrators. `Write` is already in both allowed-tools entries, so the fix widens no tool surface. Triager-approved Option B (minimal-surface) over Option A (add `Bash(touch *)`). Two regression sentinels in `tests/router-allowed-tools.bats`: no body uses `touch SECURITY_CHECK.parts/.orchestrated`; body DOES reference the Write tool within the `.orchestrated` context. Both RED before fix, GREEN after.
+
+**Note on version renumbering**: This entry originally targeted 2.3.24 on `fix/CPT-152-chk2-orchestrator-marker-write`, but CPT-151 (test-scope fix) was already on an open branch targeting 2.3.24 and landed on `main` first. Taking 2.3.25 here to avoid collision. No code semantics changed from the original branch. Follow-up work for Concerns 2 (Read-for-existence) and 3 (stale-marker) to be filed separately.
+
 ## [2.3.24] - 2026-04-18
 
 ### Fixed
