@@ -1,6 +1,6 @@
 ---
 name: chk2
-version: 2.3.9
+version: 2.3.10
 description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk2 v2.3.9 — Adversarial Security Audit
+chk2 v2.3.10 — Adversarial Security Audit
 
 USAGE
   /chk2                Run all test categories (~211 checks)
@@ -91,9 +91,10 @@ If $ARGUMENTS equals "doctor", "--doctor", or "check", run environment diagnosti
 3. Verify `openssl` is available: `which openssl`
 4. Verify `python3` is available: `which python3`
 5. Verify `websockets` python package: `python3 -c "import websockets" 2>&1`
-6. Verify target is reachable: `curl -s --max-time 10 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://myzr.io/`
-7. Verify sub-command files exist: `ls ~/.claude/commands/chk2/*.md`
-8. Report installed skill version
+6. Verify `jq` is available: `which jq` (required by `/chk2 auth` AU3 concurrent-session pipeline; missing jq silently produces zero AU3 evidence)
+7. Verify target is reachable: `curl -s --max-time 10 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://myzr.io/`
+8. Verify sub-command files exist: `ls ~/.claude/commands/chk2/*.md`
+9. Report installed skill version
 
 Format:
 ```
@@ -104,6 +105,7 @@ chk2 doctor — Environment Health Check
   [PASS] openssl: /usr/bin/openssl
   [PASS] python3: /usr/bin/python3
   [PASS] websockets: installed
+  [PASS] jq: /usr/bin/jq
   [PASS] target reachable: https://myzr.io/ (200)
   [PASS] sub-commands: 35 files in ~/.claude/commands/chk2/
   [PASS] version: X.Y.Z
@@ -118,7 +120,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-chk2 v2.3.9
+chk2 v2.3.10
 ```
 
 End of version output. Do not continue.
@@ -132,10 +134,13 @@ Before executing, silently verify:
 1. **curl available**: `which curl`. If not found:
    > **chk2 error**: curl is not installed or not in PATH.
 
-2. **Target reachable**: `curl -s --max-time 10 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://myzr.io/` returns 200. If not:
+2. **jq available**: `which jq`. If not found:
+   > **chk2 error**: jq is not installed or not in PATH. `/chk2 auth` AU3 depends on jq; running without it silently drops concurrent-session evidence. Install jq and re-run.
+
+3. **Target reachable**: `curl -s --max-time 10 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://myzr.io/` returns 200. If not:
    > **chk2 error**: Target https://myzr.io/ is not reachable (HTTP {code}). Check the server is running.
 
-3. **Sub-commands installed**: `ls ~/.claude/commands/chk2/*.md` finds files. If not:
+4. **Sub-commands installed**: `ls ~/.claude/commands/chk2/*.md` finds files. If not:
    > **chk2 warning**: Sub-command files not found in ~/.claude/commands/chk2/. Running inline.
 
 ---

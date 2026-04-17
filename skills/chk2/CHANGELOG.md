@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.10] - 2026-04-17
+
+### Fixed
+- **Silent audit evidence loss on missing `jq`**: `/chk2 doctor` and pre-flight now verify `jq` availability. `/chk2 auth` AU3 (concurrent-session limit check introduced in CPT-16) relies on `jq -r --arg i "$i" ...` with `2>/dev/null`, so a missing jq binary silently produced zero AU3 evidence — the user saw no error and had no way to distinguish "test passed" from "jq was missing". Doctor now reports `[PASS|FAIL] jq`; pre-flight aborts with a clear error message directing the user to install jq before re-running (CPT-98).
+
 ## [2.3.9] - 2026-04-17
 
 ### Fixed
