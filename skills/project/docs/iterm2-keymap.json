@@ -1,0 +1,55 @@
+{
+  "_comment": "iTerm2 keybinding profile for /project:launch — Option 6 (Hybrid letters + FZF picker). Implements CPT-73 Option 6.",
+  "_instructions": [
+    "1. Open iTerm2 → Preferences → Keys → Key Bindings",
+    "2. Click '+' → New Keyboard Shortcut",
+    "3. Keyboard Shortcut: Cmd + Shift + P",
+    "4. Action: Send Text with vim Special Chars",
+    "5. Paste the 'send_text' value below (literal \\n at the end includes Enter)",
+    "6. Save. Press Cmd+Shift+P in any iTerm2 tab to trigger the picker."
+  ],
+  "bindings": [
+    {
+      "name": "project-picker-fzf",
+      "keyboard_shortcut": "Cmd+Shift+P",
+      "action": "Send Text with vim Special Chars",
+      "send_text": "bash ~/.local/bin/project-picker-fzf.sh\\n",
+      "rationale": "Opens an FZF role picker that reads the current tmux session's windows and jumps to the selected role. Works in any terminal that's attached to a tmux session."
+    },
+    {
+      "name": "project-picker-fzf-explicit-session",
+      "keyboard_shortcut": "Cmd+Shift+O",
+      "action": "Send Text with vim Special Chars",
+      "send_text": "bash ~/.local/bin/project-picker-fzf.sh --session choc-skills\\n",
+      "rationale": "Variant: explicit session name for the choc-skills fleet — useful when running multiple tmux sessions on one machine."
+    }
+  ],
+  "alternate_keybindings": {
+    "tmux_conf_root_table": {
+      "_comment": "Optional tmux root-table binding for zero-prefix navigation. Append to ~/.tmux.conf and run `tmux source-file ~/.tmux.conf`. Implements CPT-73 Option 6 'root-bindings opt-in'.",
+      "snippet": [
+        "# CPT-73 Option 6 — root-table letter bindings (no prefix required).",
+        "# Press Ctrl-] then a/b/.../k to jump directly to the corresponding window.",
+        "# Letter → role map mirrors CPT-72 ROLE_LETTER.",
+        "bind-key -T root C-] switch-client -T project-nav",
+        "bind-key -T project-nav a select-window -t 0  # master",
+        "bind-key -T project-nav b select-window -t 1  # planner",
+        "bind-key -T project-nav c select-window -t 2  # implementer",
+        "bind-key -T project-nav d select-window -t 3  # fixer",
+        "bind-key -T project-nav e select-window -t 4  # merger",
+        "bind-key -T project-nav f select-window -t 5  # chk1",
+        "bind-key -T project-nav g select-window -t 6  # chk2",
+        "bind-key -T project-nav h select-window -t 7  # performance",
+        "bind-key -T project-nav i select-window -t 8  # playtester",
+        "bind-key -T project-nav j select-window -t 9  # reviewer",
+        "bind-key -T project-nav k select-window -t 10 # triager"
+      ]
+    }
+  },
+  "browser_tab_access_option_7": {
+    "_comment": "Option 7 is independent of iTerm2 keybindings — it serves the tmux session via ttyd at http://localhost:7681..7691, one URL per role. Open them as browser tabs for Cmd+1..Cmd+9 navigation.",
+    "start": "bash ~/.local/bin/project-ttyd-fleet.sh start choc-skills",
+    "stop": "bash ~/.local/bin/project-ttyd-fleet.sh stop choc-skills",
+    "status": "bash ~/.local/bin/project-ttyd-fleet.sh status choc-skills"
+  }
+}

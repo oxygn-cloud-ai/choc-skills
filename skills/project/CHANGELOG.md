@@ -2,6 +2,47 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.3.0] - 2026-04-17
+
+### Added (CPT-73 — Mac-native navigation: Option 6 + Option 7 stacked)
+
+Closes the observed friction ("no sessions can be viewed on the mac unless control-B on the mac — also useless and annoying") by shipping two composable navigation paths over the existing tmux fleet. Human directive locked in 6+7 stacked 2026-04-17T01:20+08:00.
+
+**Option 6 — terminal-side (FZF picker + iTerm2 ⌘⇧P + optional root-table chord)**
+- `bin/project-picker-fzf.sh` — FZF role picker that reads the current tmux session's windows and jumps to the selected role. `--list` plain-enumeration mode, graceful fallback when `fzf` is missing. Resolves `TMUX_SESSION` from env → `$TMUX` → first tmux session.
+- `docs/iterm2-keymap.json` — importable iTerm2 binding for `⌘⇧P` → `bash ~/.local/bin/project-picker-fzf.sh` + Enter. Second binding `⌘⇧O` for explicit `--session choc-skills`.
+- `docs/iterm2-keymap.json` → `alternate_keybindings.tmux_conf_root_table` — snippet for opt-in `C-] a..k` zero-prefix jump via `switch-client -T project-nav` table.
+
+**Option 7 — browser-side (ttyd fleet)**
+- `bin/project-ttyd-fleet.sh start <session> [--base-port N] [--roles ...]` — forks one `ttyd -p <port> -W -i lo tmux attach -t <session> \; select-window -t <idx>` per role. Binds `127.0.0.1` only by default (loopback); never exposes a writable shell on a public interface without explicit operator opt-in.
+- `bin/project-ttyd-fleet.sh stop <session>` — reads PID file, TERM each PID, force-KILL any stragglers after 0.3s.
+- `bin/project-ttyd-fleet.sh status <session>` — reports RUN / DEAD per role PID, exits 0 if all alive, 1 if any dead.
+- State directory: `$TTYD_FLEET_STATE_DIR` (default `~/.ttyd-fleet`), one `<session>.pids` file per fleet.
+- Security: documented in launch.md Step 8 and script header — never expose `ttyd -W` publicly without TLS + auth; prefer Tailscale MagicDNS for LAN.
+
+**Common**
+- `commands/launch.md` Step 8 — report now shows both terminal (⌘⇧P picker) and browser (ttyd fleet) access modes with security warning. Step 8.1 documents the opt-in `--with-ttyd` hook (not auto-started — operator must explicitly `bash ~/.local/bin/project-ttyd-fleet.sh start <slug>`).
+- `install.sh --check` — warns on absent `fzf` or `ttyd` (optional deps; picker and fleet fail gracefully).
+- `SKILL.md` — version bump 2.1.1 → **2.3.0**. Note: CPT-58 (Bug fix — install.sh --check parity) and CPT-59 (Feature — /project:self-audit) both also claim v2.2.0 on parallel branches. v2.3.0 sidesteps the three-way collision; whichever of the three lands last adjusts at merge time.
+
+### Tests
+
+- `tests/project-mac-nav.bats` — 15 tests covering file presence, JSON validity of keymap, `--help` usage on both scripts, graceful fallback when fzf / ttyd missing, ttyd fleet start/stop/status round-trip with ttyd stubbed via PATH-prepended mock, PID-file lifecycle, install.sh ttyd check documented, launch.md Step 8 references both access modes, CHANGELOG + SKILL.md version pin.
+
+### What's NOT in this PR (manual human verification required)
+
+- Actual iTerm2 keymap import and `⌘⇧P` live smoke test — document's `_instructions` walks the operator through the 6 GUI steps in iTerm2 Preferences.
+- Actual ttyd bracketed-paste compatibility with Claude Code in a browser tab — ticket AC calls this out explicitly; if broken, follow-up fix will adjust ttyd invocation with `TTYD_BRACKETED_PASTE=1` or an xterm.js config tweak. Human runs `bash ~/.local/bin/project-ttyd-fleet.sh start choc-skills`, opens `http://localhost:7681` in Safari, pastes a multi-line string into Claude's prompt, confirms single paste event.
+- Actual Cmd+1..Cmd+9 browser-tab navigation across the fleet — platform-dependent on browser (Safari ⌘1..⌘9, Chrome ⌘1..⌘9, Arc different shortcut).
+
+### Rejected alternatives
+
+- Option 1 (iTerm2 -CC) — breaks Blink iPad workflow
+- Option 2 (rebind tmux prefix) — universal but minor gain; doesn't solve "don't want tmux keys"
+- Option 3 (pane tiling dashboard) — monitoring use case only; could ship as `--dashboard` follow-up
+- Option 4 (ditch tmux) — catastrophic loss of pane-capture automation
+- Option 5 (Zellij port) — multi-day migration, out of proportion to problem
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

@@ -269,7 +269,34 @@ project launch — $PROJECT_NAME
   To attach: tmux attach -t $PROJECT_SLUG
   To navigate: Prefix+P for project picker, or tmux select-window -t $PROJECT_SLUG:<role>
   To pick remotely: project-picker.sh
+
+  Mac-native navigation (CPT-73 Option 6 + 7):
+    Terminal:  ⌘⇧P in iTerm2 → FZF picker (run ~/.local/bin/project-picker-fzf.sh)
+               Import keymap from ~/.claude/skills/project/docs/iterm2-keymap.json
+               Optional tmux root-table binding: C-] a..k for zero-prefix jump
+    Browser:   bash ~/.local/bin/project-ttyd-fleet.sh start $PROJECT_SLUG
+               Opens one ttyd per role at http://localhost:7681..7691.
+               Use ⌘1..⌘9 in any browser to switch tabs → switch roles.
+               Stop with: bash ~/.local/bin/project-ttyd-fleet.sh stop $PROJECT_SLUG
+
+  Security: ttyd fleet binds to 127.0.0.1 only. To expose to LAN, add TLS + auth
+  or route via Tailscale MagicDNS — NEVER expose ttyd -W publicly without both.
 ```
+
+## Step 8.1: Optional — start the ttyd fleet
+
+If the operator wants browser-tab navigation (Option 7), after Step 8 completes:
+
+```bash
+if command -v ttyd >/dev/null 2>&1; then
+  bash ~/.local/bin/project-ttyd-fleet.sh start "$PROJECT_SLUG" >/dev/null 2>&1 || true
+  echo "  ttyd fleet: http://localhost:7681..$((7681 + $N_LAUNCHED - 1))"
+else
+  echo "  ttyd fleet: skipped (install with 'brew install ttyd' for browser-tab access)"
+fi
+```
+
+Opt-in only — the ttyd fleet is NOT started automatically by `/project:launch` unless the operator passes `--with-ttyd`. Default behaviour is terminal-only (Option 6 via ⌘⇧P keybinding) to avoid opening network ports without explicit consent.
 
 ## `--all` mode
 

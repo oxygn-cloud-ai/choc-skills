@@ -218,6 +218,22 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     warn "tmux: not found (required for /project:launch and project-picker.sh)"
   fi
 
+  # CPT-73 Option 6 — fzf for the interactive role picker (project-picker-fzf.sh).
+  # Optional: picker falls back gracefully if fzf is missing.
+  if command -v fzf >/dev/null 2>&1; then
+    ok "fzf: $(command -v fzf) (project-picker-fzf)"
+  else
+    warn "fzf: not found (optional — install 'brew install fzf' for interactive role picker)"
+  fi
+
+  # CPT-73 Option 7 — ttyd for the browser-tab-per-role fleet.
+  # Optional: project-ttyd-fleet.sh errors cleanly if ttyd is missing.
+  if command -v ttyd >/dev/null 2>&1; then
+    ok "ttyd: $(command -v ttyd) (project-ttyd-fleet browser access)"
+  else
+    warn "ttyd: not found (optional — install 'brew install ttyd' for browser-tab-per-role access)"
+  fi
+
   if [ -f "${HOME}/.local/bin/project-picker.sh" ]; then
     ok "Picker script: ${HOME}/.local/bin/project-picker.sh"
   else
