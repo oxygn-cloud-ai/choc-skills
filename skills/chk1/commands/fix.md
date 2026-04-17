@@ -1,3 +1,9 @@
+---
+name: chk1:fix
+description: Deep resolution helper — apply fixes for audit findings
+allowed-tools: Read, Grep, Glob, Edit, Write, Bash(git *), AskUserQuestion
+---
+
 # chk1:fix — Deep Resolution Helper
 
 Read the most recent audit output and provide specific, implementable fixes for every issue found.

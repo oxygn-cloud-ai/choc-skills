@@ -1,3 +1,9 @@
+---
+name: chk1:quick
+description: Quick bug + risk audit (sections 2 and 3 only)
+allowed-tools: Read, Grep, Glob, Bash(git *)
+---
+
 # chk1:quick — Quick Bug and Risk Check
 
 Run only the bug detection and critical risk sections. Skips scope compliance, architecture review, and omissions analysis. Faster for quick sanity checks before committing.

@@ -1,3 +1,9 @@
+---
+name: chk1:github
+description: Log audit findings as GitHub Issues with P1-P4 priority labels
+allowed-tools: Read, Grep, Glob, Bash(gh *), Bash(git *), AskUserQuestion
+---
+
 # chk1:github — Log Audit Findings to GitHub Issues
 
 Read the most recent audit output and create a GitHub Issue for every finding, assigning P1-P4 priority labels. Skip findings that already have an open issue (comment instead).

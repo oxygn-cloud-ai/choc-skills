@@ -2,6 +2,18 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.3] - 2026-04-17
+
+### Added
+- **Security**: YAML frontmatter with scoped `allowed-tools` added to all 8 chk1 sub-command files. Tool allocations follow least-privilege (CPT-39):
+  - `all`, `architecture`, `quick`, `scope`, `security`: `Read, Grep, Glob, Bash(git *)`
+  - `fix`: adds `Edit, Write, AskUserQuestion`
+  - `github`: adds `Bash(gh *), AskUserQuestion`
+  - `update`: scoped `Bash` (`git`, `bash install.sh`, `curl`, `mkdir`, `grep`, `sed`) — no catch-all
+
+### Note on version renumbering
+- CPT-39's source branch bumped 2.4.0 → 2.4.1 in isolation. By merge time, 2.4.1 (CPT-13) and 2.4.2 (CPT-19) had both shipped, so the Merger renumbered CPT-39 to 2.4.3. No code semantics changed.
+
 ## [2.4.2] - 2026-04-17
 
 ### Changed

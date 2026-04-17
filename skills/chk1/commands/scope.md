@@ -1,3 +1,9 @@
+---
+name: chk1:scope
+description: Scope compliance + omissions + unintended changes audit
+allowed-tools: Read, Grep, Glob, Bash(git *)
+---
+
 # chk1:scope — Scope Compliance Audit
 
 Check that changes stay within the approved scope. Detects unintended modifications, out-of-scope features, unauthorized dependency changes, and missing plan items.

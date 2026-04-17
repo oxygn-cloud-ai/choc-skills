@@ -1,3 +1,9 @@
+---
+name: chk1:all
+description: Full adversarial audit (all 8 sections) of recent changes
+allowed-tools: Read, Grep, Glob, Bash(git *), AskUserQuestion
+---
+
 # chk1:all — Full Adversarial Audit
 
 Run all 8 audit sections against the detected or specified scope. This is the default behavior when running `/chk1` with no arguments.

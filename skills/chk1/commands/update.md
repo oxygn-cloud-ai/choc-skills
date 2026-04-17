@@ -1,3 +1,9 @@
+---
+name: chk1:update
+description: Update chk1 skill to latest version from source repo or GitHub
+allowed-tools: Read, Bash(git *), Bash(bash install.sh *), Bash(curl *), Bash(mkdir *), Bash(grep *), Bash(sed *)
+---
+
 # chk1:update — Update Skill to Latest Version
 
 Context from user: $ARGUMENTS

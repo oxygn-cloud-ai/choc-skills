@@ -1,3 +1,9 @@
+---
+name: chk1:security
+description: Deep security audit — injection, auth, data exposure, crypto
+allowed-tools: Read, Grep, Glob, Bash(git *)
+---
+
 # chk1:security — Security-Focused Audit
 
 Deep security audit of the changed code. Focuses exclusively on security vulnerabilities, input validation, authentication, authorization, data exposure, and injection vectors.

@@ -1,3 +1,9 @@
+---
+name: chk1:architecture
+description: Architectural compliance audit — patterns, boundaries, coupling
+allowed-tools: Read, Grep, Glob, Bash(git *)
+---
+
 # chk1:architecture — Architectural Compliance Audit
 
 Check that changes comply with the existing architecture. Detects pattern violations, boundary erosion, new coupling, unauthorized abstractions, and structural deviations.
