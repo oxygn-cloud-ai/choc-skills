@@ -1,7 +1,7 @@
 ---
 name: rr:fix
 description: "Re-run failed assessments from batch mode"
-allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(sed *), Bash(bash *), Write, Agent, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(sed *), Bash(bash *), Bash(~/.claude/skills/rr/bin/rr-finalize.sh *), Write, Agent, AskUserQuestion
 ---
 
 # rr:fix — Re-run Failed Assessments

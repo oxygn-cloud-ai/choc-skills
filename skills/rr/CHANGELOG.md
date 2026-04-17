@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.21] - 2026-04-18
+
+### Fixed
+- **`_update_cpt.sh` and `rr-finalize.sh` direct-path invocations now whitelisted in per-command frontmatter** (CPT-128). CPT-97 (v5.3.6) extended `rr:all` allowed-tools with the direct-path patterns for `rr-prepare.sh` and `rr-finalize.sh` but missed `_update_cpt.sh`, even though `rr:all` invokes it from three code paths (Agent-orchestrator `dispatch_progress`, sequential `started`, sequential `complete`). All three invocations end with `|| true`, so failures don't crash the main flow — they silently suppress CPT-1 progress tracking. Verified the same class of defect in `rr:board` (calls `_update_cpt.sh` after board-paper publish) and `rr:fix` (calls `rr-finalize.sh` after retry loop). Added the missing `Bash(~/.claude/skills/rr/bin/<script>.sh *)` patterns to all three. `doctor.md`'s references are `ls <path>` existence checks, already covered by `Bash(ls *)` — no change needed. Added a generic bats cross-check (`tests/router-allowed-tools.bats`): for every `rr/commands/*.md`, grep the body for `~/.claude/skills/rr/bin/<script>.sh` invocations (excluding `ls <path>` existence checks) and assert each one has a matching `Bash(<path> *)` entry in the frontmatter allowed-tools line. Pre-fix flagged `all.md:_update_cpt.sh`, `board.md:_update_cpt.sh`, `fix.md:rr-finalize.sh`; post-fix clean.
+
 ## [5.3.20] - 2026-04-18
 
 ### Fixed

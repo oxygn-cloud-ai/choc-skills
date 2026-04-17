@@ -201,6 +201,39 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   [ -z "$offenders" ]
 }
 
+# --- CPT-128: rr:all invokes _update_cpt.sh from the body but frontmatter
+#     doesn't whitelist the path. The invocations have `|| true` suffix so
+#     failures hide as "silent observability degradation" — CPT-1 progress
+#     tracking simply stops reporting with no visible error.
+
+@test "rr:all frontmatter whitelists _update_cpt.sh (CPT-128)" {
+  line=$(grep '^allowed-tools:' "$REPO_ROOT/skills/rr/commands/all.md")
+  [[ "$line" == *"_update_cpt.sh"* ]]
+}
+
+@test "every rr sub-command that invokes an rr/bin/ script in the body declares it in allowed-tools (CPT-128)" {
+  # Body→frontmatter cross-check. Any `~/.claude/skills/rr/bin/<name>.sh`
+  # invocation in the body must be matched by a corresponding
+  # `Bash(~/.claude/skills/rr/bin/<name>.sh *)` in the frontmatter.
+  # Excluded: `ls <path>` existence checks (covered by `Bash(ls *)`).
+  offenders=""
+  for f in "$REPO_ROOT"/skills/rr/commands/*.md; do
+    name=$(basename "$f")
+    body=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm>=2' "$f")
+    allow=$(head -30 "$f" | grep '^allowed-tools:' || true)
+    # Drop lines where the script path is a `ls <path>` existence check.
+    real_invocations=$(printf '%s' "$body" | grep -E '~/\.claude/skills/rr/bin/[A-Za-z0-9_.-]+\.sh' | grep -v 'ls ~/\.claude/skills/rr/bin/' || true)
+    scripts=$(printf '%s' "$real_invocations" | grep -oE '~/\.claude/skills/rr/bin/[A-Za-z0-9_.-]+\.sh' | sort -u || true)
+    for script in $scripts; do
+      if ! printf '%s' "$allow" | grep -qF "Bash($script *)"; then
+        offenders="$offenders ${name}:$(basename "$script")"
+      fi
+    done
+  done
+  echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}
+
 # --- CPT-119: narrow Bash(bash install.sh *) pattern blocks absolute-path invocation ---
 #
 # `bash <repo-path>/skills/<skill>/install.sh --force` (the documented primary
