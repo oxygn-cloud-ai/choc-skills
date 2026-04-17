@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.28] - 2026-04-18
+
+### Fixed
+- **`Bash(wc *)` added to `rr:board` and `rr:all` frontmatters** (CPT-158). CPT-146 (v5.3.24) extended the `commands/board.md` allowed-tools entry to cover printf/base64/tr/cat for the Phase 4 Jira auth snippet, but missed the pre-flight block at `board.md:31` which runs `ls ${RR_WORK_DIR:-~/rr-work}/individual/*.json 2>/dev/null | wc -l` to count assessments. Under CPT-32 per-command enforcement the `wc` pipeline was tool-denied and `/rr board` aborted at first probe, never reaching Phase 1. The generic wc-body↔frontmatter cross-check added with this fix also flagged `commands/all.md:155-156` which runs the same `ls … | wc -l | tr -d ' '` pattern in its summary-table block; same class of defect (body uses wc, frontmatter lacks it), so both files get `Bash(wc *)` in the same cycle. `commands/all.md` also gains `Bash(tr *)` since line 155-156's `tr -d ' '` was likewise missing. Two new regressions in `tests/rr-command-shell-tool-coverage.bats`: per-file sentinel for `board.md` and a generic cross-check that any `rr/commands/*.md` using `wc` in a direct pipeline must declare `Bash(wc *)`. Unlike the CPT-146 printf cross-check this one does NOT fall back to `Bash(bash *)` as a satisfier — CPT-146 itself demonstrated that direct-binary pipelines aren't covered by `Bash(bash *)` under per-command enforcement, otherwise CPT-146 would have been unnecessary.
+
+**Note on version renumbering**: This entry originally targeted 5.3.26 on `fix/CPT-158-board-wc-allowed-tools`, but CPT-155 (5.3.26) and CPT-157 (5.3.27) landed on `main` first and claimed those. Taking 5.3.28 here. No code semantics changed from the original branch.
+
 ## [5.3.27] - 2026-04-18
 
 ### Fixed

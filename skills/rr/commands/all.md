@@ -1,7 +1,7 @@
 ---
 name: rr:all
 description: "Batch risk register review — orchestrate parallel/sequential assessments"
-allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(rm *), Bash(date *), Bash(echo *), Bash(sed *), Bash(bash *), Bash(test *), Bash(~/.claude/skills/rr/bin/rr-prepare.sh *), Bash(~/.claude/skills/rr/bin/rr-finalize.sh *), Bash(~/.claude/skills/rr/bin/_update_cpt.sh *), Write, Agent, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(rm *), Bash(date *), Bash(echo *), Bash(sed *), Bash(bash *), Bash(test *), Bash(wc *), Bash(tr *), Bash(~/.claude/skills/rr/bin/rr-prepare.sh *), Bash(~/.claude/skills/rr/bin/rr-finalize.sh *), Bash(~/.claude/skills/rr/bin/_update_cpt.sh *), Write, Agent, AskUserQuestion
 ---
 
 # rr:all — Batch Risk Register Review
