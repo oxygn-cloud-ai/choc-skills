@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.1.2"
+VERSION="2.1.3"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -231,27 +231,46 @@ uninstall_skill() {
   local name="$1"
   validate_name "$name"
   local target="${TARGET_BASE}/${name}"
+  local commands_base="${HOME}/.claude/commands"
+  local router_md="${commands_base}/${name:?}.md"
+  local commands_dir="${commands_base}/${name:?}"
 
-  if [ ! -d "$target" ]; then
-    warn "Skill '${name}' is not installed (${target} does not exist)"
+  # CPT-112: check for stale router state as well as the skill directory,
+  # so a partial install (skill dir already removed, router files still
+  # present from a pre-CPT-36 uninstall or manual rm) can still be cleaned
+  # up via `--uninstall`. Without this, uninstall returns early on
+  # `[ ! -d "$target" ]` and leaks the exact state CPT-36 was written to fix.
+  local skill_present=0
+  local router_present=0
+  [ -d "$target" ] && skill_present=1
+  { [ -f "$router_md" ] || [ -d "$commands_dir" ]; } && router_present=1
+
+  if [ "$skill_present" -eq 0 ] && [ "$router_present" -eq 0 ]; then
+    warn "Skill '${name}' is not installed"
     return 0
   fi
 
-  if ! confirm "Uninstall '${name}' from ${target}?"; then
+  local prompt
+  if [ "$skill_present" -eq 1 ]; then
+    prompt="Uninstall '${name}' from ${target}?"
+  else
+    prompt="Uninstall '${name}' orphan router files from ${commands_base}?"
+  fi
+  if ! confirm "$prompt"; then
     warn "Skipped '${name}'"
     return 0
   fi
 
-  rm -rf "$target"
-
-  if [ -d "$target" ]; then
-    die "Failed to remove ${target} — check permissions"
+  if [ "$skill_present" -eq 1 ]; then
+    rm -rf "$target"
+    if [ -d "$target" ]; then
+      die "Failed to remove ${target} — check permissions"
+    fi
   fi
 
   # Clean up router file and subcommand directory if they exist
-  local commands_base="${HOME}/.claude/commands"
-  [ -f "${commands_base}/${name:?}.md" ] && rm -f "${commands_base}/${name:?}.md"
-  [ -d "${commands_base}/${name:?}" ] && rm -rf "${commands_base}/${name:?}"
+  [ -f "$router_md" ] && rm -f "$router_md"
+  [ -d "$commands_dir" ] && rm -rf "$commands_dir"
 
   ok "Uninstalled '${name}'"
 }
