@@ -29,6 +29,13 @@ sanitize_name() {
   echo "$n"
 }
 
+sanitize_for_applescript() {
+  # Strip non-printable/control characters (newlines, CR, tabs, null, escape
+  # sequences, etc.) that could break or inject into generated AppleScript.
+  # Preserves printable ASCII including spaces.
+  printf '%s' "$1" | tr -cd '[:print:]'
+}
+
 lookup_label() {
   local session="$1"
   for dir in "$REPOS_DIR"/*/; do
@@ -138,7 +145,9 @@ TMPSCRIPT=$(mktemp /tmp/tmux-iterm.XXXXXX) || {
 trap 'rm -f "$TMPSCRIPT"' EXIT
 
 first_label="$(lookup_label "$first")"
-# Escape AppleScript-significant characters to prevent injection
+# Strip control characters then escape AppleScript-significant characters
+first_label="$(sanitize_for_applescript "$first_label")"
+first="$(sanitize_for_applescript "$first")"
 safe_first_label="${first_label//\\/\\\\}"
 safe_first_label="${safe_first_label//\"/\\\"}"
 safe_first="${first//\\/\\\\}"
@@ -157,7 +166,9 @@ HEADER
 idx=1
 for s in "${rest[@]}"; do
   label="$(lookup_label "$s")"
-  # Escape AppleScript-significant characters to prevent injection
+  # Strip control characters then escape AppleScript-significant characters
+  label="$(sanitize_for_applescript "$label")"
+  s="$(sanitize_for_applescript "$s")"
   safe_label="${label//\\/\\\\}"
   safe_label="${safe_label//\"/\\\"}"
   safe_s="${s//\\/\\\\}"
