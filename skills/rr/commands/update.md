@@ -1,7 +1,7 @@
 ---
 name: rr:update
 description: "Update rr skill to latest version"
-allowed-tools: Read, Bash(git *), Bash(bash *)
+allowed-tools: Read, Bash(git *), Bash(bash *), Bash(*/install.sh *), Bash(./install.sh *)
 ---
 
 # rr:update — Update Skill to Latest Version

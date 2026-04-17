@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.10] - 2026-04-17
+
+### Fixed
+- **P1 regression**: `/rr update` and `/rr all --reset` direct script invocations (`./install.sh --force`, `~/.claude/skills/rr/bin/rr-prepare.sh --reset`, `~/.claude/skills/rr/bin/rr-finalize.sh ...`) previously required `Bash(bash *)` coverage but CPT-25 removed that in favour of direct invocation — without adding matching path patterns. Added `Bash(*/install.sh *)` and `Bash(./install.sh *)` to `commands/update.md`, and `Bash(~/.claude/skills/rr/bin/rr-prepare.sh *)` + `Bash(~/.claude/skills/rr/bin/rr-finalize.sh *)` to `commands/all.md`. Least-privilege per-sub-command; no change to SKILL.md router. (CPT-97)
+
 ## [5.3.9] - 2026-04-17
 
 ### Fixed
