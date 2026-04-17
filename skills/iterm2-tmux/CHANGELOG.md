@@ -2,6 +2,11 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.0.5] - 2026-04-18
+
+### Fixed
+- **`tmux-attach-session.sh` session-file read preserves trailing newlines** (CPT-159). CPT-147's temp-file handoff wrote raw session names to a file and read them back via `SESSION="$(cat "$session_file")"`. Bash command substitution strips ALL trailing newlines from its captured output — a session name that ends in `\n` bytes loses them on read, so the name the attach helper resolves against tmux doesn't match the bytes `tmux-iterm-tabs.sh` wrote. The commit's stated "full-byte round-trip" contract was violated for the trailing-NL edge. Replaced the plain substitution with the sentinel-x trick: `SESSION=$(cat "$session_file"; printf x); SESSION="${SESSION%x}"`. The extra `x` byte forces command substitution to have non-NL trailing content, so bash preserves any preceding `\n` bytes; the parameter expansion strips the sentinel, leaving the exact byte sequence intact. Two bats regressions in `tests/tmux-iterm-tabs.bats`: round-trip a session name ending in `\n\n` and assert `SESSION_HEX=6162630a0a` (bytes `a b c \n \n`); static check that the sentinel-x pattern appears in the script.
+
 ## [1.0.4] - 2026-04-18
 
 ### Security / Fixed

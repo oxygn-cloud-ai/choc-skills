@@ -204,3 +204,47 @@ call_sanitize() {
 # semantic is now carried end-to-end by the `--session-file` handoff
 # (see CPT-147 test "reads session name from --session-file path correctly"
 # above, which asserts the raw bytes survive through the file into SESSION).
+
+# --- CPT-159: bash command substitution strips trailing newlines. The
+# CPT-147 reader `SESSION="$(cat "$session_file")"` silently dropped any
+# trailing \n bytes, breaking the stated "full-byte round-trip" contract
+# for session names that end in newline(s).
+
+@test "CPT-159: session name ending in trailing \\n round-trips with bytes intact" {
+  local attach="${REPO_DIR}/skills/iterm2-tmux/bin/tmux-attach-session.sh"
+  [ -f "$attach" ]
+
+  local tmp
+  tmp=$(mktemp /tmp/tmux-target-trailing.XXXXXX)
+  trap "rm -f '$tmp'" RETURN
+  # 5 bytes: a b c \n \n
+  printf 'abc\n\n' > "$tmp"
+
+  run bash -c '
+    set -euo pipefail
+    set -- --session-file "'"$tmp"'" "label-value" 0
+    # Execute the exact arg-parsing + temp-file-read block shipped in the
+    # script: lines from start of body up to (but not including) `exec tmux`.
+    eval "$(awk "/^set -euo pipefail/{flag=1; next} /^exec tmux/{flag=0} flag" "'"$attach"'")"
+    printf "SESSION_HEX=" ; printf "%s" "$SESSION" | od -An -tx1 | tr -d " \n" ; printf "\n"
+    printf "SESSION_BYTES=[%s]\n" "${#SESSION}"
+  '
+  [ "$status" -eq 0 ]
+  # Must see all 5 bytes: 61 62 63 0a 0a.
+  # Pre-fix (plain $(cat file)) emitted just 61 62 63 (trailing NLs stripped).
+  [[ "$output" == *"SESSION_HEX=6162630a0a"* ]]
+  [[ "$output" == *"SESSION_BYTES=[5]"* ]]
+}
+
+@test "CPT-159: tmux-attach-session.sh uses the sentinel-x trick for session-file read" {
+  local attach="${REPO_DIR}/skills/iterm2-tmux/bin/tmux-attach-session.sh"
+  # The fix pattern: cat "$session_file"; printf x ... ${SESSION%x}
+  grep -qE 'cat "\$session_file"; *printf x' "$attach" || {
+    echo "tmux-attach-session.sh lacks the printf-x sentinel that preserves trailing newlines" >&2
+    return 1
+  }
+  grep -qE 'SESSION="\$\{SESSION%x\}"' "$attach" || {
+    echo "tmux-attach-session.sh does not strip the 'x' sentinel" >&2
+    return 1
+  }
+}

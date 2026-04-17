@@ -24,7 +24,15 @@ if [ "${1:-}" = "--session-file" ]; then
     printf 'Error: --session-file %s does not exist\n' "$session_file" >&2
     exit 1
   fi
-  SESSION="$(cat "$session_file")"
+  # CPT-159: bash command substitution strips ALL trailing newlines
+  # from its output. For session names ending in \n bytes, plain
+  # SESSION="$(cat file)" would lose them and the name attached here
+  # wouldn't match the bytes the writer flushed, breaking CPT-147's
+  # stated full-byte round-trip contract. The sentinel-x trick forces
+  # a trailing 'x' before substitution, then strips it — everything
+  # between survives verbatim.
+  SESSION=$(cat "$session_file"; printf x)
+  SESSION="${SESSION%x}"
   rm -f "$session_file"
   shift 2
 else
