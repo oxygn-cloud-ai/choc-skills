@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.29] - 2026-04-18
+
+### Fixed
+- **`rr-prepare.sh` and `rr-finalize.sh` now reject relative `RR_WORK_DIR` values** (CPT-148). CPT-137's walk-up loop correctly handled absolute nested paths (`$HOME/new/deeply/nested/rr-work`) by climbing to the nearest existing ancestor and canonicalizing, but it also silently accepted relative values (`foo/bar`, `../foo`, `./foo`, bare `foo`). The walk-up climbs until it hits `.`, which is always a valid existing directory; `realpath .` canonicalizes to `$PWD`; the relative segments are rewritten to `$PWD/<relative>`. If `$PWD` lives under `$HOME` (typical case), the downstream `"$RESOLVED_HOME"/*` case guard accepts the path and operations — including `rm -rf` under `--reset` — execute in an unintended location. Pre-CPT-137 the case guard rejected relative inputs outright with a clear FATAL. Added an up-front `case "$WORK_DIR" in /*) ;; *) FATAL ;; esac` BEFORE the walk-up function so non-absolute paths fail immediately with a clear message, restoring the pre-CPT-137 guard contract. Eight bats regressions in `tests/rr-work-dir-absolute-only.bats`: per-shape checks for `foo/bar`, `../foo`, `./foo`, bare `foo` on both scripts (asserts FATAL + "absolute path" message), plus a positive-case sanity that `/tmp/...` paths still pass CPT-148 and a pair of static ordering checks asserting the new gate appears before the walk-up function.
+
+**Note on version renumbering**: This entry originally targeted 5.3.26 on `fix/CPT-148-reject-relative-rr-work-dir`, but CPT-155/157/158 have open branches ahead of this one. Taking 5.3.29 to avoid collision. No code semantics changed from the original branch.
+
 ## [5.3.28] - 2026-04-18
 
 ### Fixed

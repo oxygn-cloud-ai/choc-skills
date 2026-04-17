@@ -22,6 +22,12 @@ set -euo pipefail
 
 WORK_DIR="${RR_WORK_DIR:-${HOME}/rr-work}"
 
+# CPT-148: reject non-absolute paths up front (see rr-prepare.sh for rationale).
+case "$WORK_DIR" in
+    /*) ;;
+    *) echo "FATAL: RR_WORK_DIR must be an absolute path starting with '/'. Got: '$WORK_DIR'. Use \$HOME/... or /tmp/... instead." >&2; exit 1 ;;
+esac
+
 # Resolve symlinks before validation to prevent symlink traversal attacks (CPT-26).
 # Also resolve HOME for consistent comparison (macOS: /var -> /private/var).
 #

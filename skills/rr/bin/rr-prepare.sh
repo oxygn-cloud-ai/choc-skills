@@ -25,6 +25,17 @@ set -euo pipefail
 
 WORK_DIR="${RR_WORK_DIR:-${HOME}/rr-work}"
 
+# CPT-148: reject non-absolute paths up front. CPT-137's walk-up loop treats
+# `.` as a valid existing ancestor, which silently resolves a relative
+# RR_WORK_DIR (e.g. `foo/bar`, `../foo`, bare `foo`) against $PWD. If $PWD
+# happens to live under $HOME, the downstream case guard accepts the path
+# and the script operates in an unintended location. Fail fast on anything
+# that doesn't start with `/` so the user sees their typo immediately.
+case "$WORK_DIR" in
+    /*) ;;
+    *) echo "FATAL: RR_WORK_DIR must be an absolute path starting with '/'. Got: '$WORK_DIR'. Use \$HOME/... or /tmp/... instead." >&2; exit 1 ;;
+esac
+
 # Resolve symlinks before validation to prevent symlink traversal attacks (CPT-26).
 # A symlink at $HOME/rr-work -> /outside/path would pass the case guard without this.
 # Also resolve HOME for consistent comparison (macOS: /var -> /private/var).
