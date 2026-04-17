@@ -26,18 +26,47 @@ if not (1024 <= PORT <= 65535):
 SCRIPT_DIR = Path(__file__).parent
 
 
-def count_files(subdir):
+def count_files(subdir, dir_cache=None):
+    if dir_cache is not None and subdir in dir_cache:
+        return len(dir_cache[subdir])
     d = WORK_DIR / subdir
     if not d.exists():
         return 0
     return len([f for f in d.iterdir() if f.is_file() and f.suffix == ".json"])
 
 
-def list_stems(subdir):
+def list_stems(subdir, dir_cache=None):
+    if dir_cache is not None and subdir in dir_cache:
+        return dir_cache[subdir]
     d = WORK_DIR / subdir
     if not d.exists():
         return []
     return sorted([f.stem for f in d.iterdir() if f.is_file() and f.suffix == ".json"])
+
+
+def _build_dir_cache():
+    """Read all monitored directories once per request cycle."""
+    cache = {}
+    for subdir in ("individual", "jira-results", "jira-errors", "errors",
+                    "extracts", "results", "payloads", "progress"):
+        d = WORK_DIR / subdir
+        if d.exists():
+            cache[subdir] = sorted([f.stem for f in d.iterdir()
+                                    if f.is_file() and f.suffix == ".json"])
+        else:
+            cache[subdir] = []
+    return cache
+
+
+def _read_log_once():
+    """Read batch.log once per request cycle."""
+    log = WORK_DIR / "batch.log"
+    if not log.exists():
+        return None
+    try:
+        return log.read_text()
+    except Exception:
+        return None
 
 
 def read_json_safe(path):
@@ -47,14 +76,12 @@ def read_json_safe(path):
         return None
 
 
-def get_phase():
-    log = WORK_DIR / "batch.log"
-    if not log.exists():
+def get_phase(log_content=None):
+    if log_content is None:
+        log_content = _read_log_once()
+    if log_content is None:
         return {"num": 0, "name": "No log"}
-    try:
-        lines = log.read_text().splitlines()
-    except Exception:
-        return {"num": 0, "name": "Read error"}
+    lines = log_content.splitlines()
     names = {
         1: "Discovery", 2: "Quarterly Filter", 3: "Extraction",
         4: "Sub-Agent Dispatch", 5: "Collection", 6: "Publication", 7: "Completion",
@@ -67,44 +94,41 @@ def get_phase():
     return {"num": 0, "name": "Starting..."}
 
 
-def get_log_tail(n=50):
-    log = WORK_DIR / "batch.log"
-    if not log.exists():
+def get_log_tail(n=50, log_content=None):
+    if log_content is None:
+        log_content = _read_log_once()
+    if log_content is None:
         return []
-    try:
-        lines = log.read_text().splitlines()
-        return lines[-n:]
-    except Exception:
-        return []
+    lines = log_content.splitlines()
+    return lines[-n:]
 
 
-def is_complete():
-    log = WORK_DIR / "batch.log"
-    if not log.exists():
+def is_complete(log_content=None):
+    if log_content is None:
+        log_content = _read_log_once()
+    if log_content is None:
         return False
-    try:
-        return "BATCH COMPLETE" in log.read_text()
-    except Exception:
-        return False
+    return "BATCH COMPLETE" in log_content
 
 
-def get_start_time():
-    log = WORK_DIR / "batch.log"
-    if not log.exists():
+def get_start_time(log_content=None):
+    if log_content is None:
+        log_content = _read_log_once()
+    if log_content is None:
         return None
     try:
-        first_line = log.read_text().splitlines()[0]
+        first_line = log_content.splitlines()[0]
         return first_line.split("]")[0].lstrip("[")
     except Exception:
         return None
 
 
-def build_batch_status():
+def build_batch_status(dir_cache=None):
     batches = sorted(
         WORK_DIR.glob("extracts/batch_*.json"),
         key=lambda p: int(p.stem.replace("batch_", ""))
     )
-    in_progress_keys = set(list_stems("progress"))
+    in_progress_keys = set(list_stems("progress", dir_cache))
 
     result = []
     for bf in batches:
@@ -147,11 +171,11 @@ def build_batch_status():
     return result
 
 
-def build_risk_status():
-    assessed = set(list_stems("individual"))
-    published = set(list_stems("jira-results"))
-    pub_errors = set(list_stems("jira-errors"))
-    in_progress = set(list_stems("progress"))  # tool-use progress reports
+def build_risk_status(dir_cache=None):
+    assessed = set(list_stems("individual", dir_cache))
+    published = set(list_stems("jira-results", dir_cache))
+    pub_errors = set(list_stems("jira-errors", dir_cache))
+    in_progress = set(list_stems("progress", dir_cache))  # tool-use progress reports
 
     disco = WORK_DIR / "discovery.json"
     all_keys = []
@@ -219,6 +243,11 @@ def build_live_progress():
 
 
 def build_api_response():
+    # Read batch.log once per request — pass to all helpers
+    log_content = _read_log_once()
+    # Cache directory listings once per request
+    dir_cache = _build_dir_cache()
+
     total_risks = 0
     to_process = 0
     disco = WORK_DIR / "discovery.json"
@@ -233,9 +262,9 @@ def build_api_response():
         if f:
             to_process = f.get("to_process", f.get("total", 0))
 
-    phase = get_phase()
-    complete = is_complete()
-    start = get_start_time()
+    phase = get_phase(log_content)
+    complete = is_complete(log_content)
+    start = get_start_time(log_content)
 
     return {
         "total_risks": total_risks,
@@ -243,18 +272,18 @@ def build_api_response():
         "phase": phase,
         "complete": complete,
         "start_time": start,
-        "batches": build_batch_status(),
-        "risks": build_risk_status(),
+        "batches": build_batch_status(dir_cache),
+        "risks": build_risk_status(dir_cache),
         "progress": build_live_progress(),
-        "log": get_log_tail(50),
+        "log": get_log_tail(50, log_content),
         "counts": {
-            "extracts": count_files("extracts"),
-            "payloads": count_files("payloads"),
-            "results": count_files("results"),
-            "errors": count_files("errors"),
-            "individual": count_files("individual"),
-            "jira_results": count_files("jira-results"),
-            "jira_errors": count_files("jira-errors"),
+            "extracts": count_files("extracts", dir_cache),
+            "payloads": count_files("payloads", dir_cache),
+            "results": count_files("results", dir_cache),
+            "errors": count_files("errors", dir_cache),
+            "individual": count_files("individual", dir_cache),
+            "jira_results": count_files("jira-results", dir_cache),
+            "jira_errors": count_files("jira-errors", dir_cache),
         },
     }
 

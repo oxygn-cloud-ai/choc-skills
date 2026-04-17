@@ -35,18 +35,46 @@ except ImportError:
 WORK_DIR = Path(os.environ.get("RR_WORK_DIR", Path.home() / "rr-work"))
 
 
-def count_files(subdir):
+def count_files(subdir, dir_cache=None):
+    if dir_cache is not None and subdir in dir_cache:
+        return len(dir_cache[subdir])
     d = WORK_DIR / subdir
     if not d.exists():
         return 0
     return len([f for f in d.iterdir() if f.is_file()])
 
 
-def list_files(subdir):
+def list_files(subdir, dir_cache=None):
+    if dir_cache is not None and subdir in dir_cache:
+        return dir_cache[subdir]
     d = WORK_DIR / subdir
     if not d.exists():
         return []
     return sorted([f.stem for f in d.iterdir() if f.is_file()])
+
+
+def _build_dir_cache():
+    """Read all monitored directories once per refresh cycle."""
+    cache = {}
+    for subdir in ("individual", "jira-results", "jira-errors", "errors",
+                    "extracts", "results", "payloads"):
+        d = WORK_DIR / subdir
+        if d.exists():
+            cache[subdir] = sorted([f.stem for f in d.iterdir() if f.is_file()])
+        else:
+            cache[subdir] = []
+    return cache
+
+
+def _read_log_once():
+    """Read batch.log once per refresh cycle."""
+    log = WORK_DIR / "batch.log"
+    if not log.exists():
+        return None
+    try:
+        return log.read_text()
+    except Exception:
+        return None
 
 
 def read_json_field(filename, field, default=0):
@@ -60,14 +88,12 @@ def read_json_field(filename, field, default=0):
         return default
 
 
-def get_phase():
-    log = WORK_DIR / "batch.log"
-    if not log.exists():
+def get_phase(log_content=None):
+    if log_content is None:
+        log_content = _read_log_once()
+    if log_content is None:
         return 0, "No log"
-    try:
-        lines = log.read_text().splitlines()
-    except Exception:
-        return 0, "Read error"
+    lines = log_content.splitlines()
     names = {
         1: "Discovery", 2: "Quarterly Filter", 3: "Extraction",
         4: "Sub-Agent Dispatch", 5: "Collection", 6: "Publication", 7: "Completion",
@@ -80,37 +106,34 @@ def get_phase():
     return 0, "Starting..."
 
 
-def get_log_tail(n=30):
-    log = WORK_DIR / "batch.log"
-    if not log.exists():
+def get_log_tail(n=30, log_content=None):
+    if log_content is None:
+        log_content = _read_log_once()
+    if log_content is None:
         return []
-    try:
-        lines = log.read_text().splitlines()
-        return lines[-n:] if lines else []
-    except Exception:
-        return []
+    lines = log_content.splitlines()
+    return lines[-n:] if lines else []
 
 
-def get_start_time():
-    log = WORK_DIR / "batch.log"
-    if not log.exists():
+def get_start_time(log_content=None):
+    if log_content is None:
+        log_content = _read_log_once()
+    if log_content is None:
         return None
     try:
-        first_line = log.read_text().splitlines()[0]
+        first_line = log_content.splitlines()[0]
         ts = first_line.split("]")[0].lstrip("[")
         return datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
     except Exception:
         return None
 
 
-def is_complete():
-    log = WORK_DIR / "batch.log"
-    if not log.exists():
+def is_complete(log_content=None):
+    if log_content is None:
+        log_content = _read_log_once()
+    if log_content is None:
         return False
-    try:
-        return "BATCH COMPLETE" in log.read_text()
-    except Exception:
-        return False
+    return "BATCH COMPLETE" in log_content
 
 
 def get_risk_keys():
@@ -194,10 +217,10 @@ def build_batch_table():
     return table
 
 
-def build_risk_panel():
-    assessed_keys = set(list_files("individual"))
-    published_keys = set(list_files("jira-results"))
-    pub_error_keys = set(list_files("jira-errors"))
+def build_risk_panel(dir_cache=None):
+    assessed_keys = set(list_files("individual", dir_cache))
+    published_keys = set(list_files("jira-results", dir_cache))
+    pub_error_keys = set(list_files("jira-errors", dir_cache))
     all_keys = get_risk_keys()
 
     if not all_keys:
@@ -280,8 +303,8 @@ def colorize_log_line(line):
     return text
 
 
-def build_log_panel():
-    lines = get_log_tail(30)
+def build_log_panel(log_content=None):
+    lines = get_log_tail(30, log_content)
     if not lines:
         return Panel(Text("No log output yet.", style="dim"), title="Log Stream", border_style="dim")
 
@@ -294,9 +317,9 @@ def build_log_panel():
     return Panel(log_content, title=f"Log Stream (last {len(lines)} lines)", border_style="dim")
 
 
-def build_error_panel():
-    jira_errors = list_files("jira-errors")
-    dispatch_errors = list_files("errors")
+def build_error_panel(dir_cache=None):
+    jira_errors = list_files("jira-errors", dir_cache)
+    dispatch_errors = list_files("errors", dir_cache)
 
     if not jira_errors and not dispatch_errors:
         return None
@@ -324,18 +347,23 @@ def build_error_panel():
 
 
 def build_dashboard():
+    # Read batch.log once per cycle — pass to all helpers
+    log_content = _read_log_once()
+    # Cache directory listings once per cycle
+    dir_cache = _build_dir_cache()
+
     total_risks = read_json_field("discovery.json", "total", 0)
     to_process = read_json_field("filter-result.json", "to_process", 0)
     if to_process == 0:
         to_process = total_risks
 
-    assessments = count_files("individual")
-    jira_ok = count_files("jira-results")
-    phase_num, phase_name = get_phase()
-    complete = is_complete()
+    assessments = count_files("individual", dir_cache)
+    jira_ok = count_files("jira-results", dir_cache)
+    phase_num, phase_name = get_phase(log_content)
+    complete = is_complete(log_content)
     now = time.strftime("%H:%M:%S")
 
-    start = get_start_time()
+    start = get_start_time(log_content)
     elapsed = ""
     if start:
         delta = datetime.now() - start
@@ -347,8 +375,8 @@ def build_dashboard():
     if phase_num <= 3:
         pct = phase_num * 10
     elif phase_num == 4:
-        results = count_files("results")
-        batches = max(count_files("extracts"), 1)
+        results = count_files("results", dir_cache)
+        batches = max(count_files("extracts", dir_cache), 1)
         pct = 30 + (20 * results // batches)
     elif phase_num == 5:
         pct = 50 + (20 * assessments // max(to_process, 1))
@@ -378,17 +406,17 @@ def build_dashboard():
         sections.append(batch_table)
         sections.append(Text(""))
 
-    risk_panel = build_risk_panel()
+    risk_panel = build_risk_panel(dir_cache)
     if risk_panel:
         sections.append(risk_panel)
         sections.append(Text(""))
 
-    error_panel = build_error_panel()
+    error_panel = build_error_panel(dir_cache)
     if error_panel:
         sections.append(error_panel)
         sections.append(Text(""))
 
-    sections.append(build_log_panel())
+    sections.append(build_log_panel(log_content))
 
     subtitle = "[green]Batch complete — Ctrl+C to close[/]" if complete else "[dim]Ctrl+C to exit — refreshes every 2s[/]"
     return Panel(

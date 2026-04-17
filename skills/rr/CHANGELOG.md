@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.3] - 2026-04-17
+
+### Changed
+- **Performance**: `monitor.py` and `monitor_server.py` read `batch.log` once per refresh cycle and cache directory listings instead of re-reading for each helper. Reduces I/O from ~120 reads/minute to ~30 on `monitor.py`, and from 4+ reads per HTTP request to 1 on `monitor_server.py` (CPT-31).
+
+### Note on version renumbering
+- CPT-31's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2–5.3.2 had all shipped, so the Merger renumbered CPT-31 to 5.3.3. No code semantics changed.
+
 ## [5.3.2] - 2026-04-17
 
 ### Changed
