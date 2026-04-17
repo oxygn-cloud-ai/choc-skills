@@ -238,13 +238,56 @@ call_sanitize() {
 
 @test "CPT-159: tmux-attach-session.sh uses the sentinel-x trick for session-file read" {
   local attach="${REPO_DIR}/skills/iterm2-tmux/bin/tmux-attach-session.sh"
-  # The fix pattern: cat "$session_file"; printf x ... ${SESSION%x}
-  grep -qE 'cat "\$session_file"; *printf x' "$attach" || {
+  # CPT-161 changed the sentinel form from `cat; printf x` (which masked
+  # cat's exit status) to `cat && printf x` (which propagates it via
+  # short-circuit). Accept either shape — both strip trailing newlines
+  # via ${SESSION%x}.
+  grep -qE 'cat "\$session_file"[[:space:]]*(&&|;) *printf x' "$attach" || {
     echo "tmux-attach-session.sh lacks the printf-x sentinel that preserves trailing newlines" >&2
     return 1
   }
   grep -qE 'SESSION="\$\{SESSION%x\}"' "$attach" || {
     echo "tmux-attach-session.sh does not strip the 'x' sentinel" >&2
+    return 1
+  }
+}
+
+# --- CPT-161: the sentinel form `$(cat file; printf x)` masks cat's
+# exit status because `$(a; b)` returns b's status. For unreadable
+# session files (permission denied, I/O error), cat fails but printf
+# succeeds, SESSION comes out empty, the script continues past the
+# read and hands tmux a bogus target. Switched to `cat && printf x`
+# so cat's failure short-circuits and the command substitution's
+# status reflects it. Wrapped in `if ! SESSION=$(...)` with a clear
+# error + exit 1.
+
+@test "CPT-161: unreadable --session-file aborts with clear error" {
+  local attach="${REPO_DIR}/skills/iterm2-tmux/bin/tmux-attach-session.sh"
+  [ -f "$attach" ]
+
+  local tmp
+  tmp=$(mktemp /tmp/tmux-target-unread.XXXXXX)
+  printf 'abc' > "$tmp"
+  chmod 000 "$tmp"
+
+  run bash "$attach" --session-file "$tmp" "label-value" 0
+
+  chmod 644 "$tmp" 2>/dev/null || true
+  rm -f "$tmp"
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"failed to read"* ]]
+  [[ "$output" == *"$tmp"* ]]
+}
+
+@test "CPT-161: session-file read uses the short-circuit && form, not the masking ; form" {
+  local attach="${REPO_DIR}/skills/iterm2-tmux/bin/tmux-attach-session.sh"
+  grep -qE 'cat "\$session_file"[[:space:]]+&&[[:space:]]+printf x' "$attach" || {
+    echo "tmux-attach-session.sh does not use the short-circuit '&& printf x' form — cat's exit status is masked" >&2
+    return 1
+  }
+  grep -qE 'if ! SESSION=\$\(cat' "$attach" || {
+    echo "tmux-attach-session.sh does not wrap the assignment in 'if !' to catch cat failures" >&2
     return 1
   }
 }

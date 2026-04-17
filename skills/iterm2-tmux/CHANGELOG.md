@@ -2,6 +2,11 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.0.6] - 2026-04-18
+
+### Fixed
+- **`tmux-attach-session.sh` now propagates cat's exit status on session-file read** (CPT-161). CPT-159's sentinel form `SESSION=$(cat "$session_file"; printf x)` preserved trailing newlines but masked cat's exit status with printf's (always 0). A permission-denied or I/O error on the session file would silently yield an empty SESSION; the script would then `rm -f` the file and call `tmux attach -t ""`, producing a confusing tmux error or — worse — an accidental match if an empty-named session happened to exist. Switched to `cat && printf x` so cat's failure short-circuits and the command substitution's exit status reflects cat's. Wrapped in `if ! SESSION=$(...)` with a clear `Error: failed to read --session-file <path>` message and `exit 1`. Kept the sentinel-x stripping via `${SESSION%x}` so CPT-159's trailing-NL preservation still holds. Did not use `mapfile -d ''` (triager's preferred Option C) because macOS default `/bin/bash` is 3.2 and mapfile requires bash 4+. Two bats regressions in `tests/tmux-iterm-tabs.bats`: runtime test creates a `chmod 000` session file and asserts non-zero exit with the `failed to read <path>` message; static check requires the `cat ... && printf x` + `if ! SESSION=$(cat` shapes. Also widened the CPT-159 sentinel-shape regression test to accept either `;` or `&&` between cat and printf so both CPT-159 and CPT-161 paths are green across the transition.
+
 ## [1.0.5] - 2026-04-18
 
 ### Fixed

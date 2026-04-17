@@ -31,7 +31,20 @@ if [ "${1:-}" = "--session-file" ]; then
   # stated full-byte round-trip contract. The sentinel-x trick forces
   # a trailing 'x' before substitution, then strips it — everything
   # between survives verbatim.
-  SESSION=$(cat "$session_file"; printf x)
+  #
+  # CPT-161: the `$(cmd1; cmd2)` shape returns cmd2's exit status, so
+  # `$(cat "$session_file"; printf x)` always exits 0 regardless of
+  # cat's success — a permission-denied or I/O error on the session
+  # file would yield an empty SESSION and the script would proceed to
+  # call tmux with the wrong target. Use `cat && printf x` instead:
+  # `&&` short-circuits on cat failure so the command substitution's
+  # exit status reflects cat's. Wrap in `if ! SESSION=$(...)` so we
+  # abort with a clear error. macOS default /bin/bash is 3.2 — mapfile
+  # is not available, which is why this approach avoids it.
+  if ! SESSION=$(cat "$session_file" && printf x); then
+    printf 'Error: failed to read --session-file %s\n' "$session_file" >&2
+    exit 1
+  fi
   SESSION="${SESSION%x}"
   rm -f "$session_file"
   shift 2
