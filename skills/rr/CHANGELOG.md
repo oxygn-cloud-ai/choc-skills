@@ -2,6 +2,12 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.22] - 2026-04-18
+
+### Fixed
+- **`_publish_one.sh` EXIT trap no longer clobbers lock cleanup** (CPT-140, regression 1). CPT-118 added `trap 'rm -f "$attempt_headers"' EXIT` for the headers tempfile without realizing each `trap ... EXIT` call REPLACES the previous handler under bash semantics. The lock-cleanup trap installed near the top of the script was silently overridden — every batch publish from `rr-finalize.sh` (which exports `LOCK_DIR`) leaked `$LOCK_DIR/${risk_key}.lock`, and subsequent runs hit the `ALREADY_PUBLISHING` early-return for every already-attempted risk until someone manually removed the lock directory. Replaced both traps with a single unified `_cleanup` function that removes both resources, registered once with `trap _cleanup EXIT`. The `attempt_headers` variable is declared empty up-front so the guard is correct even if the script exits before the mktemp runs.
+- **`_publish_one.sh` Retry-After grep pipeline no longer aborts under `set -e pipefail` when the header is absent** (CPT-140, regression 2). The CPT-118 pipeline `grep -iE '^Retry-After:' | tail -1 | sed ...` was unguarded. When the response had no Retry-After header (common for 503/529, many 429), grep exited 1, pipefail propagated it as the pipeline's exit code, command substitution returned 1, and `set -e` aborted the worker before the `.retryAfter` body fallback or exponential-backoff path could run. Added `|| true` at the end of the pipeline so the missing-header case leaves `retry_after_header` empty and the fallback chain runs as designed. Three bats regressions in `tests/rr-publish-retry-after.bats` enforce: single EXIT trap (at most one `trap ... EXIT` in the script), unified `_cleanup` function references both `LOCK_DIR` and `attempt_headers`, and the `retry_after_header=$(...)` assignment contains `|| true`.
+
 ## [5.3.21] - 2026-04-18
 
 ### Fixed

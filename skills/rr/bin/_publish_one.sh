@@ -36,13 +36,34 @@ if [ ! -f "$AUTH_FILE" ]; then
 fi
 JIRA_AUTH=$(< "$AUTH_FILE")
 
+# CPT-140: unified cleanup runs on every exit path. Both the lock dir
+# (registered when LOCK_DIR is exported by rr-finalize.sh) and the
+# attempt_headers tempfile (created before the first publish attempt)
+# must be cleaned. A single EXIT trap keeps both reachable — bash trap
+# semantics REPLACE the previous handler on each `trap` call, so the
+# pre-CPT-140 shape where CPT-118 added a second `trap … EXIT` silently
+# clobbered the lock cleanup and leaked $LOCK_DIR/${risk_key}.lock.
+#
+# attempt_headers is declared empty here so the guard is correct even
+# if the script exits before the mktemp on line below; the actual
+# tempfile is created later, right before the curl POST.
+attempt_headers=""
+_cleanup() {
+    if [ -n "${LOCK_DIR:-}" ] && [ -n "${risk_key:-}" ]; then
+        rm -rf "$LOCK_DIR/${risk_key}.lock" 2>/dev/null || true
+    fi
+    if [ -n "${attempt_headers:-}" ]; then
+        rm -f "$attempt_headers" 2>/dev/null || true
+    fi
+}
+trap _cleanup EXIT
+
 # Per-risk lockfile to prevent duplicate publishing
 if [ -n "${LOCK_DIR:-}" ]; then
     if ! mkdir "$LOCK_DIR/${risk_key}.lock" 2>/dev/null; then
         echo "${risk_key}:SKIP:ALREADY_PUBLISHING" >&2
         exit 0
     fi
-    trap 'rm -rf "$LOCK_DIR/${risk_key}.lock"' EXIT
 fi
 
 MAX_PUBLISH_RETRIES=3
@@ -365,8 +386,10 @@ payload=$(jq -n \
 # rate-limit signal). CPT-33 previously parsed only a body `.retryAfter`
 # field that Jira never sets, so the retry path silently fell through
 # to exponential backoff and ignored the server-mandated delay.
+# CPT-140: tempfile is cleaned by the unified _cleanup trap installed
+# near the top of the script — do NOT register a second EXIT trap here
+# (that would clobber lock cleanup).
 attempt_headers=$(mktemp "${TMPDIR:-/tmp}/rr-publish-headers.XXXXXX")
-trap 'rm -f "$attempt_headers"' EXIT
 
 attempt=0
 while [ $attempt -lt $MAX_PUBLISH_RETRIES ]; do
@@ -448,8 +471,18 @@ while [ $attempt -lt $MAX_PUBLISH_RETRIES ]; do
             # only accept bare-integer seconds (HTTP-date form is RFC-legal
             # but uncommon on rate-limit responses — fall through to body/exp
             # backoff rather than computing seconds-until-date portably).
+            #
+            # CPT-140: `|| true` guard is required because `set -euo
+            # pipefail` is in effect (line 22). When the response has no
+            # Retry-After header (common for 503/529 and many 429), grep
+            # exits 1, pipefail makes that the pipeline exit, command
+            # substitution propagates the failure, and set -e would abort
+            # the whole script — killing the worker before the body/exp-
+            # backoff fallback runs. The guard swallows the missing-header
+            # case and lets retry_after_header stay empty.
             retry_after_header=$(grep -iE '^Retry-After:' "$attempt_headers" 2>/dev/null \
-                | tail -1 | sed 's/^[^:]*:[[:space:]]*//;s/[[:space:]]*\r\{0,1\}$//')
+                | tail -1 | sed 's/^[^:]*:[[:space:]]*//;s/[[:space:]]*\r\{0,1\}$//' \
+                || true)
             if [[ "$retry_after_header" =~ ^[0-9]+$ ]] && [ "$retry_after_header" -gt 0 ]; then
                 retry_after="$retry_after_header"
             fi
