@@ -12,7 +12,7 @@ allowed-tools:
 ---
 
 <objective>
-Interactively modify the current project's configuration. Changes are persisted to GITHUB_CONFIG.md and applied to GitHub/git.
+Interactively modify the current project's configuration. Machine-readable changes are persisted to the repo's `PROJECT_CONFIG.json` (project type, Jira epic, labels, deviations) and applied to GitHub/git; narrative standards remain in `~/.claude/PROJECT_STANDARDS.md`. (CPT-124/141 migration: the retired per-project `GITHUB_CONFIG.md` is no longer read or written.)
 </objective>
 
 <process>
@@ -26,10 +26,12 @@ If not in a git repo: "Not in a git repository."
 
 Verify dependencies exist before reading:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. Required for project configuration."
-- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. Required for project configuration."
+- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. This file defines the narrative label/CI/branch-protection standards (replaces retired GITHUB_CONFIG.md). Required for project configuration."
 
-Read the project's `GITHUB_CONFIG.md` for current configuration.
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions.
+Read the project's `PROJECT_CONFIG.json` (if present) for current machine-readable configuration. Create a scaffold one via `/project:new` if it doesn't exist, or continue with inferred defaults for this session.
+Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions and `~/.claude/PROJECT_STANDARDS.md` for label/CI/protection standards.
+
+Migration note (CPT-141): the retired per-project `GITHUB_CONFIG.md` is no longer consulted or written. If a repo still has a stale `GITHUB_CONFIG.md`, suggest removing it after migrating any project-specific content into `PROJECT_CONFIG.json`.
 
 ## Step 2: Show current config and ask what to change
 
@@ -45,8 +47,8 @@ Options:
 - **Add/remove labels** — manage GitHub labels
 - **Enable/disable branch protection** — toggle branch protection on main
 - **Enable/disable CI workflow** — add or remove .github/workflows/test.yml
-- **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and GITHUB_CONFIG.md
-- **Update deviations** — document a deviation from global standards in GITHUB_CONFIG.md
+- **Set Jira epic key** — update the Jira epic reference in CLAUDE.md and PROJECT_CONFIG.json (.jira.epicKey)
+- **Update deviations** — document a deviation from global standards in PROJECT_CONFIG.json (.deviations)
 - **Done — no changes**
 
 ## Step 3: Execute the chosen action
@@ -55,7 +57,7 @@ Options:
 1. Ask: "Switch to Software or Non-Software?"
 2. If switching to Software: add missing worktrees (chk1, chk2, playtester), create CI, set protection, add full label set
 3. If switching to Non-Software: warn about removing CI/protection, remove extra worktrees if user confirms
-4. Update GITHUB_CONFIG.md
+4. Update PROJECT_CONFIG.json
 
 ### Add worktree session
 1. Ask: "Role name?" (slug, e.g., `designer`)
@@ -66,7 +68,7 @@ Options:
    git push -u origin "session/<role>"
    ```
 4. Create session prompt at `.claude/sessions/<role>.md`
-5. Update GITHUB_CONFIG.md with the new role
+5. Update PROJECT_CONFIG.json with the new role
 
 ### Remove worktree session
 1. Show list of current worktrees
@@ -93,7 +95,7 @@ Options:
    git push origin --delete "session/<role>" 2>/dev/null
    ```
 5. Remove `.claude/sessions/<role>.md`
-6. Update GITHUB_CONFIG.md
+6. Update PROJECT_CONFIG.json
 
 ### List worktrees
 ```bash
@@ -114,19 +116,19 @@ done
 
 ### Enable/disable branch protection
 - Toggle via `gh api repos/{owner}/{repo}/branches/main/protection`
-- Update GITHUB_CONFIG.md
+- Update PROJECT_CONFIG.json
 
 ### Enable/disable CI
 - Create or remove `.github/workflows/test.yml`
-- Read template from `~/.claude/GITHUB_CONFIG.md` section 3
+- Read CI template from `~/.claude/PROJECT_STANDARDS.md`
 
 ### Set Jira epic key
 - Ask for the key (e.g., CPT-42)
-- Update CLAUDE.md and GITHUB_CONFIG.md
+- Update CLAUDE.md and PROJECT_CONFIG.json
 
 ### Update deviations
 - Ask: "What deviation are you documenting?"
-- Append to GITHUB_CONFIG.md deviations section with justification
+- Append to PROJECT_CONFIG.json .deviations array with justification
 
 ## Step 4: Confirm
 

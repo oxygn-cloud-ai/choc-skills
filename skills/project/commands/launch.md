@@ -64,7 +64,7 @@ done
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the role list.
 
-Detect project type from `GITHUB_CONFIG.md` or infer:
+Detect project type from `PROJECT_CONFIG.json` `.project.type` (preferred) or infer from presence of `.github/workflows/` and language scaffolding (CPT-124/141 migration: retired `GITHUB_CONFIG.md` is no longer consulted):
 - **Software** (11 roles): master, planner, implementer, fixer, merger, chk1, chk2, performance, playtester, reviewer, triager
 - **Non-Software** (8 roles): master, planner, implementer, fixer, merger, performance, reviewer, triager
 

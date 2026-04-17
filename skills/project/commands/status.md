@@ -25,7 +25,8 @@ If not in a git repo, say "Not in a git repository. Navigate to a project and tr
 
 Verify dependencies exist (do not read the full files — extract only what is needed):
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
-- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: WARN and continue (skip label/CI standard comparison)
+- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: WARN and continue (skip label/CI/branch-protection standard comparison). Replaces retired `~/.claude/GITHUB_CONFIG.md` per CPT-124/141.
+- `test -f PROJECT_CONFIG.json` (repo-local) — if missing: WARN and continue (some status fields degrade to inference).
 
 Derive the **expected** role list with this precedence (CPT-139 — the set-diff must compare observed worktrees against THIS project's configured roles, not the full MSA catalog; non-software projects legitimately skip chk1/chk2/playtester per MSA §1):
 
@@ -94,7 +95,7 @@ for w in "${WORKTREES[@]}"; do
 done
 ```
 
-Read the project's `CLAUDE.md` and `GITHUB_CONFIG.md` if they exist.
+Read the project's `CLAUDE.md` and `PROJECT_CONFIG.json` if they exist. A stale `GITHUB_CONFIG.md` is informational only — surface it in the output as migration-pending but do not treat as required (CPT-124/141).
 
 ## Step 3: Gather data
 
@@ -138,7 +139,7 @@ print('n/a')
 " 2>/dev/null || echo "n/a")
 
 # Docs
-for doc in README.md ARCHITECTURE.md PHILOSOPHY.md CLAUDE.md GITHUB_CONFIG.md; do
+for doc in README.md ARCHITECTURE.md PHILOSOPHY.md CLAUDE.md PROJECT_CONFIG.json; do
   if [ -f "$doc" ]; then
     echo "[x] $doc ($(stat -f '%Sm' -t '%Y-%m-%d' "$doc" 2>/dev/null || stat -c '%Y' "$doc" 2>/dev/null | xargs -I{} date -d @{} +%Y-%m-%d 2>/dev/null || echo '?'))"
   else
@@ -174,7 +175,7 @@ Format all gathered data into the status display:
 
 ```
 Project: <name>
-Type: <from GITHUB_CONFIG.md or infer from presence of CI/tests>
+Type: <from PROJECT_CONFIG.json .project.type, or infer from presence of CI/tests>
 Path: <path>
 GitHub: <remote URL>
 Jira Epic: <from CLAUDE.md or "not configured">
@@ -185,7 +186,7 @@ Docs:
   [x] ARCHITECTURE.md    (2026-04-10)
   [x] PHILOSOPHY.md      (2026-04-08)
   [x] CLAUDE.md          (2026-04-10)
-  [ ] GITHUB_CONFIG.md   (MISSING)
+  [x] PROJECT_CONFIG.json (2026-04-10)
 
 CI:
   Workflow: <filename or "none">

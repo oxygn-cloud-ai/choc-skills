@@ -9,7 +9,7 @@ allowed-tools:
 ---
 
 <objective>
-Audit the current project against ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/GITHUB_CONFIG.md. Report compliance gaps with PASS/FAIL/WARN/SKIP verdicts.
+Audit the current project against `~/.claude/MULTI_SESSION_ARCHITECTURE.md` (role/worktree/Jira definitions) and `~/.claude/PROJECT_STANDARDS.md` (narrative label/CI/branch-protection spec), with machine-readable per-project config from the repo's `PROJECT_CONFIG.json`. Report compliance gaps with PASS/FAIL/WARN/SKIP verdicts. (CPT-124/141 migration: the retired `GITHUB_CONFIG.md` is no longer consulted.)
 </objective>
 
 <process>
@@ -25,15 +25,17 @@ If not in a git repo: "Not in a git repository. Navigate to a project and try ag
 
 Before reading, verify the dependency files exist:
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file is required for project auditing. Restore it or check your ~/.claude configuration."
-- `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: **STOP** with error: "~/.claude/GITHUB_CONFIG.md not found. This file is required for project auditing."
+- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. This file defines the narrative label/CI/branch-protection standards (replaces retired GITHUB_CONFIG.md). Restore it or check your ~/.claude configuration."
 
 Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the full role list and requirements.
-Read `~/.claude/GITHUB_CONFIG.md` for label, CI, branch protection, and doc requirements.
-Read the project's `GITHUB_CONFIG.md` to understand project type and documented deviations.
+Read `~/.claude/PROJECT_STANDARDS.md` for label, CI, branch protection, and doc requirements.
+Read the project's `PROJECT_CONFIG.json` (if present) to understand project type, Jira epic, and documented deviations. If missing, fall back to inference in Step 3.
+
+Migration note (CPT-141): the retired per-project `GITHUB_CONFIG.md` is no longer consulted — its narrative content is now in `~/.claude/PROJECT_STANDARDS.md` and per-project machine-readable config is in each repo's `PROJECT_CONFIG.json`. If a repo still has a stale `GITHUB_CONFIG.md`, flag it as migration-pending in the audit output (informational only — do not STOP).
 
 ## Step 3: Determine project type
 
-If `GITHUB_CONFIG.md` exists and specifies a type, use it.
+If `PROJECT_CONFIG.json` exists and has `.project.type` (or `.project_type` / `.projectType`), use it.
 Otherwise infer: if `.github/workflows/` exists or `pyproject.toml`/`package.json` exists → Software. Else → Non-Software.
 
 ## Step 4: Run audit checklist
@@ -43,8 +45,8 @@ For each check, report PASS, FAIL, WARN, or SKIP with details.
 ### Checks (run all, adapt expectations to project type):
 
 1. **GitHub repo exists**: `git remote get-url origin` succeeds
-2. **Jira epic configured**: CLAUDE.md or GITHUB_CONFIG.md contains a CPT-<N> reference
-3. **Required docs present**: README.md, CLAUDE.md, GITHUB_CONFIG.md (always). ARCHITECTURE.md, PHILOSOPHY.md (Software or if present).
+2. **Jira epic configured**: `PROJECT_CONFIG.json` has `.jira.epicKey` (preferred) OR `CLAUDE.md` contains a `CPT-<N>` reference.
+3. **Required docs present**: README.md, CLAUDE.md, PROJECT_CONFIG.json (always). ARCHITECTURE.md, PHILOSOPHY.md (Software or if present). A stale `GITHUB_CONFIG.md` is informational only — flag as migration-pending but do not fail.
 4. **Session worktrees present**: Per architecture doc — 11 for Software, 8 for Non-Software. Check `git worktree list`.
 5. **Session startup prompts**: `.claude/sessions/<role>.md` exists for each expected role
 6. **Branch protection on main**: Derive `OWNER_REPO` from `git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||'`, then `gh api "repos/$OWNER_REPO/branches/main/protection"` succeeds. SKIP for Non-Software if documented deviation.

@@ -2,6 +2,13 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.9] - 2026-04-18
+
+### Fixed
+- **Finished the CPT-124 `GITHUB_CONFIG.md` → `PROJECT_STANDARDS.md` + `PROJECT_CONFIG.json` migration across four remaining command files** (CPT-141). CPT-124 migrated `install.sh`, `SKILL.md`, `README.md`, and `commands/new.md` but left `audit.md`, `config.md`, `status.md`, and `launch.md` hard-depending on the retired filename. `audit.md` and `config.md` STOPped with errors when `~/.claude/GITHUB_CONFIG.md` was absent; `status.md` marked `GITHUB_CONFIG.md` as a required doc (reported MISSING on modern setups); `launch.md` detected project type from it. The CPT-124 `--check` "healthy" verdict was a lie for 4 of 5 project commands — a freshly-scaffolded `/project:new` repo could not run `/project:audit` or `/project:config`. This release completes the migration: the STOP gates now fire on `~/.claude/PROJECT_STANDARDS.md`, machine-readable config (type, Jira epic, labels, deviations) is read from and written to each repo's `PROJECT_CONFIG.json`, and stale `GITHUB_CONFIG.md` is treated as informational-only (flagged as migration-pending, never a failure). 8 bats regressions in `tests/project-github-config-migration.bats` enforce: no file hard-STOPs on missing `~/.claude/GITHUB_CONFIG.md`, all four reference `PROJECT_STANDARDS.md` or `PROJECT_CONFIG.json`, and `status.md` no longer lists `GITHUB_CONFIG.md` in the required-docs loop.
+
+**Note on version renumbering**: This entry originally targeted 1.2.8 on `fix/CPT-141-github-config-migration-finish`, but CPT-139 (status role-scope fix) landed on `main` first and claimed 1.2.8. Renumbered to 1.2.9 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [1.2.8] - 2026-04-18
 
 ### Fixed
