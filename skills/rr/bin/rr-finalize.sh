@@ -63,7 +63,10 @@ done
 #=============================================================================
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE" >&2
+    local msg
+    msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+    echo "$msg" >&2
+    [ -d "$(dirname "$LOG_FILE")" ] && echo "$msg" >> "$LOG_FILE" 2>/dev/null || true
 }
 
 die() {

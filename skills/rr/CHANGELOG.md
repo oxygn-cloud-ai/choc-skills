@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.1] - 2026-04-17
+
+### Fixed
+- `log()` in `rr-prepare.sh` and `rr-finalize.sh` no longer produces `tee` errors when `WORK_DIR` doesn't exist; gracefully falls back to stderr-only logging (CPT-38).
+
+### Note on version renumbering
+- CPT-38's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2–5.3.0 had all shipped, so the Merger renumbered CPT-38 to 5.3.1. No code semantics changed.
+
 ## [5.3.0] - 2026-04-17
 
 ### Changed
