@@ -27,13 +27,35 @@ Verify dependencies exist (do not read the full files — extract only what is n
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
 - `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: WARN and continue (skip label/CI standard comparison)
 
-Derive the **expected** role list from `~/.claude/MULTI_SESSION_ARCHITECTURE.md` — the authoritative source of session roles. Parse only the `` `session/<role>` `` tokens from the role table's worktree-branch column; do NOT read the full file (CPT-114 fixes the prior tautological derivation that used `.worktrees/*/` as the expected set, which meant missing roles silently vanished and stray worktrees were implicitly accepted):
+Derive the **expected** role list with this precedence (CPT-139 — the set-diff must compare observed worktrees against THIS project's configured roles, not the full MSA catalog; non-software projects legitimately skip chk1/chk2/playtester per MSA §1):
+
+1. **First** — if `PROJECT_CONFIG.json` exists at the repo root and has `.sessions.roles` as an explicit array, use it verbatim. This is the per-project source of truth.
+2. **Else** — if `PROJECT_CONFIG.json.project.type` (or `.project_type` / `.projectType`) is `"non-software"`, derive from `~/.claude/MULTI_SESSION_ARCHITECTURE.md` then drop `chk1`, `chk2`, `playtester`.
+3. **Else** — fall back to the full MSA catalog (parse `` `session/<role>` `` tokens from the role table's worktree-branch column). This preserves pre-CPT-139 behaviour for projects that don't yet carry PROJECT_CONFIG.json or have it without role-narrowing fields. CPT-114 fixes the prior tautological derivation that used `.worktrees/*/` as the expected set, which meant missing roles silently vanished and stray worktrees were implicitly accepted — do NOT regress to that.
 
 ```bash
 ROLES=()
-if [ -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md ]; then
+
+# Layer 1: PROJECT_CONFIG.json .sessions.roles
+if [ -f PROJECT_CONFIG.json ] && command -v jq >/dev/null 2>&1; then
   while IFS= read -r role; do
     [ -n "$role" ] && ROLES+=("$role")
+  done < <(jq -r '.sessions.roles[]? // empty' PROJECT_CONFIG.json 2>/dev/null)
+fi
+
+# Layer 2 + 3: PROJECT_CONFIG.json .project.type, else full MSA
+if [ ${#ROLES[@]} -eq 0 ] && [ -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md ]; then
+  local project_type=""
+  if [ -f PROJECT_CONFIG.json ] && command -v jq >/dev/null 2>&1; then
+    project_type=$(jq -r '.project.type // .project_type // .projectType // empty' PROJECT_CONFIG.json 2>/dev/null)
+  fi
+  while IFS= read -r role; do
+    [ -n "$role" ] || continue
+    # Non-software: MSA says skip chk1, chk2, playtester
+    if [ "$project_type" = "non-software" ]; then
+      case "$role" in chk1|chk2|playtester) continue ;; esac
+    fi
+    ROLES+=("$role")
   done < <(grep -oE '`session/[a-z0-9_-]+`' ~/.claude/MULTI_SESSION_ARCHITECTURE.md \
            | sed 's|`session/||;s|`$||' | sort -u)
 fi

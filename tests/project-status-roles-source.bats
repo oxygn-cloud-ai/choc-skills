@@ -63,3 +63,44 @@ STATUS_MD="${REPO_DIR}/skills/project/commands/status.md"
     return 1
   }
 }
+
+# --- CPT-139: expected-role set must be scoped to THIS project's configured
+#     roles, not the full MSA catalog. Otherwise non-software projects (which
+#     skip chk1/chk2/playtester) see false [missing role] warnings.
+
+@test "status.md consults PROJECT_CONFIG.json for the expected role set (CPT-139)" {
+  grep -qE 'PROJECT_CONFIG\.json' "$STATUS_MD" || {
+    echo "status.md does not reference PROJECT_CONFIG.json for role scoping" >&2
+    return 1
+  }
+}
+
+@test "status.md honours PROJECT_CONFIG.json .sessions.roles explicit list (CPT-139)" {
+  # When PROJECT_CONFIG.json carries an explicit .sessions.roles array, the
+  # parser must use it as the expected-role set rather than the full MSA
+  # catalog.
+  grep -qE '(sessions\.roles|"sessions".*"roles"|\.sessions\.roles)' "$STATUS_MD" || {
+    echo "status.md does not read PROJECT_CONFIG.json .sessions.roles" >&2
+    return 1
+  }
+}
+
+@test "status.md honours PROJECT_CONFIG.json project type → role subset (CPT-139)" {
+  # When PROJECT_CONFIG.json has .project.type (or equivalent) set to
+  # non-software, the parser must drop chk1/chk2/playtester from the expected
+  # role set (per MSA "Non-software projects may skip: chk1, chk2, Playtester").
+  grep -qE '(non-software|project\.type|project_type|projectType)' "$STATUS_MD" || {
+    echo "status.md does not map project type to role subset" >&2
+    return 1
+  }
+}
+
+@test "status.md documents the MSA fallback when PROJECT_CONFIG is absent (CPT-139)" {
+  # The existing behaviour (derive from MSA) must remain as a safe fallback
+  # for projects that don't yet have PROJECT_CONFIG.json or have it without
+  # the role-narrowing fields.
+  grep -qE '(fallback|if PROJECT_CONFIG.*absent|MSA)' "$STATUS_MD" || {
+    echo "status.md does not document MSA fallback for missing PROJECT_CONFIG" >&2
+    return 1
+  }
+}

@@ -2,6 +2,11 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.8] - 2026-04-18
+
+### Fixed
+- **`/project:status` no longer reports false `[missing role]` for non-software projects** (CPT-139). CPT-114 correctly restored the MSA-sourced ROLES derivation after the CPT-19 tautology, but extracted all 11 session tokens from `MULTI_SESSION_ARCHITECTURE.md` unconditionally. MSA §1 explicitly notes "Non-software projects may skip: chk1, chk2, Playtester", so an 8-worktree non-software project got three false `[missing role]` warnings. The expected-role set is now scoped per project via a three-layer precedence: (1) `PROJECT_CONFIG.json .sessions.roles` explicit list (repo source of truth); (2) `PROJECT_CONFIG.json .project.type` / `.project_type` / `.projectType` set to `"non-software"` drops `chk1`/`chk2`/`playtester` from the MSA catalog; (3) full MSA catalog fallback when neither is present. Projects that don't yet carry `PROJECT_CONFIG.json` or have it without the role-narrowing fields keep the pre-CPT-139 behaviour — zero regression for existing software repos. The set-diff now compares `.worktrees/*/` against THIS project's configured roles, not the catalog of possible roles. Four bats regressions in `tests/project-status-roles-source.bats` enforce the precedence layers.
+
 ## [1.2.7] - 2026-04-18
 
 ### Fixed
