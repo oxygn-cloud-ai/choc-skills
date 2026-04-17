@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.4] - 2026-04-17
+
+### Fixed
+- `/rr:remove` Mode 1 pagination loop now has a 100-page safety cap (10,000 tickets) to prevent infinite loops from malformed Jira `nextPageToken` responses. Warns if the cap is reached. (CPT-15)
+
+### Note on version renumbering
+- CPT-15's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2 (CPT-9) and 5.2.3 (CPT-10) had already shipped to main with different changes, so the Merger renumbered CPT-15 to 5.2.4. No code semantics changed in renumbering.
+
 ## [5.2.3] - 2026-04-17
 
 ### Fixed

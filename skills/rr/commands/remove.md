@@ -45,7 +45,15 @@ JIRA_BASE_URL="https://chocfin.atlassian.net"
 
 all_keys=""
 next_page_token=""
+page_count=0
+MAX_PAGES=100
 while true; do
+  page_count=$((page_count + 1))
+  if [ "$page_count" -gt "$MAX_PAGES" ]; then
+    echo "WARNING: Pagination limit reached ($MAX_PAGES pages). Results may be incomplete."
+    break
+  fi
+
   payload='{"jql": "project = RR AND issuetype = Review ORDER BY key ASC", "maxResults": 100, "fields": ["summary", "issuetype"]'
   if [ -n "$next_page_token" ]; then
     payload="$payload, \"nextPageToken\": \"$next_page_token\""
