@@ -2,6 +2,16 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.6] - 2026-04-17
+
+### Security
+- Resolve symlinks before path validation in `rr-prepare.sh` and `rr-finalize.sh` to prevent symlink-traversal attacks on `rm -rf` (CPT-26). A symlink at `$HOME/rr-work` pointing outside allowed paths would previously pass the case check.
+- Added the missing path validation (case guard) to `rr-finalize.sh` entirely.
+- Updated `commands/all.md` `--reset` handler with the same symlink resolution and path validation.
+
+### Note on version renumbering
+- CPT-26's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2/5.2.3/5.2.4/5.2.5 had already shipped, so the Merger renumbered CPT-26 to 5.2.6. No code semantics changed.
+
 ## [5.2.5] - 2026-04-17
 
 ### Security

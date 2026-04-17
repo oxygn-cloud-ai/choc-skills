@@ -21,6 +21,24 @@ set -euo pipefail
 #=============================================================================
 
 WORK_DIR="${RR_WORK_DIR:-${HOME}/rr-work}"
+
+# Resolve symlinks before validation to prevent symlink traversal attacks (CPT-26).
+# Also resolve HOME for consistent comparison (macOS: /var -> /private/var).
+RESOLVED_HOME="$HOME"
+if command -v realpath >/dev/null 2>&1; then
+    RESOLVED_HOME="$(realpath "$HOME")"
+    [ -e "$WORK_DIR" ] && WORK_DIR="$(realpath "$WORK_DIR")"
+elif [ -d "$WORK_DIR" ]; then
+    RESOLVED_HOME="$(cd "$HOME" && pwd -P)"
+    WORK_DIR="$(cd "$WORK_DIR" && pwd -P)"
+fi
+
+# Validate WORK_DIR is under $HOME or /tmp to prevent accidental operations elsewhere
+case "$WORK_DIR" in
+    "$RESOLVED_HOME"/*|/tmp/*|/private/tmp/*) ;;
+    *) echo "FATAL: RR_WORK_DIR must be under \$HOME or /tmp (after symlink resolution). Got: $WORK_DIR" >&2; exit 1 ;;
+esac
+
 LOG_FILE="$WORK_DIR/batch.log"
 
 # Resolve the directory this script lives in (follows symlinks)
