@@ -259,14 +259,13 @@ Read these files now and keep them in context for the batch run:
 For each pending risk in the progress file:
 
 1. Update status to `current` in progress file
-2. **Verify pre-loaded content is still retrievable** (compaction re-check): before executing the step, confirm you can still quote a known heading from the pre-loaded step file (e.g., the top-level heading of `step-1-extract.md`). If the content has been compacted away or is no longer retrievable, re-read the relevant step file(s) on demand. Log "pre-load recovered by re-read" to the session log so degradation is observable.
-3. Execute the full 6-step workflow using the pre-loaded step content from the setup phase above (or the freshly re-read content if the check in step 2 triggered a re-read):
-   - Step 1: Extract and draft (use pre-loaded step-1-extract content)
-   - Step 2: Adversarial review (use pre-loaded step-2-adversarial content)
-   - Step 3: Rectified assessment (use pre-loaded step-3-rectify content)
-   - Step 4: Discussion — **in batch mode, skip interactive discussion** and auto-resolve based on adversarial findings
-   - Step 5: Final assessment (use pre-loaded step-5-finalise content)
-   - Step 6: Publish to Jira (use pre-loaded step-6-publish content)
+2. Execute the full 6-step workflow with **per-phase compaction re-checks** (CPT-133). Before each phase, verify the corresponding pre-loaded step file is still retrievable — recall a known heading from the step file. If the content has been compacted away or is no longer retrievable, re-read that step file on demand and log `pre-load recovered by re-read: <step-name>` to the session log so per-phase degradation is observable (a single "start of risk" check can't catch mid-workflow compaction between, say, Step 2 and Step 5):
+   - **Phase 1 — Step 1: Extract and draft.** Verify `step-1-extract.md` heading is still retrievable (re-read on miss), then extract the risk from Jira, fetch child tickets, export to JSON, and draft the initial assessment.
+   - **Phase 2 — Step 2: Adversarial review.** Verify `step-2-adversarial.md` heading is still retrievable (re-read on miss), then challenge Assessment 1 against the 8 criteria.
+   - **Phase 3 — Step 3: Rectified assessment.** Verify `step-3-rectify.md` heading is still retrievable (re-read on miss), then address every challenge from Step 2.
+   - **Phase 4 — Step 4: Discussion.** In batch mode, skip interactive discussion and auto-resolve based on adversarial findings. (No step file is pre-loaded for Step 4 — this phase is batch-mode-only logic and has no re-check.)
+   - **Phase 5 — Step 5: Final assessment.** Verify `step-5-finalise.md` heading is still retrievable (re-read on miss), then incorporate the adversarial-driven resolutions and produce the final assessment.
+   - **Phase 6 — Step 6: Publish to Jira.** Verify `step-6-publish.md` heading is still retrievable (re-read on miss), then check for existing same-day Review, create or update the Review child ticket, and attach workflow files.
 3. After completion: update progress file — set status to `done` with timestamp
 4. Mark next risk as `current`
 5. After each risk: check context capacity

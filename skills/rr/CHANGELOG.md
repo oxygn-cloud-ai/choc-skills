@@ -2,6 +2,14 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.16] - 2026-04-18
+
+### Fixed
+- **Per-phase compaction re-check in `rr:all` batch mode**: CPT-91 added a compaction-aware re-check to the per-risk loop but it verified only `step-1-extract.md` at the start of each risk, then used all five pre-loaded step files. Compaction can evict step-2/3/5/6 while leaving step-1 retrievable (single-file heuristic passes, later phases execute with missing instructions) and can happen mid-workflow between Step 2 and Step 5 (check-at-start misses it). Moved the re-check inside each of the five step-file-backed phases: before each phase, recall a known heading from that phase's step file and re-read on miss. Log entry is now annotated — `pre-load recovered by re-read: <step-name>` — so per-phase degradation is observable. Step 4 (Discussion) has no pre-loaded file in batch mode, so no re-check there (CPT-133, concerns 1+2).
+- **Duplicate `3.` in Process Each Risk numbered list**: inserting the compaction re-check step in CPT-91 didn't renumber subsequent items, leaving two `3.` items (execute workflow, update progress file). Markdown auto-renumbers on render but raw text carried the bug. Renumbered correctly as part of the per-phase restructure above (CPT-133, concern 3).
+
+**Note on version renumbering**: This entry originally targeted 5.3.15 on `fix/CPT-133-rr-per-phase-compaction-recheck`, but CPT-123 (conflicting-flag detection) landed on `main` and claimed 5.3.15 first. Renumbered to 5.3.16 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.15] - 2026-04-18
 
 ### Fixed
