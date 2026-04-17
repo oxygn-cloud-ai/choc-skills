@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.11] - 2026-04-17
+
+### Fixed
+- **Honest scoping for pre-load optimization**: CPT-9's pre-load optimization claimed to eliminate 6×(N-1) redundant reads but assumed pre-loaded content stayed in context across all N risks. Under Claude Code auto-compaction the content can be summarised or dropped silently, causing per-risk steps to execute against a stale/empty view. `commands/all.md` now (1) documents the auto-compaction limitation in the pre-load section, (2) adds a per-risk re-check step that verifies a known heading is still retrievable and re-reads on miss, logging "pre-load recovered by re-read" for observability, (3) scopes the savings claim to per-session rather than per-register (CPT-91).
+
 ## [5.3.10] - 2026-04-17
 
 ### Fixed

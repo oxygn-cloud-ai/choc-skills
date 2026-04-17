@@ -243,21 +243,24 @@ Check if `${RR_OUTPUT_DIR:-~/rr-output}/rr-progress.md` exists.
 
 ### Pre-Load Workflow Steps
 
-Before processing any risks, read all workflow step files once. These are static reference documents that do not change between risks — loading them once avoids 6×(N-1) redundant file reads for a register of N risks.
+Before processing any risks, read all workflow step files once. These are static reference documents that do not change between risks — loading them once avoids 6×(N-1) redundant file reads **within a single uninterrupted session**.
 
-Read these files now and keep them in context for the entire batch run:
+Read these files now and keep them in context for the batch run:
 - `~/.claude/skills/rr/references/workflow/step-1-extract.md`
 - `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`
 - `~/.claude/skills/rr/references/workflow/step-3-rectify.md`
 - `~/.claude/skills/rr/references/workflow/step-5-finalise.md`
 - `~/.claude/skills/rr/references/workflow/step-6-publish.md`
 
+**Known limitation — auto-compaction**: Claude Code auto-compacts context as it fills. Compaction can summarise or drop the pre-loaded step content silently. The per-risk loop below therefore includes a re-check step to detect this and re-read on miss. Realistic savings are per-session (until the first compaction or new chat), not per-register — the claim holds for the first ~N risks processed before compaction, then degrades.
+
 ### Process Each Risk
 
 For each pending risk in the progress file:
 
 1. Update status to `current` in progress file
-2. Execute the full 6-step workflow using the pre-loaded step content from the setup phase above:
+2. **Verify pre-loaded content is still retrievable** (compaction re-check): before executing the step, confirm you can still quote a known heading from the pre-loaded step file (e.g., the top-level heading of `step-1-extract.md`). If the content has been compacted away or is no longer retrievable, re-read the relevant step file(s) on demand. Log "pre-load recovered by re-read" to the session log so degradation is observable.
+3. Execute the full 6-step workflow using the pre-loaded step content from the setup phase above (or the freshly re-read content if the check in step 2 triggered a re-read):
    - Step 1: Extract and draft (use pre-loaded step-1-extract content)
    - Step 2: Adversarial review (use pre-loaded step-2-adversarial content)
    - Step 3: Rectified assessment (use pre-loaded step-3-rectify content)
