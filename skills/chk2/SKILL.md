@@ -1,6 +1,6 @@
 ---
 name: chk2
-version: 2.3.13
+version: 2.3.14
 description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk2 v2.3.13 — Adversarial Security Audit
+chk2 v2.3.14 — Adversarial Security Audit
 
 USAGE
   /chk2                Run all test categories (~211 checks)
@@ -120,7 +120,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-chk2 v2.3.13
+chk2 v2.3.14
 ```
 
 End of version output. Do not continue.

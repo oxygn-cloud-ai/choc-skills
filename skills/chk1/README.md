@@ -123,7 +123,7 @@ rm -rf ~/.claude/skills/chk1
 
 ## Version
 
-Current: **2.4.6**
+Current: **2.4.7**
 
 ## License
 

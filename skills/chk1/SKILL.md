@@ -1,6 +1,6 @@
 ---
 name: chk1
-version: 2.4.6
+version: 2.4.7
 description: Adversarial Implementation Audit Mandate. Use when auditing recently implemented changes for bugs, risks, omissions, deviations, and unintended modifications. Fault-finding audit, not validation.
 user-invocable: true
 disable-model-invocation: true
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk1 v2.4.6 — Adversarial Implementation Audit
+chk1 v2.4.7 — Adversarial Implementation Audit
 
 USAGE
   /chk1                     Full audit (auto-detects recent changes)
@@ -107,7 +107,7 @@ If any check is FAIL, advise the user on how to fix it. End of doctor output. Do
 If $ARGUMENTS equals "version", "--version", or "-v", output:
 
 ```
-chk1 v2.4.6
+chk1 v2.4.7
 ```
 
 End of version output. Do not continue.

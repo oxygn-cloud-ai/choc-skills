@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.14] - 2026-04-17
+
+### Fixed
+- **`/chk2 update` tool-denied under CPT-32 enforcement**: CPT-19 rewrote the update body to fetch 35 sub-commands in parallel via `echo "…" | tr ' ' '\n' | xargs -P 4 -I{} curl ...` but didn't extend `skills/chk2/commands/update.md`'s `allowed-tools` frontmatter. Under per-command enforcement, `xargs`, `echo`, and `tr` were denied, the parallel-download stage failed, and the update flow silently left sub-commands un-updated. Added `Bash(xargs *), Bash(echo *), Bash(tr *)` to the update allowed-tools list (CPT-115).
+
 ## [2.3.13] - 2026-04-17
 
 ### Fixed

@@ -2,6 +2,11 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.7] - 2026-04-17
+
+### Fixed
+- **`/chk1 update` tool-denied under CPT-32 enforcement**: CPT-19 rewrote the update body to fetch sub-commands in parallel via `echo "…" | tr ' ' '\n' | xargs -P 4 -I{} curl ...` but didn't extend `skills/chk1/commands/update.md`'s `allowed-tools` frontmatter. Under per-command enforcement, `xargs`, `echo`, and `tr` were denied and the parallel-download stage failed silently, leaving sub-commands un-updated. Added `Bash(xargs *), Bash(echo *), Bash(tr *)` to the update allowed-tools list (CPT-115).
+
 ## [2.4.6] - 2026-04-17
 
 ### Fixed
