@@ -8,7 +8,7 @@ Technical configuration for the RA (Risk Assessments) project in Jira.
 
 | Parameter | Value |
 |-----------|-------|
-| **Atlassian Cloud ID** | `81a55da4-28c8-4a49-8a47-03a98a73f152` |
+| **Atlassian Cloud ID** | `$JIRA_CLOUD_ID` |
 | **Project Key** | `RA` |
 | **Project Name** | Risk Assessments |
 | **Project ID** | `12400` |
@@ -62,7 +62,7 @@ All Assessment epics must be assigned to:
 | Field | Value |
 |-------|-------|
 | **Name** | James Shanahan |
-| **Account ID** | `712020:fd08a63d-8c2c-4412-8761-834339d9475c` |
+| **Account ID** | `$RR_ASSIGNEE_ID` |
 
 ---
 
@@ -109,12 +109,12 @@ project = RA AND issuetype = Epic AND summary ~ "<subject-slug>"
 ```
 mcp__plugin_atlassian_atlassian__createJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   projectKey: "RA"
   issueTypeName: "Epic"
   summary: "<assessment-title>"
   description: "<rendered-markdown>"
-  assignee_account_id: "712020:fd08a63d-8c2c-4412-8761-834339d9475c"
+  assignee_account_id: "$RR_ASSIGNEE_ID"
   contentFormat: "markdown"
   responseContentFormat: "markdown"
   additional_fields:
@@ -125,7 +125,7 @@ Parameters:
 ```
 mcp__plugin_atlassian_atlassian__createJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   projectKey: "RA"
   issueTypeName: "Task"
   parent: "<epic-key>"
@@ -139,7 +139,7 @@ Parameters:
 ```
 mcp__plugin_atlassian_atlassian__createJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   projectKey: "RA"
   issueTypeName: "Sub-task"
   parent: "<task-key>"

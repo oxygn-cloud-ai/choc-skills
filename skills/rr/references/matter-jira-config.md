@@ -6,7 +6,7 @@ Technical configuration for the Decision Matters (MATTER) Jira project, used for
 
 | Parameter | Value |
 |-----------|-------|
-| **Atlassian Cloud ID** | `81a55da4-28c8-4a49-8a47-03a98a73f152` |
+| **Atlassian Cloud ID** | `$JIRA_CLOUD_ID` |
 | **Project Key** | `MATTER` |
 | **Project Name** | Board Resolutions for Chocolate Group |
 
@@ -67,7 +67,7 @@ Example: `Board Risk Oversight Paper: Q1 2026`
 
 ```
 mcp__claude_ai_Atlassian__createJiraIssue
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   projectKey: "MATTER"
   issueTypeName: "Resolution Voting"
   summary: "Board Risk Oversight Paper: Q1 2026"
@@ -90,7 +90,7 @@ curl -s -X POST \
 
 ## Default Assignee
 
-James Shanahan — Account ID: `712020:fd08a63d-8c2c-4412-8761-834339d9475c`
+James Shanahan — Account ID: `$RR_ASSIGNEE_ID`
 
 ## Notes
 

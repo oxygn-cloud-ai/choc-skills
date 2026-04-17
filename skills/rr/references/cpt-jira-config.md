@@ -4,7 +4,7 @@
 
 | Parameter | Value |
 |-----------|-------|
-| **Cloud ID** | `81a55da4-28c8-4a49-8a47-03a98a73f152` |
+| **Cloud ID** | `$JIRA_CLOUD_ID` |
 | **Project Key** | `CPT` |
 | **Project Name** | CPT: Claude Progress Tracker |
 | **Target Ticket** | `CPT-1` |

@@ -39,12 +39,12 @@ Stop here if dry run.
 ### 4. Create Epic
 ```
 mcp__plugin_atlassian_atlassian__createJiraIssue
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   projectKey: "RA"
   issueTypeName: "Epic"
   summary: "Assessment: <title>"
   description: <rendered markdown of assessment summary>
-  assignee_account_id: "712020:fd08a63d-8c2c-4412-8761-834339d9475c"
+  assignee_account_id: "$RR_ASSIGNEE_ID"
   contentFormat: "markdown"
   additional_fields:
     labels: ["<Qn-Risk-Assessment>"]

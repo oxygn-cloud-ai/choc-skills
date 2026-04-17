@@ -1,6 +1,6 @@
 ---
 name: ra
-version: 1.0.0
+version: 1.0.1
 description: "Bespoke risk assessment for Chocolate Finance. Invoke with /ra to start an interactive assessment, or /ra:publish to push results to Jira."
 user-invocable: true
 disable-model-invocation: true
@@ -35,15 +35,17 @@ Parse $ARGUMENTS and route:
 | Environment Variable | Default | Purpose |
 |---------------------|---------|---------|
 | `RA_OUTPUT_DIR` | `~/ra-output` | Directory for assessment output files |
+| `JIRA_CLOUD_ID` | (none) | Required — Atlassian Cloud ID for MCP and API calls |
 | `JIRA_EMAIL` | (none) | Required for Jira publication |
 | `JIRA_API_KEY` | (none) | Required for Jira publication |
+| `RR_ASSIGNEE_ID` | (none) | Optional — Jira account ID for ticket assignee |
 
 ## Quick Reference
 
 | Field | Value |
 |-------|-------|
 | Jira Project | RA |
-| Cloud ID | `81a55da4-28c8-4a49-8a47-03a98a73f152` |
+| Cloud ID | `$JIRA_CLOUD_ID` |
 | Issue Types | Epic (Assessment), Task (Finding), Sub-task (Mitigation) |
 
 ### Rating Matrix

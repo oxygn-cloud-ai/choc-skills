@@ -46,7 +46,7 @@ if [ -n "${LOCK_DIR:-}" ]; then
 fi
 
 MAX_PUBLISH_RETRIES=3
-ASSIGNEE_ID="712020:fd08a63d-8c2c-4412-8761-834339d9475c"
+ASSIGNEE_ID="${RR_ASSIGNEE_ID:-}"
 
 # File paths
 assessment_file="$WORK_DIR/individual/${risk_key}.json"
@@ -349,11 +349,10 @@ payload=$(jq -n \
             parent: {key: $parent},
             summary: $summary,
             description: $desc,
-            assignee: {accountId: $assignee},
             duedate: $duedate,
             customfield_10015: $startdate,
             labels: [$label]
-        },
+        } | if $assignee != "" then . + {assignee: {accountId: $assignee}} else . end,
         update: {}
     }')
 

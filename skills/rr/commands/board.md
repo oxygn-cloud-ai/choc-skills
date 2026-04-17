@@ -120,7 +120,7 @@ Use MCP tool to create the ticket:
 
 ```
 mcp__claude_ai_Atlassian__createJiraIssue
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   projectKey: "MATTER"
   issueTypeName: "Resolution Voting"
   summary: "Board Risk Oversight Paper: <Q> <YYYY>"

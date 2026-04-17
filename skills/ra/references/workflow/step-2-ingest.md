@@ -12,8 +12,8 @@ For each source identified in Step 1, retrieve the content:
 |-------------|------|
 | Local files | Read tool |
 | URLs | WebFetch tool |
-| Jira tickets | `mcp__plugin_atlassian_atlassian__getJiraIssue` with `cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"` |
-| Confluence pages | `mcp__plugin_atlassian_atlassian__getConfluencePage` with `cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"` |
+| Jira tickets | `mcp__plugin_atlassian_atlassian__getJiraIssue` with `cloudId: "$JIRA_CLOUD_ID"` |
+| Confluence pages | `mcp__plugin_atlassian_atlassian__getConfluencePage` with `cloudId: "$JIRA_CLOUD_ID"` |
 | Slack messages | Slack MCP tools |
 | Pasted text | Already available from conversation |
 

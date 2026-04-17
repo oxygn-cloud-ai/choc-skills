@@ -23,7 +23,7 @@
           "enum": ["create", "update"]
         },
         "review_date": { "$ref": "enums.schema.json#/definitions/iso8601_date" },
-        "cloud_id": { "type": "string", "const": "81a55da4-28c8-4a49-8a47-03a98a73f152" },
+        "cloud_id": { "type": "string", "description": "Atlassian Cloud ID from $JIRA_CLOUD_ID env var" },
         "project_key": { "type": "string", "const": "RR" },
         "issue_type_name": { "type": "string", "const": "Review" },
         "issue_type_id": { "type": "string", "const": "12686" }
@@ -32,7 +32,7 @@
 
     "jira_fields": {
       "type": "object",
-      "required": ["summary", "assignee_account_id", "duedate", "customfield_10015", "labels"],
+      "required": ["summary", "duedate", "customfield_10015", "labels"],
       "properties": {
         "summary": { 
           "type": "string",
@@ -42,8 +42,7 @@
         "parent": { "$ref": "enums.schema.json#/definitions/ticket_key" },
         "assignee_account_id": {
           "type": "string",
-          "const": "712020:fd08a63d-8c2c-4412-8761-834339d9475c",
-          "description": "James Shanahan's Atlassian account ID"
+          "description": "Atlassian account ID from $RR_ASSIGNEE_ID env var (optional — omit field if unset)"
         },
         "duedate": {
           "$ref": "enums.schema.json#/definitions/iso8601_date",

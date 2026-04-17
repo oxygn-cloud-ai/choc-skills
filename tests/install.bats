@@ -234,3 +234,31 @@ teardown() {
     fi
   done
 }
+
+# --- Security: no hardcoded org identifiers ---
+
+@test "no hardcoded Jira Cloud ID in skill files" {
+  # CPT-27: The literal Cloud ID must not appear anywhere in skills/ —
+  # all references should use $JIRA_CLOUD_ID env var placeholder
+  local cloud_id="81a55da4-28c8-4a49-8a47-03a98a73f152"
+  local hits
+  hits=$(grep -r "$cloud_id" "${REPO_DIR}/skills/" 2>/dev/null || true)
+  if [ -n "$hits" ]; then
+    echo "Hardcoded Cloud ID found in:" >&2
+    echo "$hits" >&2
+    return 1
+  fi
+}
+
+@test "no hardcoded Assignee Account ID in skill files" {
+  # CPT-27: The literal account ID must not appear anywhere in skills/ —
+  # all references should use $RR_ASSIGNEE_ID env var placeholder
+  local account_id="712020:fd08a63d-8c2c-4412-8761-834339d9475c"
+  local hits
+  hits=$(grep -r "$account_id" "${REPO_DIR}/skills/" 2>/dev/null || true)
+  if [ -n "$hits" ]; then
+    echo "Hardcoded Assignee ID found in:" >&2
+    echo "$hits" >&2
+    return 1
+  fi
+}

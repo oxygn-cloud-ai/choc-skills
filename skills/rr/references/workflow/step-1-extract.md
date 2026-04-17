@@ -22,7 +22,7 @@ The user will provide one of:
 ```
 mcp__claude_ai_Atlassian__getJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   issueIdOrKey: "<key>"
   responseContentFormat: "markdown"
 ```
@@ -32,7 +32,7 @@ Or search:
 ```
 mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   jql: "project = RR AND key = <key>"
   fields: ["summary", "description", "status", "issuetype", "priority", "created", "parent"]
   responseContentFormat: "markdown"
@@ -60,7 +60,7 @@ Use the Read tool to read `$RR_OUTPUT_DIR/rr-progress.md`
 ```
 mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   jql: "project = RR AND issuetype = Risk ORDER BY key ASC"
   fields: ["summary", "status", "priority"]
   maxResults: 100
@@ -109,7 +109,7 @@ Fetch all child tickets (Reviews, Mitigations) of the parent Risk:
 ```
 mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   jql: "project = RR AND parent = <parent-key> ORDER BY created DESC"
   fields: ["summary", "description", "status", "issuetype", "created"]
   responseContentFormat: "markdown"
@@ -127,7 +127,7 @@ Create the Jira export JSON conforming to `jira-export.schema.json`:
     "exported_at": "2026-03-29",
     "exported_at_time": "14:30:00",
     "source_ticket": "RR-220",
-    "cloud_id": "81a55da4-28c8-4a49-8a47-03a98a73f152",
+    "cloud_id": "$JIRA_CLOUD_ID",
     "project_key": "RR"
   },
   "parent_risk": {

@@ -2,6 +2,12 @@
 
 All notable changes to the ra skill will be documented in this file.
 
+## [1.0.1] - 2026-04-14
+
+### Fixed
+- **Security**: Replaced hardcoded Jira Cloud ID and Assignee Account ID with `$JIRA_CLOUD_ID` and `$RR_ASSIGNEE_ID` environment variable references across SKILL.md, reference docs, and command files
+- Doctor check now verifies `JIRA_CLOUD_ID` is set and warns if `RR_ASSIGNEE_ID` is unset
+
 ## [1.0.0] - 2026-04-11
 
 ### Added

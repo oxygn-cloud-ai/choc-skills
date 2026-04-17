@@ -8,7 +8,7 @@ Technical configuration for the RR (Risk Register) project in Jira.
 
 | Parameter | Value |
 |-----------|-------|
-| **Atlassian Cloud ID** | `81a55da4-28c8-4a49-8a47-03a98a73f152` |
+| **Atlassian Cloud ID** | `$JIRA_CLOUD_ID` |
 | **Project Key** | `RR` |
 | **Project Name** | Risk Register |
 
@@ -60,7 +60,7 @@ All Review tickets must be assigned to:
 | Field | Value |
 |-------|-------|
 | **Name** | James Shanahan |
-| **Account ID** | `712020:fd08a63d-8c2c-4412-8761-834339d9475c` |
+| **Account ID** | `$RR_ASSIGNEE_ID` |
 
 ---
 
@@ -116,7 +116,7 @@ Example: `summary ~ "T*"` for all Technology risks.
 ```
 mcp__claude_ai_Atlassian__getJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   issueIdOrKey: "<ticket-key>"
   responseContentFormat: "markdown"
 ```
@@ -125,7 +125,7 @@ Parameters:
 ```
 mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   jql: "<query>"
   fields: ["summary", "description", "status", "issuetype", "priority", "created", "parent"]
   responseContentFormat: "markdown"
@@ -135,13 +135,13 @@ Parameters:
 ```
 mcp__claude_ai_Atlassian__createJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   projectKey: "RR"
   issueTypeName: "Review"
   parent: "<parent-risk-key>"
   summary: "Review: <yyyy>, <Mmm> <dd>"
   description: "<rendered-markdown>"
-  assignee_account_id: "712020:fd08a63d-8c2c-4412-8761-834339d9475c"
+  assignee_account_id: "$RR_ASSIGNEE_ID"
   contentFormat: "markdown"
   responseContentFormat: "markdown"
   additional_fields:
@@ -154,7 +154,7 @@ Parameters:
 ```
 mcp__claude_ai_Atlassian__editJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   issueIdOrKey: "<review-ticket-key>"
   fields: { "description": "<rendered-markdown>" }
   contentFormat: "markdown"

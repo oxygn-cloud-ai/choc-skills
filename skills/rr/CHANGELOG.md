@@ -2,6 +2,17 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.7] - 2026-04-17
+
+### Security
+- Replaced hardcoded Jira Cloud ID (27 occurrences) and Assignee Account ID (10 occurrences) across all rr files with `$JIRA_CLOUD_ID` and `$RR_ASSIGNEE_ID` environment variable references (CPT-27).
+- `_publish_one.sh` now reads assignee from `$RR_ASSIGNEE_ID` env var and omits the assignee field if unset.
+- `jira-ticket.schema.json` `const` constraints on `cloud_id` and `assignee_account_id` removed.
+- Doctor check now verifies `JIRA_CLOUD_ID` is set and warns if `RR_ASSIGNEE_ID` is unset.
+
+### Note on version renumbering
+- CPT-27's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2/5.2.3/5.2.4/5.2.5/5.2.6 had all shipped, so the Merger renumbered CPT-27 to 5.2.7. No code semantics changed.
+
 ## [5.2.6] - 2026-04-17
 
 ### Security

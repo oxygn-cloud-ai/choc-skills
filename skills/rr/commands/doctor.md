@@ -9,8 +9,10 @@ Run these checks and report results. Do not proceed to any other action after.
 3. Verify `python3` is available: `which python3`
 4. Check `rich` is installed: `python3 -c "import rich" 2>/dev/null`
 5. Check env vars (report set/not set, **never display values**):
+   - `JIRA_CLOUD_ID`
    - `JIRA_EMAIL`
    - `JIRA_API_KEY`
+   - `RR_ASSIGNEE_ID` (optional — WARN if not set, not FAIL)
 6. Check reference files exist:
    - `ls ~/.claude/skills/rr/references/schemas/enums.schema.json`
    - `ls ~/.claude/skills/rr/references/business-context.md`
@@ -50,8 +52,10 @@ rr doctor — Environment Health Check
   [PASS] jq: /usr/bin/jq
   [PASS] python3: /usr/bin/python3
   [PASS] rich: installed
+  [PASS] JIRA_CLOUD_ID: set
   [PASS] JIRA_EMAIL: set
   [WARN] JIRA_API_KEY: not set
+  [WARN] RR_ASSIGNEE_ID: not set (reviews will have no assignee)
   [PASS] reference files: 9 files found
   [PASS] bin: 9 files found
   [PASS] sub-commands: N files in ~/.claude/commands/rr/

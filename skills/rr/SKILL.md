@@ -1,6 +1,6 @@
 ---
 name: rr
-version: 5.2.6
+version: 5.2.7
 description: "Risk register assessment for Chocolate Finance. Invoke with /rr followed by a ticket key (e.g. /rr RR-220) or /rr all for batch mode."
 user-invocable: true
 disable-model-invocation: true
@@ -52,8 +52,10 @@ If the sub-command `.md` files exist in `~/.claude/commands/rr/`, invoke them vi
 |---------------------|---------|---------|
 | `RR_OUTPUT_DIR` | `~/rr-output` | Directory for individual risk output files |
 | `RR_WORK_DIR` | `~/rr-work` | Batch mode working directory |
+| `JIRA_CLOUD_ID` | (none) | Required — Atlassian Cloud ID for MCP and API calls |
 | `JIRA_EMAIL` | (none) | Required for batch mode Jira REST API |
 | `JIRA_API_KEY` | (none) | Required for batch mode Jira REST API |
+| `RR_ASSIGNEE_ID` | (none) | Optional — Jira account ID for review ticket assignee |
 | `SLACK_WEBHOOK_URL` | (none) | Optional Slack notification on batch completion |
 
 ---
@@ -63,7 +65,7 @@ If the sub-command `.md` files exist in `~/.claude/commands/rr/`, invoke them vi
 | Field | Value |
 |-------|-------|
 | Jira Project | RR |
-| Cloud ID | `81a55da4-28c8-4a49-8a47-03a98a73f152` |
+| Cloud ID | `$JIRA_CLOUD_ID` |
 | Issue Types | Risk (parent), Review (child), Mitigation (child) |
 
 ### Rating Matrix

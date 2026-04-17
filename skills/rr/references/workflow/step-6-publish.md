@@ -135,7 +135,7 @@ Determine the quarterly label based on assessment month:
     "existing_ticket_key": null,
     "operation": "create",
     "review_date": "2026-03-29",
-    "cloud_id": "81a55da4-28c8-4a49-8a47-03a98a73f152",
+    "cloud_id": "$JIRA_CLOUD_ID",
     "project_key": "RR",
     "issue_type_name": "Review",
     "issue_type_id": "12686"
@@ -143,7 +143,7 @@ Determine the quarterly label based on assessment month:
   "jira_fields": {
     "summary": "Review: 2026, Mar 29",
     "parent": "RR-220",
-    "assignee_account_id": "712020:fd08a63d-8c2c-4412-8761-834339d9475c",
+    "assignee_account_id": "$RR_ASSIGNEE_ID",
     "duedate": "2026-03-29",
     "customfield_10015": "2026-03-29",
     "labels": ["Q1-Risk-Review"]
@@ -197,13 +197,13 @@ Determine the quarterly label based on assessment month:
 ```
 mcp__claude_ai_Atlassian__createJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   projectKey: "RR"
   issueTypeName: "Review"
   parent: "<parent-key>"
   summary: "Review: <yyyy>, <Mmm> <dd>"
   description: "<rendered_description>"
-  assignee_account_id: "712020:fd08a63d-8c2c-4412-8761-834339d9475c"
+  assignee_account_id: "$RR_ASSIGNEE_ID"
   contentFormat: "markdown"
   responseContentFormat: "markdown"
   additional_fields:
@@ -221,7 +221,7 @@ Where:
 ```
 mcp__claude_ai_Atlassian__editJiraIssue
 Parameters:
-  cloudId: "81a55da4-28c8-4a49-8a47-03a98a73f152"
+  cloudId: "$JIRA_CLOUD_ID"
   issueIdOrKey: "<existing-review-key>"
   fields: { "description": "<rendered_description>" }
   contentFormat: "markdown"
