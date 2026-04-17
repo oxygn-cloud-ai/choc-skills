@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.26] - 2026-04-18
+
+### Fixed
+- **`_publish_one.sh` lock cleanup no longer deletes another worker's lock** (CPT-155). CPT-140 (v5.3.22) fixed CPT-118's trap-clobber regression by unifying lock and `attempt_headers` cleanup into a single `_cleanup` function registered once with `trap _cleanup EXIT` — but installed the trap BEFORE the `mkdir "$LOCK_DIR/${risk_key}.lock"` attempt. Under `xargs -P` concurrency from `rr-finalize.sh`, worker B (failing to acquire because worker A owns it) would hit the `ALREADY_PUBLISHING` branch, `exit 0`, fire its EXIT trap, and unconditionally `rm -rf "$LOCK_DIR/${risk_key}.lock"` — deleting worker A's still-active lock. Worker C could then acquire the lock and publish the same risk concurrently with A, posting the same Review ticket twice to Jira. Added a `LOCK_ACQUIRED=0` sentinel declared alongside `attempt_headers` (before the trap installation); set to `1` only inside the `mkdir`-succeeded branch; `_cleanup` gates the lock rm on `[ "${LOCK_ACQUIRED:-0}" = "1" ]`. Attempt-headers rm stays unconditional because that tempfile is never shared between workers. Five bats regressions in `tests/rr-publish-lock-ownership.bats`: non-owner cleanup preserves the lock (the P1 bug, RED before fix), owner cleanup removes the lock (guards against over-correction), non-owner cleanup still removes attempt_headers, plus two static checks (LOCK_ACQUIRED=0 appears before the trap; LOCK_ACQUIRED=1 appears in the script). The ownership invariant from CPT-118's original placement is restored while keeping CPT-140's unified-cleanup win.
+
+**Note on version renumbering**: This entry originally targeted 5.3.25 on `fix/CPT-155-publish-lock-ownership`, but CPT-149 landed on `main` first and claimed 5.3.25. Renumbered to 5.3.26 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [5.3.25] - 2026-04-18
 
 ### Fixed

@@ -47,9 +47,19 @@ JIRA_AUTH=$(< "$AUTH_FILE")
 # attempt_headers is declared empty here so the guard is correct even
 # if the script exits before the mktemp on line below; the actual
 # tempfile is created later, right before the curl POST.
+#
+# CPT-155: LOCK_ACQUIRED gates the lock-dir rm in _cleanup. Without it,
+# a worker that hits ALREADY_PUBLISHING (its mkdir failed because another
+# worker owns the lock) would still rm that other worker's lock on exit —
+# a third worker could then acquire the lock and publish the same risk
+# concurrently. Set to 1 ONLY inside the mkdir-succeeded branch so
+# _cleanup removes the lock iff this worker actually acquired it. The
+# attempt_headers rm stays unconditional because that tempfile is never
+# shared between workers.
 attempt_headers=""
+LOCK_ACQUIRED=0
 _cleanup() {
-    if [ -n "${LOCK_DIR:-}" ] && [ -n "${risk_key:-}" ]; then
+    if [ "${LOCK_ACQUIRED:-0}" = "1" ] && [ -n "${LOCK_DIR:-}" ] && [ -n "${risk_key:-}" ]; then
         rm -rf "$LOCK_DIR/${risk_key}.lock" 2>/dev/null || true
     fi
     if [ -n "${attempt_headers:-}" ]; then
@@ -60,7 +70,9 @@ trap _cleanup EXIT
 
 # Per-risk lockfile to prevent duplicate publishing
 if [ -n "${LOCK_DIR:-}" ]; then
-    if ! mkdir "$LOCK_DIR/${risk_key}.lock" 2>/dev/null; then
+    if mkdir "$LOCK_DIR/${risk_key}.lock" 2>/dev/null; then
+        LOCK_ACQUIRED=1
+    else
         echo "${risk_key}:SKIP:ALREADY_PUBLISHING" >&2
         exit 0
     fi
