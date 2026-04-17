@@ -33,27 +33,37 @@ teardown() {
 # --- rr-prepare.sh: symlink resolution ---
 
 @test "rr-prepare --reset rejects symlink under HOME pointing outside HOME" {
-  # Create symlink: $HOME/rr-work -> /tmp/fake-target (resolves outside $HOME)
-  # The symlink path passes the case guard ($HOME/*) but the resolved path
-  # would be /tmp/... which is allowed. Use a path that resolves outside both.
-  local outside_dir
-  outside_dir="$(mktemp -d)"
-  touch "$outside_dir/batch.log"
+  # Test premise: the resolved symlink target must be outside $HOME AND /tmp,
+  # which is what the case guard in rr-prepare.sh rejects.
+  #
+  # CPT-96: previous version used /var/tmp/* as the attack path, but on some
+  # Linux distros (including GitHub Actions ubuntu-latest) /var/tmp resolves
+  # into /tmp via symlink or bind mount, making that path match the allowed
+  # /tmp/* case. We probe at runtime for a writable location that provably
+  # resolves outside /tmp and outside $HOME.
+  local attack_dir=""
+  local candidate resolved_home resolved_candidate
+  resolved_home="$(realpath "$HOME" 2>/dev/null)" || resolved_home="$HOME"
+  for candidate in /dev/shm /var/tmp /opt; do
+    if [ -d "$candidate" ] && [ -w "$candidate" ]; then
+      # Verify this candidate does not resolve into /tmp, /private/tmp, or $HOME
+      resolved_candidate="$(realpath "$candidate" 2>/dev/null)" || resolved_candidate="$candidate"
+      case "$resolved_candidate" in
+        /tmp|/tmp/*|"$resolved_home"|"$resolved_home"/*|/private/tmp|/private/tmp/*) continue ;;
+        *) attack_dir="$candidate/rr-test-attack-$$"; break ;;
+      esac
+    fi
+  done
 
-  ln -s "$outside_dir" "$HOME/rr-work"
-  export RR_WORK_DIR="$HOME/rr-work"
+  [ -n "$attack_dir" ] || skip "no writable location outside /tmp and \$HOME available on this system"
 
-  # The resolved path is outside $HOME and outside /tmp (on macOS, mktemp
-  # creates under /var/folders which is neither $HOME nor /tmp)
-  # On Linux mktemp creates under /tmp so this test needs a different approach.
-  # We create a directory outside both allowed prefixes.
-  local attack_dir="/var/tmp/rr-test-attack-$$"
   mkdir -p "$attack_dir"
   touch "$attack_dir/batch.log"
   ln -sf "$attack_dir" "$HOME/rr-work"
+  export RR_WORK_DIR="$HOME/rr-work"
 
   run "$RR_PREPARE" --reset
-  rm -rf "$attack_dir" "$outside_dir"
+  rm -rf "$attack_dir"
 
   [ "$status" -ne 0 ]
   [[ "$output" == *"FATAL"* ]] || [[ "$output" == *"symlink"* ]] || [[ "$output" == *"Refusing"* ]]
