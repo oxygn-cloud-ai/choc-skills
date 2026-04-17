@@ -244,16 +244,24 @@ teardown() {
   [[ "$output" == *"Changelog"* ]]
 }
 
-@test "--changelog lists all skills with CHANGELOG.md" {
+@test "--changelog lists every skills/*/CHANGELOG.md owner (CPT-113 hardened)" {
   run bash "$INSTALLER" --changelog
   [ "$status" -eq 0 ]
-  # Every skill that has a CHANGELOG.md must appear as a link in the root changelog
-  # Pattern: [skill_name](skills/skill_name/CHANGELOG.md)
-  local skill
-  for skill in "${SKILLS[@]}"; do
-    [ -f "${REPO_DIR}/skills/${skill}/CHANGELOG.md" ] || continue
-    [[ "$output" == *"[${skill}]"* ]] || {
-      echo "Skill '$skill' missing from --changelog output (expected [${skill}] link)" >&2
+  # CPT-113: the previous shape iterated `${SKILLS[@]}` which
+  # discover_skills() builds by filtering on SKILL.md presence. Standalone
+  # tools like iterm2-tmux have CHANGELOG.md but no SKILL.md, so they
+  # were silently excluded from the coverage check. Iterate directly over
+  # skills/*/ and require every directory with a CHANGELOG.md to appear
+  # as a `[<name>]` entry in the root --changelog output — matches the
+  # invariant the CPT-37 commit message claims to enforce.
+  local d name
+  for d in "${REPO_DIR}"/skills/*/; do
+    [ -d "$d" ] || continue
+    name="$(basename "$d")"
+    [[ "$name" == _* ]] && continue
+    [ -f "${d}CHANGELOG.md" ] || continue
+    [[ "$output" == *"[${name}]"* ]] || {
+      echo "'$name' has CHANGELOG.md but is missing from --changelog output (expected [${name}] link)" >&2
       return 1
     }
   done
