@@ -29,8 +29,10 @@ INSTALLER="${REPO_DIR}/install.sh"
     grep -nE 'run skills/\$\{name\}/install\.sh' "$INSTALLER" >&2
     return 1
   fi
-  # Positive: must anchor via REPO_DIR in the same neighbourhood
-  grep -qE 'run \$\{REPO_DIR\}/skills/\$\{name\}/install\.sh' "$INSTALLER" || {
+  # Positive: must anchor via REPO_DIR in the same neighbourhood. Accept
+  # either the pre-CPT-142 unquoted form or the CPT-142 quoted form
+  # (run "${REPO_DIR}/..." — escaped \" in bash double-quoted string).
+  grep -qE 'run (\\")?\$\{REPO_DIR\}/skills/\$\{name\}/install\.sh' "$INSTALLER" || {
     echo "install.sh --check per-skill remediation no longer anchors via \${REPO_DIR}/skills/\${name}/install.sh" >&2
     return 1
   }
@@ -83,4 +85,104 @@ INSTALLER="${REPO_DIR}/install.sh"
     echo "$summary_block" >&2
     return 1
   }
+}
+
+# --- CPT-142: CPT-132's remediation string works from outside the repo, but
+#     (1) unquoted $REPO_DIR breaks when the repo lives under a path with
+#         spaces (e.g. /Volumes/Team Drive/choc-skills) — shell splits the
+#         copy-pasted command into separate words;
+#     (2) the summary-line uses literal `<name>` as a placeholder — POSIX
+#         shells parse `< name` as input redirection, so users who follow
+#         the hint verbatim hit `name: No such file or directory`.
+
+@test "CPT-142: per-skill remediation quotes the \${REPO_DIR} path" {
+  # The per-skill ok() line at ~346 must wrap ${REPO_DIR}/skills/${name}/install.sh
+  # in double quotes so shells treat it as one argument even when the path
+  # contains spaces. The source uses escaped quotes (\") inside a bash
+  # double-quoted string — the regex must match those literal \" bytes.
+  grep -qE '\\"\$\{REPO_DIR\}/skills/\$\{name\}/install\.sh\\"' "$INSTALLER" || {
+    echo 'per-skill remediation string does not quote "${REPO_DIR}/skills/${name}/install.sh" — breaks on paths with spaces' >&2
+    grep -nE 'REPO_DIR\}/skills/\$\{name\}/install\.sh' "$INSTALLER" >&2
+    return 1
+  }
+}
+
+@test "CPT-142: summary-line remediation does not use a raw '<name>' placeholder" {
+  # `<name>` triggers POSIX shell input-redirection. The summary-line must
+  # use a copy-safe placeholder form. Accept uppercase NAME or any braces/
+  # angle-bracket alternative that doesn't trigger shell parsing when the
+  # user copy-pastes the command verbatim.
+  local summary_block
+  summary_block=$(awk '/All.*skill.*SKILL\.md verified/,/^\}$/' "$INSTALLER")
+  [ -n "$summary_block" ] || { echo "could not locate summary-line block" >&2; return 1; }
+
+  if echo "$summary_block" | grep -qE 'skills/<name>/install\.sh'; then
+    echo 'summary-line uses literal <name> — shells parse that as input redirection from a file named "name"' >&2
+    echo "$summary_block" >&2
+    return 1
+  fi
+}
+
+@test "CPT-142: summary-line remediation quotes the \${REPO_DIR} path" {
+  # Same quoting requirement as the per-skill line — the summary hint's
+  # ${REPO_DIR}/skills/NAME/install.sh must be wrapped in double quotes.
+  # The source uses escaped quotes (\") inside a bash double-quoted string.
+  local summary_block
+  summary_block=$(awk '/All.*skill.*SKILL\.md verified/,/^\}$/' "$INSTALLER")
+  [ -n "$summary_block" ] || { echo "could not locate summary-line block" >&2; return 1; }
+
+  echo "$summary_block" | grep -qE '\\"\$\{REPO_DIR\}/skills/[^\\]+/install\.sh\\"' || {
+    echo "summary-line remediation does not quote \"\${REPO_DIR}/skills/.../install.sh\" — breaks on paths with spaces" >&2
+    echo "$summary_block" >&2
+    return 1
+  }
+}
+
+@test "CPT-142: --check output on spaces-in-path repo emits quoted remediation" {
+  # End-to-end: copy the installer into a worktree under a path containing
+  # a space, run --check, assert the output contains a quoted
+  # ${REPO_DIR}/.../install.sh reference that would survive copy-paste.
+  local spaced_dir
+  spaced_dir="$(mktemp -d)/repo with space"
+  mkdir -p "$spaced_dir/skills" "$spaced_dir/scripts"
+  cp "$INSTALLER" "$spaced_dir/install.sh"
+  chmod +x "$spaced_dir/install.sh"
+
+  # Copy validate-skills.sh if it exists (optional — --check only needs install.sh)
+  if [ -f "${REPO_DIR}/scripts/generate-checksums.sh" ]; then
+    cp "${REPO_DIR}/scripts/generate-checksums.sh" "$spaced_dir/scripts/" || true
+  fi
+
+  # Copy at least one skill so the per-skill line fires
+  if [ -d "${REPO_DIR}/skills/rr" ]; then
+    cp -r "${REPO_DIR}/skills/rr" "$spaced_dir/skills/" || true
+  fi
+
+  export HOME="$(mktemp -d)"
+  mkdir -p "${HOME}/.claude/skills/rr"
+  # Seed a matching install so --check finds the skill "installed"
+  if [ -f "${spaced_dir}/skills/rr/SKILL.md" ]; then
+    cp "${spaced_dir}/skills/rr/SKILL.md" "${HOME}/.claude/skills/rr/SKILL.md"
+  fi
+
+  run bash -c "cd / && bash '$spaced_dir/install.sh' --check 2>&1"
+
+  # Clean up
+  [[ "$spaced_dir" == /tmp/* || "$spaced_dir" == /var/folders/* || "$spaced_dir" == /private/* ]] && \
+    rm -rf "$(dirname "$spaced_dir")"
+  [[ "$HOME" == /tmp/* || "$HOME" == /var/folders/* || "$HOME" == /private/* ]] && rm -rf "$HOME"
+
+  # If the output references the spaced path, it must be quoted. Accept
+  # either the per-skill "verified" hint or the summary hint; we're looking
+  # for evidence that at least one emission escaped the quoting issue.
+  if echo "$output" | grep -qE 'repo with space'; then
+    echo "$output" | grep -qE '"[^"]*repo with space[^"]*/install\.sh"' || {
+      echo "--check output references the spaced path without quoting — copy-paste will break" >&2
+      echo "$output" >&2
+      return 1
+    }
+  fi
+  # If the test env couldn't reproduce the spaced path in the output (skill
+  # not installed, etc.), the structural tests above still enforce the
+  # quoting invariant statically.
 }
