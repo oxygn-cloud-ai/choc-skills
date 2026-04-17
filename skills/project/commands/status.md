@@ -27,11 +27,48 @@ Verify dependencies exist (do not read the full files — extract only what is n
 - `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
 - `test -f ~/.claude/GITHUB_CONFIG.md` — if missing: WARN and continue (skip label/CI standard comparison)
 
-Derive the expected role list from `.worktrees/` directories (do not read full `MULTI_SESSION_ARCHITECTURE.md` — the role list is the directory listing):
+Derive the **expected** role list from `~/.claude/MULTI_SESSION_ARCHITECTURE.md` — the authoritative source of session roles. Parse only the `` `session/<role>` `` tokens from the role table's worktree-branch column; do NOT read the full file (CPT-114 fixes the prior tautological derivation that used `.worktrees/*/` as the expected set, which meant missing roles silently vanished and stray worktrees were implicitly accepted):
+
 ```bash
 ROLES=()
+if [ -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md ]; then
+  while IFS= read -r role; do
+    [ -n "$role" ] && ROLES+=("$role")
+  done < <(grep -oE '`session/[a-z0-9_-]+`' ~/.claude/MULTI_SESSION_ARCHITECTURE.md \
+           | sed 's|`session/||;s|`$||' | sort -u)
+fi
+```
+
+Derive the **observed** worktree list separately from `.worktrees/*/`:
+
+```bash
+WORKTREES=()
 for wt in .worktrees/*/; do
-  [ -d "$wt" ] && ROLES+=("$(basename "$wt")")
+  [ -d "$wt" ] && WORKTREES+=("$(basename "$wt")")
+done
+```
+
+Compute the set differences so Step 4 can surface `[missing role]` and `[unexpected worktree]` flags:
+
+```bash
+# Roles that have no matching worktree
+MISSING_ROLES=()
+for r in "${ROLES[@]}"; do
+  found=0
+  for w in "${WORKTREES[@]}"; do
+    [ "$r" = "$w" ] && { found=1; break; }
+  done
+  [ "$found" -eq 0 ] && MISSING_ROLES+=("$r")
+done
+
+# Worktrees that have no matching role (stray)
+STRAY_WORKTREES=()
+for w in "${WORKTREES[@]}"; do
+  found=0
+  for r in "${ROLES[@]}"; do
+    [ "$w" = "$r" ] && { found=1; break; }
+  done
+  [ "$found" -eq 0 ] && STRAY_WORKTREES+=("$w")
 done
 ```
 
@@ -137,6 +174,8 @@ Branch: <branch> (protected: <yes/no>, force-push: <blocked/allowed>)
 
 Worktrees:
   <for each worktree from git worktree list, show branch, path, ahead/behind main>
+  <for each role in MISSING_ROLES: print "  [missing role] <role> — expected by MULTI_SESSION_ARCHITECTURE.md but no .worktrees/<role>/">
+  <for each worktree in STRAY_WORKTREES: print "  [unexpected worktree] <name> — present under .worktrees/ but not in MULTI_SESSION_ARCHITECTURE.md role table">
 
 Labels: <count> (<list P1-P4 presence>)
 Open Issues: <count by priority>

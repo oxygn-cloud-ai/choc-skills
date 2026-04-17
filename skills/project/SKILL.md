@@ -1,6 +1,6 @@
 ---
 name: project
-version: 1.2.4
+version: 1.2.5
 description: Project repository administration — create new, audit, configure, status check. Multi-session workflow scaffolding per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/GITHUB_CONFIG.md.
 user-invocable: true
 disable-model-invocation: true
@@ -21,7 +21,7 @@ The router at `~/.claude/commands/project.md` intercepts sub-command arguments a
 If `$ARGUMENTS` equals `help`, `--help`, or `-h`, display the following usage guide and stop.
 
 ```
-project v1.2.4 — Project Repository Administration
+project v1.2.5 — Project Repository Administration
 
 USAGE
   /project                  Show status for current project (same as /project status)
@@ -111,7 +111,7 @@ End of doctor output. Do not continue.
 If `$ARGUMENTS` equals `version`, `--version`, or `-v`, output the version and stop.
 
 ```
-project v1.2.4
+project v1.2.5
 ```
 
 End of version output. Do not continue.

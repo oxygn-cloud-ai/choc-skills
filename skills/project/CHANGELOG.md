@@ -2,6 +2,11 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.5] - 2026-04-17
+
+### Fixed
+- **`/project:status` role-list tautology**: CPT-19 replaced reading `MULTI_SESSION_ARCHITECTURE.md` with deriving ROLES from `.worktrees/*/` directly. That made the subsequent missing/stray comparison tautological — the observed set was the expected set, so missing roles silently vanished and stray worktrees were implicitly accepted (a fresh repo with three configured worktrees would report "all roles present" instead of "8 missing"). Restored the authoritative source: `skills/project/commands/status.md` now extracts `session/<role>` tokens from `~/.claude/MULTI_SESSION_ARCHITECTURE.md`'s role table (~20 lines parsed, not the full file), derives the observed worktrees separately, computes set-differences, and surfaces `[missing role]` / `[unexpected worktree]` markers in the Step 4 display output (CPT-114).
+
 ## [1.2.4] - 2026-04-17
 
 ### Fixed
