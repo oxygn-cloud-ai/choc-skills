@@ -1,0 +1,5 @@
+# Phase 1 (CPT-87.1) authors the deterministic tier questionnaire here:
+#   mas-materiality-test.md   8 materiality questions + 4 criticality questions + rule table
+#
+# Phase 0 ships only this placeholder to lock the directory in place. The tier decision
+# MUST be rule-based (BATS-testable); no LLM judgement.

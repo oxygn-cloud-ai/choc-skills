@@ -1,0 +1,51 @@
+# OPSvdd jurisdiction spec — Singapore (ACTIVE in v1.0.0)
+#
+# This file is the active jurisdiction for Chocolate Finance Phase 0+. It anchors
+# the regulatory framework, currency, tax jurisdiction, and relevant MAS instruments.
+# Tier framework and step logic dereference values from here.
+#
+# Phase 0 ships this as a populated placeholder so the directory tree is discoverable;
+# Phase 1+ consumes the `instruments[]` list when building step-2 tier questions and
+# step-6 security/BCP checks.
+
+code: sg
+name: Singapore
+regulator: MAS
+regulator_long_name: Monetary Authority of Singapore
+currency: SGD
+tax_jurisdiction: SG
+
+licence_context:
+  holder: Chocolate Finance
+  licence_type: CMS  # Capital Markets Services
+  licensee_act: Securities and Futures Act 2001
+
+# MAS instruments governing vendor outsourcing. Phase 2 authors full content into
+# references/regulatory/sg/<instrument>.md; Phase 0 ships the list only.
+instruments:
+  - key: guidelines_on_outsourcing
+    title: MAS Guidelines on Outsourcing
+    year: 2018
+    scope: materiality, outsourcing register, MAS notification
+    relevant_sections: ["4", "5", "6", "7"]
+
+  - key: notice_sfa_04_n10
+    title: MAS Notice SFA 04-N10 — Technology Risk Management
+    scope: IT vendor risk management
+
+  - key: notice_634
+    title: MAS Notice 634 — Outsourcing Notification
+    scope: notification of material outsourcing arrangements
+    warning: "Tier 1 outsourcing MAY require Notice 634 filing — skill warns, does not file"
+
+  - key: bcm_guidelines
+    title: MAS Business Continuity Management Guidelines
+    scope: BCP test evidence for critical vendors
+
+  - key: pdpa_part_via
+    title: PDPA Part VIA — Data Protection Provisions for Data Intermediaries
+    scope: data processor obligations, cross-border transfer
+
+  - key: cyber_hygiene
+    title: MAS Guidelines on Cyber Hygiene
+    scope: vendor security baseline

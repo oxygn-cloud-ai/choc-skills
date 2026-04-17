@@ -1,0 +1,9 @@
+# OPSvdd jurisdiction spec — Hong Kong (STUB — not active in v1.0.0)
+#
+# Future hook. HKMA / SFC outsourcing guidelines would be enumerated here when
+# Chocolate Finance expands to HK. No domain logic references this file in v1.0.0.
+
+code: hk
+name: Hong Kong
+regulator: HKMA+SFC
+status: stub

@@ -1,0 +1,9 @@
+# OPSvdd jurisdiction spec — UAE (STUB — not active in v1.0.0)
+#
+# Future hook. DFSA / FSRA / SCA guidelines (depending on free-zone) would be enumerated
+# here. No domain logic references this file in v1.0.0.
+
+code: uae
+name: United Arab Emirates
+regulator: DFSA|FSRA|SCA
+status: stub

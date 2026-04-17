@@ -1,0 +1,9 @@
+# OPSvdd jurisdiction spec — Japan (STUB — not active in v1.0.0)
+#
+# Future hook. JFSA guidelines would be enumerated here. No domain logic references
+# this file in v1.0.0.
+
+code: jp
+name: Japan
+regulator: JFSA
+status: stub

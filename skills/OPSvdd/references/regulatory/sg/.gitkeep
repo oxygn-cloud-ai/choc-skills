@@ -1,0 +1,9 @@
+# Phase 2 (CPT-87.2) authors the following files here:
+#   outsourcing-guidelines.md     MAS Guidelines on Outsourcing — verbatim excerpts
+#   notice-634.md                 MAS Notice 634 — notification triggers + text
+#   trm.md                        Technology Risk Management Guidelines
+#   bcm.md                        Business Continuity Management Guidelines
+#   pdpa.md                       PDPA Part VIA
+#   cyber-hygiene.md              Cyber Hygiene Guidelines
+#
+# Phase 0 ships only this placeholder to lock the directory in place.

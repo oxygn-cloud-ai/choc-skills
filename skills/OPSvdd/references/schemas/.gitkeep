@@ -1,0 +1,15 @@
+# Phase 2 (CPT-87.2) authors JSON Schemas here:
+#   intake.schema.json
+#   tier.schema.json
+#   entity.schema.json
+#   financial-ops.schema.json
+#   security-bcp.schema.json
+#   adversarial.schema.json
+#   discussion.schema.json
+#   vendor-review-status.schema.json   AC-7.11 — load-bearing OPS custom field schema
+#   enums.schema.json                  shared enums (severity, category, status)
+#
+# Phase 3 (CPT-87.3) adds:
+#   override-artefact.schema.json      AC-7.6 keys, alphabetical
+#
+# Phase 0 ships only this placeholder.
