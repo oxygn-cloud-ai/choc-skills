@@ -2,6 +2,11 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.7] - 2026-04-17
+
+### Fixed
+- **P1 regression**: `rr-prepare.sh` `phase_filter` referenced undefined `$reviews_tmpfile` (typo of `$tmp_reviews`) introduced by CPT-35. Under `set -euo pipefail` every `/rr all` invocation aborted at phase 2. Root cause was a dead-code block that computed an unused `all_reviews` aggregate; the block has been removed entirely. The subsequent `$tmp_reviews` consumer (lines 300-304) was always the only real consumer. Also clears two CI-breaking ShellCheck warnings (SC2154, SC2034) introduced by the same block (CPT-117).
+
 ## [5.3.6] - 2026-04-17
 
 ### Changed

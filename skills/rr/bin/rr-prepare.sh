@@ -289,14 +289,6 @@ phase_filter() {
         next_page_token=$(echo "$reviews_response" | jq -r '.nextPageToken // empty')
         [ -z "$next_page_token" ] && break
     done
-    # Combine all review pages in a single jq pass — O(n) instead of O(p×n)
-    local all_reviews
-    if [ -s "$reviews_tmpfile" ]; then
-        all_reviews=$(jq -s 'add' "$reviews_tmpfile")
-    else
-        all_reviews="[]"
-    fi
-    # tmpfile cleaned up by RETURN trap
 
     # Build space-delimited set of reviewed parent keys for O(|set|) lookup.
     # Bash 3.2-compatible alternative to `declare -A` (associative arrays are
