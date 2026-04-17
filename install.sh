@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.1.4"
+VERSION="2.1.5"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -49,6 +49,12 @@ ${BOLD}USAGE${RESET}
   ./install.sh <name>             Install a specific skill
   ./install.sh --uninstall <name> Uninstall a skill
   ./install.sh --uninstall --all  Uninstall all skills
+  ./install.sh --uninstall --orphans <name>
+                                  Force-clean orphan router files when the
+                                  skill dir is already absent (CPT-112
+                                  recovery path; default leaves files alone
+                                  to protect user-authored files of the same
+                                  name — CPT-138)
   ./install.sh --update           Reinstall all (no prompts)
   ./install.sh --check            Verify installation health
   ./install.sh --list             List available skills
@@ -235,26 +241,39 @@ uninstall_skill() {
   local router_md="${commands_base}/${name:?}.md"
   local commands_dir="${commands_base}/${name:?}"
 
-  # CPT-112: check for stale router state as well as the skill directory,
-  # so a partial install (skill dir already removed, router files still
-  # present from a pre-CPT-36 uninstall or manual rm) can still be cleaned
-  # up via `--uninstall`. Without this, uninstall returns early on
-  # `[ ! -d "$target" ]` and leaks the exact state CPT-36 was written to fix.
+  # CPT-138: the default uninstall only touches router files when the skill
+  # directory is present — that's the only provenance the installer has that
+  # those files are ours to delete. When the skill directory is absent, a
+  # matching-named router.md or commands/<name>/ is most likely user-authored
+  # (e.g. someone wrote their own /rr command that never came from this repo).
+  # The CPT-112 recovery path (clean stale router files left by a pre-CPT-36
+  # uninstall or manual rm -rf of skills/<name>/) is still reachable, but only
+  # when the user explicitly opts in with `--orphans`.
   local skill_present=0
   local router_present=0
   [ -d "$target" ] && skill_present=1
   { [ -f "$router_md" ] || [ -d "$commands_dir" ]; } && router_present=1
 
-  if [ "$skill_present" -eq 0 ] && [ "$router_present" -eq 0 ]; then
-    warn "Skill '${name}' is not installed"
-    return 0
+  if [ "$skill_present" -eq 0 ]; then
+    if [ "$router_present" -eq 1 ] && [ "${ORPHANS_FLAG:-false}" != "true" ]; then
+      warn "Skill '${name}' is not installed (skills/${name}/ absent)."
+      info "Found router files at ${router_md} or ${commands_dir} but not touching them —"
+      info "they may be user-authored. To force-clean orphan router files, run:"
+      info "  ./install.sh --uninstall --orphans ${name}"
+      return 0
+    fi
+    if [ "$router_present" -eq 0 ]; then
+      warn "Skill '${name}' is not installed"
+      return 0
+    fi
+    # skill absent, router present, --orphans set — fall through to cleanup.
   fi
 
   local prompt
   if [ "$skill_present" -eq 1 ]; then
     prompt="Uninstall '${name}' from ${target}?"
   else
-    prompt="Uninstall '${name}' orphan router files from ${commands_base}?"
+    prompt="Force-clean '${name}' orphan router files from ${commands_base}? (--orphans)"
   fi
   if ! confirm "$prompt"; then
     warn "Skipped '${name}'"
@@ -374,6 +393,7 @@ ACTION="install"
 TARGETS=()
 ALL_FLAG=false
 QUIET=false
+ORPHANS_FLAG=false
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -385,6 +405,7 @@ while [ $# -gt 0 ]; do
     --dry-run|-n)    DRY_RUN=true; shift ;;
     --quiet|-q)      QUIET=true; shift ;;
     --uninstall)     ACTION="uninstall"; shift ;;
+    --orphans)       ORPHANS_FLAG=true; shift ;;
     --update)        ACTION="install"; FORCE=true; shift ;;
     --all)           ALL_FLAG=true; shift ;;
     --changelog)     if [ -f "${REPO_DIR}/CHANGELOG.md" ]; then cat "${REPO_DIR}/CHANGELOG.md"; else err "No CHANGELOG.md found"; fi; exit 0 ;;
