@@ -347,12 +347,23 @@ fi
 # Dispatch /loop as a SINGLE LINE. We do NOT inline multi-line prompt text
 # because /loop's argument parser behavior on multi-line bracketed pastes is
 # undocumented — a path-starting-with-/ line would flip slash-command mode.
-# Instead, the recurring prompt is: "read loops/<prompt>.md and do it."
-# The session reads the file fresh each cycle, so edits to the file take
+# Instead, the recurring prompt is: "read preamble, then read loops/<prompt>.md,
+# then do it." The session reads both files fresh each cycle, so edits take
 # effect next tick.
+#
+# CPT-82 preamble (three-tier context strategy): the skill installs a canonical
+# preamble template at ~/.claude/skills/project/templates/loop-preamble.md
+# containing the /compact / /clear / --continue tuning per role type. Every
+# /loop cycle reads the preamble first so step-0 context-management guidance
+# applies uniformly across all 8 polling roles without needing to edit each
+# role's per-worktree loops/loop.md separately.
+LOOP_PREAMBLE_PATH="${HOME}/.claude/skills/project/templates/loop-preamble.md"
 if [ "$ROLE_IS_LOOP_CAPABLE" = "true" ] && [ "$LOOP_INTERVAL" -gt 0 ] 2>/dev/null; then
   if [ -f "$LOOP_PROMPT_ABS" ]; then
-    loop_cmd="/loop ${LOOP_INTERVAL}m Read the file ${LOOP_PROMPT_ABS} and execute the recurring task described there."
+    if [ ! -f "$LOOP_PREAMBLE_PATH" ]; then
+      warn "loop-preamble template missing at $LOOP_PREAMBLE_PATH — /loop cycles will not have step-0 context guidance. Run 'skills/project/install.sh --force' to install."
+    fi
+    loop_cmd="/loop ${LOOP_INTERVAL}m First read ${LOOP_PREAMBLE_PATH} (if it exists) and apply its step-0 context-management guidance. Then read the file ${LOOP_PROMPT_ABS} and execute the recurring task described there."
     log "dispatching: $loop_cmd"
     send_single_line "$loop_cmd"
   else

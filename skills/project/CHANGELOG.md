@@ -2,6 +2,44 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.7] - 2026-04-17
+
+### Added (CPT-82 — three-tier context-strategy preamble via template + /loop inject)
+
+Phase 2 of the CPT-74 long-running-session architecture. Every polling role's `/loop` cycle now reads a canonical step-0 preamble first, then executes its role-specific `loops/loop.md` task. The preamble encodes the three-tier context strategy: `/compact` at >60%, `/clear` at >85% (or post-discrete-unit for code-writing roles), daily `--continue` relaunch.
+
+- **New file** `skills/project/templates/loop-preamble.md` — canonical step-0 guidance. Contains: 60% / 85% thresholds, `/compact` / `/clear` / `--continue` tuning, monitor-role vs code-writing-role distinctions (master/triager/reviewer/merger/chk1/chk2 prefer `/compact`; fixer/implementer `/clear` between Jira issues), MEMORY.md + future Phase 3 progress-registry pointers, /status advisory.
+- **`skills/project/install.sh` Step 5.1** — new step copies `templates/*.md` to `~/.claude/skills/project/templates/`. Re-runnable, idempotent. WARNs gracefully if the dir is missing.
+- **`skills/project/bin/project-launch-session.sh` /loop dispatch** — command string now instructs the model to first read `~/.claude/skills/project/templates/loop-preamble.md` (if it exists), then read the role-specific `loops/loop.md`. Single-line dispatch preserved (bracketed-paste safe). WARN emitted if preamble file is absent at dispatch time (graceful degradation — model skips the file-not-found on read).
+- **`skills/project/commands/launch.md` Step 7.6** — new paragraph documents the preamble mechanism: how it's delivered (skill install), how it's referenced (at /loop dispatch), how to update (edit template + reinstall). Step-8 success-criteria line updated with the new /loop command template.
+
+### Tests
+
+New `tests/loop-preamble.bats` (15 tests). Coverage:
+
+- Template file exists at `skills/project/templates/loop-preamble.md`.
+- Content markers: `60%` / `85%` / `/compact` / `/clear` / `--continue` / "monitor role" / "code-writing role" / `MEMORY.md`.
+- All 8 polling roles named in template (master / triager / reviewer / merger / chk1 / chk2 / fixer / implementer).
+- 3 on-demand roles (planner / performance / playtester) NOT listed as tuning-row consumers.
+- `install.sh` has a step that references `templates/loop-preamble`.
+- `project-launch-session.sh` /loop dispatch references `loop-preamble.md`.
+- Preamble reference appears before the role-specific `LOOP_PROMPT_ABS` in the dispatch command.
+- `launch.md` documents the mechanism.
+
+All 95 bats tests pass; shellcheck clean.
+
+### Scope divergence from ticket (transparent)
+
+CPT-82's original scope said "edit 8 per-worktree `loops/loop.md` files to add a step-0 preamble". That's physically impossible from a single branch — `.worktrees/` is gitignored so cross-branch edits from `session/implementer` don't get tracked. The only alternatives were (a) 8 separate feature branches (8× Jira overhead for a prompt tweak) or (b) central template + /loop inject (this approach).
+
+This implementation delivers the **functional outcome** the ticket's AC-1 requires ("every role's loop cycle starts with step-0 preamble guidance") via a stronger mechanism: one canonical source owned by skill, referenced uniformly by every role's /loop dispatch, editable centrally, bats-testable as one file. Per-worktree `loops/loop.md` files remain role-specific and untouched.
+
+### Out of scope (deferred)
+
+- **Phase 3 (CPT-83) progress registry** — the preamble references "your pinned progress ticket" abstractly. Until Phase 3 lands, state lives in MEMORY.md + Jira ticket comments as before. Preamble text is forward-compatible.
+- **Phase 4 (CPT-84) Ralph-loop end-of-cycle verification** — preamble covers cycle-start; Phase 4 covers cycle-end. Separate ticket.
+- **Master's daily 04:00 --continue cron** — spec'd in CPT-83 or a separate infra ticket. Preamble mentions the mechanism but doesn't implement it.
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

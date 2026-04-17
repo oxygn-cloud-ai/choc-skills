@@ -180,12 +180,14 @@ The script's responsibilities per role:
    `.claude/sessions/<role>.md` exists) as a single bracketed-paste block via
    `tmux load-buffer`/`paste-buffer -p`. Then wait for stability again before
    dispatching `/loop`. On timeout: SKIP /loop dispatch (no fire-and-forget).
-6. **Dispatch `/loop`** as a **single line**:
-   `/loop <N>m Read the file loops/loop.md in this worktree and execute the recurring task described there.`
+6. **Dispatch `/loop`** as a **single line** with a two-file read — the step-0 preamble (shipped by skill) + the role-specific loop prompt (per-worktree):
+   `/loop <N>m First read ~/.claude/skills/project/templates/loop-preamble.md (if it exists) and apply its step-0 context-management guidance. Then read the file loops/loop.md in this worktree and execute the recurring task described there.`
    We do NOT inline multi-line prompt text into `/loop` because the slash-command
    parser's behavior on multi-line bracketed pastes is undocumented and a line
    starting with `/` in the pasted content could flip into slash-command mode.
-   The session reads the file fresh each cycle, so edits take effect on next tick.
+   The session reads both files fresh each cycle, so edits take effect on next tick.
+
+   **Three-tier context strategy (CPT-82)** is delivered via the `loop-preamble.md` template that `install.sh` ships to `~/.claude/skills/project/templates/`. The template encodes the `/compact` at >60%, `/clear` at >85% (or post-discrete-unit), and daily `--continue` relaunch tuning — plus monitor-role vs code-writing-role distinctions. Each `/loop` tick reads the preamble first so step-0 guidance applies uniformly across all 8 polling roles without per-worktree `loops/loop.md` edits. Edit the preamble in `skills/project/templates/loop-preamble.md` and re-run `install.sh --force` to propagate.
 
 ### Invocation per role
 
@@ -301,7 +303,7 @@ project launch --all — $N projects launched
 - [ ] Env vars: sanitized `<PROJECT>_PATH` + env.project + env.sessions.<role>, written through `jq @sh` (lossless for tabs/newlines/quotes). Invalid identifier keys are filtered with a WARN.
 - [ ] Identity prompt (if selected) pasted as bracketed-paste block via `tmux load-buffer`/`paste-buffer -p`
 - [ ] Pane stability polled before and after identity-prompt paste; no blind sleep. On readiness/processing timeout, `/loop` is SKIPPED (exit 4) — never fired blind.
-- [ ] `/loop` dispatched as a SINGLE LINE: `/loop <N>m Read the file loops/loop.md in this worktree and execute the recurring task described there.`
+- [ ] `/loop` dispatched as a SINGLE LINE with step-0 preamble reference: `/loop <N>m First read ~/.claude/skills/project/templates/loop-preamble.md (if it exists) and apply its step-0 context-management guidance. Then read the file loops/loop.md in this worktree and execute the recurring task described there.`
 - [ ] On-demand roles (planner/performance/playtester) never get /loop
 - [ ] Existing sessions handled gracefully (resume/recreate)
 - [ ] Dry run passes `--dry-run` to `project-launch-session.sh` and prints the full setup-script contents without executing

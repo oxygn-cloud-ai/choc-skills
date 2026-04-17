@@ -346,6 +346,22 @@ else
   warn "PROJECT_CONFIG.schema.json not found at repo root — /project:new won't be able to copy it to new projects"
 fi
 
+# 5.1. Install templates/ (CPT-82 loop-preamble, future templates)
+TEMPLATES_SOURCE="${SCRIPT_DIR}/templates"
+TEMPLATES_TARGET="${SKILL_TARGET}/templates"
+if [ -d "$TEMPLATES_SOURCE" ]; then
+  mkdir -p "$TEMPLATES_TARGET"
+  tpl_count=0
+  for file in "${TEMPLATES_SOURCE}"/*.md; do
+    [ -f "$file" ] || continue
+    cp "$file" "${TEMPLATES_TARGET}/$(basename "$file")"
+    tpl_count=$((tpl_count + 1))
+  done
+  ok "templates: ${tpl_count} file(s) -> ${TEMPLATES_TARGET}/"
+else
+  warn "No templates/ directory — loop-preamble won't be installed; /loop dispatch falls back to uncontextualised cycles"
+fi
+
 # 6. Install hooks + register each in ~/.claude/settings.json hooks.PreToolUse
 # Hook files live in ~/.claude/hooks/ (machine-global, shared with other tools).
 # Registration is idempotent: re-running --force does not duplicate entries.
