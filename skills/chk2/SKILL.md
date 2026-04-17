@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk2 v2.3.8 — Adversarial Security Audit
+chk2 v2.3.9 — Adversarial Security Audit
 
 USAGE
   /chk2                Run all test categories (~211 checks)
@@ -106,7 +106,7 @@ chk2 doctor — Environment Health Check
   [PASS] websockets: installed
   [PASS] target reachable: https://myzr.io/ (200)
   [PASS] sub-commands: 35 files in ~/.claude/commands/chk2/
-  [PASS] version: 2.3.8
+  [PASS] version: X.Y.Z
 
   Result: N passed, N warnings, N failed
 ```
@@ -118,7 +118,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-chk2 v2.3.8
+chk2 v2.3.9
 ```
 
 End of version output. Do not continue.

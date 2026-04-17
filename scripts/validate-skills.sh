@@ -4,7 +4,13 @@ set -euo pipefail
 # Validates all skill definitions in the repository.
 # Used by CI and can be run locally before submitting PRs.
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Override for testing: REPO_DIR_OVERRIDE lets tests point at a fixture tree
+# without mutating the real one.
+if [ -n "${REPO_DIR_OVERRIDE:-}" ]; then
+  REPO_DIR="$REPO_DIR_OVERRIDE"
+else
+  REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
 SKILLS_DIR="${REPO_DIR}/skills"
 
 # --- Colors ---
@@ -86,6 +92,26 @@ for dir in "${SKILLS_DIR}"/*/; do
   else
     fail "Version '${fm_version}' is not valid semver (expected X.Y.Z)"
     skill_errors=$((skill_errors + 1))
+  fi
+
+  # --- Check: internal <name> v<semver> strings match frontmatter version (CPT-92) ---
+  # Skills frequently drift: author bumps frontmatter but forgets the help
+  # banner, version-output, and doctor-example strings. This catches those
+  # silent mismatches. Use `X.Y.Z` as a placeholder in doctor-example blocks
+  # to opt out of this check for cases where the literal represents a
+  # template rather than the real version.
+  internal_drift=0
+  while IFS= read -r internal_ver; do
+    [ -n "$internal_ver" ] || continue
+    if [ "$internal_ver" != "$fm_version" ]; then
+      fail "Internal '${name} v${internal_ver}' does not match frontmatter ${fm_version}"
+      internal_drift=$((internal_drift + 1))
+    fi
+  done < <(grep -oE "${name} v[0-9]+\.[0-9]+\.[0-9]+" "$skill_file" | sed "s/^${name} v//" | sort -u)
+  if [ "$internal_drift" -eq 0 ]; then
+    pass "Internal '${name} v<ver>' strings match frontmatter"
+  else
+    skill_errors=$((skill_errors + internal_drift))
   fi
 
   # --- Check: required subcommands ---

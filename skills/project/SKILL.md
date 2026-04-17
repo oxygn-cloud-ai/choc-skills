@@ -21,7 +21,7 @@ The router at `~/.claude/commands/project.md` intercepts sub-command arguments a
 If `$ARGUMENTS` equals `help`, `--help`, or `-h`, display the following usage guide and stop.
 
 ```
-project v1.2.1 — Project Repository Administration
+project v1.2.4 — Project Repository Administration
 
 USAGE
   /project                  Show status for current project (same as /project status)
@@ -91,7 +91,7 @@ Format:
 ```
 project doctor — Skill Installation Health Check
 
-  [PASS] Skill installed at ~/.claude/skills/project/SKILL.md (v1.0.0)
+  [PASS] Skill installed at ~/.claude/skills/project/SKILL.md (vX.Y.Z)
   [PASS] Source repo: /Volumes/.../choc-skills/skills/project (reachable)
   [PASS] Router: ~/.claude/commands/project.md
   [PASS] Subcommands: 6 files (new, status, launch, audit, config, update)
@@ -111,7 +111,7 @@ End of doctor output. Do not continue.
 If `$ARGUMENTS` equals `version`, `--version`, or `-v`, output the version and stop.
 
 ```
-project v1.2.1
+project v1.2.4
 ```
 
 End of version output. Do not continue.

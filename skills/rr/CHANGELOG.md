@@ -152,7 +152,7 @@ Note: MINOR bump (5.2.8 → 5.3.0) is the source branch's intended version and l
 - Pure-bash O(|set|) lookup replaces the associative-array O(1) lookup. At realistic register sizes (≲ hundreds of reviewed parents) wall-clock cost is indistinguishable; still eliminates the per-risk `grep` subprocess fork that was the original CPT-10 hotspot.
 - `tests/rr-prepare-perf.bats` now pins bash-3.2 compatibility via anti-assertions on `declare -A`, `readarray`, and `mapfile`, plus a `/bin/bash -n` syntax-parse test.
 
-## [5.2.2] - 2026-04-14
+## [5.2.2] - 2026-04-17
 
 ### Fixed
 - Sequential mode: workflow step files (step-1 through step-6) are now pre-loaded once before the per-risk loop instead of re-read for every risk. Eliminates 6×(N-1) redundant file reads for a register of N risks. (CPT-9)

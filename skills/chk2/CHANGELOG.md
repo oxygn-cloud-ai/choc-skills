@@ -77,7 +77,7 @@ All notable changes to the chk2 skill will be documented in this file.
 ### Note on version renumbering
 - CPT-16's source branch bumped 2.2.0 → 2.2.1 in isolation. By merge time, 2.3.0 (CPT-8) had already shipped, so the Merger renumbered CPT-16 to 2.3.1. No code semantics changed.
 
-## [2.3.0] - 2026-04-14
+## [2.3.0] - 2026-04-17
 
 ### Changed
 - `/chk2:all` now dispatches 30 categories in 5 parallel waves of 6 using Agent tool calls instead of running all sequentially. Reduces wall-clock time from ~30+ min to ~5-10 min. (CPT-8)

@@ -95,7 +95,7 @@ chk1 doctor — Environment Health Check
   [PASS] Has recent commits: N commits found
   [PASS] Branch: main
   [PASS] Installed: ~/.claude/skills/chk1/SKILL.md
-  [PASS] Version: 1.1.0
+  [PASS] Version: X.Y.Z
 
   Result: N passed, N warnings, N failed
 ```
