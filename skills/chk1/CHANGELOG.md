@@ -2,6 +2,11 @@
 
 All notable changes to the chk1 skill will be documented in this file.
 
+## [2.4.10] - 2026-04-18
+
+### Fixed
+- **`Bash(bash *install.sh *)` replaced with anchored triplet** (CPT-150). CPT-119 widened the narrow `Bash(bash install.sh *)` pattern to `Bash(bash *install.sh *)` so the documented absolute-path invocation would work. The widened glob, however, substring-matches `uninstall.sh`, `reinstall.sh`, `some-install.sh.bak`, and any `*install.sh`-suffixed path. CPT-25's least-privilege rationale was weakened even though the body instructions don't currently invoke those. Replaced with a three-pattern set that requires a path-separator (or start) before `install.sh`: `Bash(bash install.sh *)` (bare), `Bash(bash ./install.sh *)` (explicit same-dir), `Bash(bash */install.sh *)` (any path ending in `/install.sh`). All documented invocation forms (`bash install.sh`, `bash ./install.sh`, `bash <repo>/skills/chk1/install.sh`) still work; `bash uninstall.sh` and `bash reinstall.sh` no longer match. Regression sentinels in `tests/router-allowed-tools.bats`: unanchored form absent; at least one anchored form present when any bash-install.sh pattern is declared.
+
 ## [2.4.9] - 2026-04-18
 
 ### Fixed

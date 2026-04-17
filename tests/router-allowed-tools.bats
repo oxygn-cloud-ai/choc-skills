@@ -254,30 +254,42 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 # to widen to `Bash(bash *install.sh *)` which matches both the absolute-path
 # and bare forms while still constraining to install.sh invocations.
 
-@test "no update command has the narrow Bash(bash install.sh *) pattern (CPT-119)" {
+@test "no update command has the narrow Bash(bash install.sh *) pattern ALONE (CPT-119, CPT-150 refined)" {
+  # Pre-CPT-119: frontmatter carried ONLY the bare `Bash(bash install.sh *)`
+  # form — that did not cover absolute-path invocations (`bash /abs/path/
+  # install.sh --force`) which the body instructs. The offender is the
+  # bare form WITHOUT any other install.sh-anchored pattern alongside it.
+  #
+  # CPT-150 adds `Bash(bash ./install.sh *)` and `Bash(bash */install.sh *)`
+  # alongside the bare form — the triplet together covers all invocation
+  # shapes safely. An update.md that carries the bare form AND at least
+  # one path-anchored form is NOT an offender.
   offenders=""
   for f in "$REPO_ROOT"/skills/*/commands/update.md; do
     [ -f "$f" ] || continue
     allow=$(head -20 "$f" | grep '^allowed-tools:' || true)
-    # The literal narrow pattern is `Bash(bash install.sh *)` — NOT widened.
-    # The widened form is `Bash(bash *install.sh *)` (note the leading `*`).
-    # If the narrow form appears in the allowed-tools line, that's an offender.
     if printf '%s' "$allow" | grep -qE 'Bash\(bash install\.sh \*\)'; then
-      offenders="$offenders ${f#$REPO_ROOT/}"
+      # Bare form present — require a path-anchored companion.
+      if ! printf '%s' "$allow" | grep -qE 'Bash\(bash (\./install\.sh \*|\*/install\.sh \*)\)'; then
+        offenders="$offenders ${f#$REPO_ROOT/}"
+      fi
     fi
   done
-  echo "offenders:$offenders"
+  echo "offenders (bare form present without path-anchored companion):$offenders"
   [ -z "$offenders" ]
 }
 
 @test "every update command has a pattern covering absolute-path bash invocation (CPT-119)" {
   # For every update.md that instructs the model to run `bash <path>/install.sh`,
   # the allowed-tools frontmatter MUST contain a pattern that will match such
-  # calls. Acceptable forms (both inline `allowed-tools: a, b, c` and YAML
-  # list syntax are handled):
-  #   - Bash(bash *install.sh *)  ← the canonical widening
-  #   - Bash(bash *)              ← wide bash-only catch-all
-  #   - Bash                      ← fully unrestricted Bash
+  # calls. Acceptable anchored forms (CPT-150 hardened — pre-CPT-150 the
+  # regex also accepted `Bash(bash *install.sh *)` which matches
+  # uninstall.sh/reinstall.sh substrings and weakened CPT-25 least-privilege):
+  #   - Bash(bash install.sh *)      ← bare same-directory
+  #   - Bash(bash ./install.sh *)    ← explicit same-directory
+  #   - Bash(bash */install.sh *)    ← any path ending in /install.sh
+  #   - Bash(bash *)                 ← wide bash-only catch-all (still acceptable)
+  #   - Bash                         ← fully unrestricted Bash
   offenders=""
   for f in "$REPO_ROOT"/skills/*/commands/update.md; do
     [ -f "$f" ] || continue
@@ -285,12 +297,56 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
     # Extract the whole frontmatter block for allowed-tools inspection
     fm=$(awk 'BEGIN{fm=0} /^---$/{fm++; if(fm==2)exit; next} fm==1' "$f")
     if printf '%s' "$body" | grep -qE 'bash [^ ]*/install\.sh'; then
-      if ! printf '%s' "$fm" | grep -qE '(Bash\(bash \*(install\.sh \*)?\)|(^|[[:space:],-])Bash([[:space:],]|$))'; then
+      if ! printf '%s' "$fm" | grep -qE '(Bash\(bash (install\.sh \*|\./install\.sh \*|\*/install\.sh \*|\*)\)|(^|[[:space:],-])Bash([[:space:],]|$))'; then
         offenders="$offenders ${f#$REPO_ROOT/}"
       fi
     fi
   done
   echo "offenders:$offenders"
+  [ -z "$offenders" ]
+}
+
+# --- CPT-150: CPT-119's canonical widening `Bash(bash *install.sh *)` uses a
+#     leading-glob that substring-matches `uninstall.sh`, `reinstall.sh`, and
+#     any `*install.sh.bak`-shape path. CPT-25's least-privilege rationale is
+#     weakened even when the body instructions don't currently invoke those.
+#     Fix: anchor the pattern so `install.sh` must be either bare, `./install.sh`,
+#     or `*/install.sh` — all forms require a path-separator (or start) before
+#     `install.sh`.
+
+@test "CPT-150: no update command keeps the unanchored Bash(bash *install.sh *) pattern" {
+  offenders=""
+  for f in "$REPO_ROOT"/skills/*/commands/update.md; do
+    [ -f "$f" ] || continue
+    allow=$(head -20 "$f" | grep '^allowed-tools:' || true)
+    # The unanchored form `Bash(bash *install.sh *)` (leading glob before
+    # `install.sh` with no required path-separator) MUST NOT appear.
+    if printf '%s' "$allow" | grep -qE 'Bash\(bash \*install\.sh \*\)'; then
+      offenders="$offenders ${f#$REPO_ROOT/}"
+    fi
+  done
+  echo "offenders (still carry Bash(bash *install.sh *)): $offenders"
+  [ -z "$offenders" ]
+}
+
+@test "CPT-150: update commands carrying any bash-install.sh pattern use an anchored form" {
+  # If the frontmatter mentions `install.sh` inside a `Bash(bash ...)`
+  # pattern AT ALL, at least one of the anchored forms must be present.
+  # Files that rely on the wider `Bash(bash *)` catch-all, or that don't
+  # mention install.sh under `bash`, are out of scope for this assertion.
+  offenders=""
+  for f in "$REPO_ROOT"/skills/*/commands/update.md; do
+    [ -f "$f" ] || continue
+    allow=$(head -20 "$f" | grep '^allowed-tools:' || true)
+    # Does the frontmatter carry any `Bash(bash ... install.sh ...)` pattern?
+    if printf '%s' "$allow" | grep -qE 'Bash\(bash [^)]*install\.sh[^)]*\)'; then
+      # Yes — require at least one anchored form.
+      if ! printf '%s' "$allow" | grep -qE 'Bash\(bash (install\.sh \*|\./install\.sh \*|\*/install\.sh \*)\)'; then
+        offenders="$offenders ${f#$REPO_ROOT/}"
+      fi
+    fi
+  done
+  echo "offenders (bash-install.sh pattern present but none anchored): $offenders"
   [ -z "$offenders" ]
 }
 

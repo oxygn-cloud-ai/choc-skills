@@ -1,7 +1,7 @@
 ---
 name: chk2:update
 description: "Update chk2 skill to latest version"
-allowed-tools: Read, Bash(git *), Bash(bash *install.sh *), Bash(curl *), Bash(grep *), Bash(sed *), Bash(xargs *), Bash(echo *), Bash(tr *)
+allowed-tools: Read, Bash(git *), Bash(bash install.sh *), Bash(bash ./install.sh *), Bash(bash */install.sh *), Bash(curl *), Bash(grep *), Bash(sed *), Bash(xargs *), Bash(echo *), Bash(tr *)
 ---
 
 # chk2:update — Update Skill to Latest Version

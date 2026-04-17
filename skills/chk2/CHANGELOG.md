@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.26] - 2026-04-18
+
+### Fixed
+- **`Bash(bash *install.sh *)` replaced with anchored triplet** (CPT-150). See chk1 v2.4.10 for the full write-up; same fix applied identically to `skills/chk2/commands/update.md`.
+
 ## [2.3.25] - 2026-04-18
 
 ### Fixed

@@ -2,6 +2,13 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.30] - 2026-04-18
+
+### Fixed
+- **`Bash(bash *install.sh *)` replaced with anchored triplet** (CPT-150). See chk1 v2.4.10 for the full write-up; same fix applied identically to `skills/rr/commands/update.md` alongside the existing direct-path patterns (`Bash(*/install.sh *)`, `Bash(./install.sh *)`).
+
+**Note on version renumbering**: This entry originally targeted 5.3.26 on `fix/CPT-150-install-sh-anchor-pattern`, but CPT-148/155/157/158 landed on `main` first and claimed 5.3.26-5.3.29. Taking 5.3.30. No code semantics changed.
+
 ## [5.3.29] - 2026-04-18
 
 ### Fixed
