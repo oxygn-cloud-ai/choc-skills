@@ -139,45 +139,62 @@ TMPSCRIPT=$(mktemp /tmp/tmux-iterm.XXXXXX) || {
   echo "[ERROR] Failed to create temp file." >&2
   exit 1
 }
+
+# CPT-147: stash each raw session name in its own temp file under a dedicated
+# directory, and pass the FILE PATH (not the raw bytes) to the attach helper
+# via --session-file. This side-steps both AppleScript string-literal hazards
+# (newline/CR/tab break the parser) and shell single-quote escape hazards
+# (`'` in a session name closes the argument). The path is under our control
+# (mktemp -d /tmp/tmux-iterm-sessions.XXXXXX) so its VALUE is always safe to
+# interpolate, even when the session name's value is not.
+#
+# Lifecycle: tmux-attach-session.sh consumes and deletes each file on read,
+# so per-session cleanup is immediate. The empty parent dir stays until OS
+# /tmp cleanup (first boot / daily) — harmless. We intentionally do NOT
+# trap-clean session_dir on tmux-iterm-tabs.sh exit because `write text` is
+# asynchronous: AppleScript returns before the typed command runs in the
+# destination shell, and an eager cleanup would race the helper.
+session_dir=$(mktemp -d /tmp/tmux-iterm-sessions.XXXXXX) || {
+  echo "[ERROR] Failed to create session-names temp dir." >&2
+  exit 1
+}
 trap 'rm -f "$TMPSCRIPT"' EXIT
 
 first_label="$(lookup_label "$first")"
-# Sanitize the AppleScript label only; keep $first raw so the tmux target
-# passed to `tmux attach -t` still resolves for sessions with exotic names
-# (CPT-105: CPT-29 conflated AppleScript-literal safety with tmux-identifier
-# safety and broke attach for control-char session names).
+# Sanitize the AppleScript label (keeps CPT-29's AppleScript-literal safety).
+# The tmux target (raw $first) is delivered via --session-file below, so it
+# never passes through AppleScript string interpolation or shell quoting.
 first_label="$(sanitize_for_applescript "$first_label")"
 safe_first_label="${first_label//\\/\\\\}"
 safe_first_label="${safe_first_label//\"/\\\"}"
-safe_first="${first//\\/\\\\}"
-safe_first="${safe_first//\"/\\\"}"
-safe_first="${safe_first//\'/\'}"
+
+first_target_file="$session_dir/0"
+printf '%s' "$first" > "$first_target_file"
 cat > "$TMPSCRIPT" << HEADER
 tell application "iTerm2"
   activate
   tell current window
     tell current session
       set name to "$safe_first_label"
-      write text "$ATTACH_SCRIPT '$safe_first' '$safe_first_label' 0"
+      write text "$ATTACH_SCRIPT --session-file $first_target_file '$safe_first_label' 0"
     end tell
 HEADER
 
 idx=1
 for s in "${rest[@]}"; do
   label="$(lookup_label "$s")"
-  # Sanitize the AppleScript label only; keep $s raw so the tmux target
-  # passed to `tmux attach -t` still resolves (CPT-105).
+  # Sanitize the label only (CPT-29); tmux target passed via temp file (CPT-147).
   label="$(sanitize_for_applescript "$label")"
   safe_label="${label//\\/\\\\}"
   safe_label="${safe_label//\"/\\\"}"
-  safe_s="${s//\\/\\\\}"
-  safe_s="${safe_s//\"/\\\"}"
-  safe_s="${safe_s//\'/\'}"
+
+  s_target_file="$session_dir/$idx"
+  printf '%s' "$s" > "$s_target_file"
   cat >> "$TMPSCRIPT" << EOF
     set newTab to (create tab with default profile)
     tell current session of newTab
       set name to "$safe_label"
-      write text "$ATTACH_SCRIPT '$safe_s' '$safe_label' $idx"
+      write text "$ATTACH_SCRIPT --session-file $s_target_file '$safe_label' $idx"
     end tell
 EOF
   idx=$((idx + 1))

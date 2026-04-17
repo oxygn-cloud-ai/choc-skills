@@ -1,11 +1,38 @@
 #!/bin/bash
 # Set up iTerm2 tab color, background image, title, then attach tmux.
-# Usage: tmux-attach-session.sh <session> <label> <color_index>
+#
+# Usage (positional — legacy):
+#   tmux-attach-session.sh <session> <label> <color_index>
+#
+# Usage (file handoff — CPT-147):
+#   tmux-attach-session.sh --session-file <path> <label> <color_index>
+#
+# The --session-file form reads the raw session name from <path> (written by
+# tmux-iterm-tabs.sh to bytes that would otherwise be unsafe to interpolate
+# into AppleScript string literals or shell-quoted command-line arguments:
+# newline, CR, tab, single-quote). The helper deletes the file after
+# reading it, so each invocation has a single-shot target.
 set -euo pipefail
 
-SESSION="${1:?session required}"
-LABEL="${2:?label required}"
-INDEX="${3:-0}"
+# CPT-147: accept --session-file <path> as an alternative to positional SESSION.
+# The file path is written by tmux-iterm-tabs.sh under /tmp with a safe name
+# (no shell hazards), so interpolating the PATH is always safe even when the
+# VALUE would not be.
+if [ "${1:-}" = "--session-file" ]; then
+  session_file="${2:?--session-file requires a path argument}"
+  if [ ! -f "$session_file" ]; then
+    printf 'Error: --session-file %s does not exist\n' "$session_file" >&2
+    exit 1
+  fi
+  SESSION="$(cat "$session_file")"
+  rm -f "$session_file"
+  shift 2
+else
+  SESSION="${1:?session required}"
+  shift
+fi
+LABEL="${1:?label required}"
+INDEX="${2:-0}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BG_DIR="$SCRIPT_DIR/.session-backgrounds"
 

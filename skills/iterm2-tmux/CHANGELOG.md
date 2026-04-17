@@ -2,6 +2,11 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.0.4] - 2026-04-18
+
+### Security / Fixed
+- **Raw tmux target name no longer passes through AppleScript string interpolation or shell-quoted args** (CPT-147). CPT-29 over-sanitised (broke attach for control-char names). CPT-105 under-sanitised (reverted the over-sanitisation but left the raw identifier interpolated into `write text "$ATTACH_SCRIPT '$safe_first' '$safe_first_label' 0"` — newline/CR/tab in a session name break the AppleScript parser, and a literal single quote escapes the argument and can inject into the shell command line). Neither commit alone delivered safe + functional attach for the full input domain. Fix: `bin/tmux-iterm-tabs.sh` now writes each raw session name to its own temp file under `$(mktemp -d /tmp/tmux-iterm-sessions.XXXXXX)` and passes `--session-file <path>` to `bin/tmux-attach-session.sh`. The file PATH (controlled by us, no shell hazards) flows through AppleScript; the session VALUE never does. `bin/tmux-attach-session.sh` now accepts `--session-file <path>` as an alternative to the positional argument, reads the name via `cat` (preserving all bytes intact, including `\n`, `\r`, `\t`, `'`), then `rm -f`s the file for single-shot semantics. Legacy positional form is preserved for any external callers. Four bats regressions in `tests/tmux-iterm-tabs.bats` enforce the new shape: temp-dir creation, `--session-file` in the AppleScript write-text line, no raw `$safe_first`/`$safe_s` interpolation, and an end-to-end flag-parse test that round-trips NL/CR/TAB/`'` bytes through the file. The obsolete CPT-105 "safe_first derives from raw $first" test was removed (superseded — the variable no longer exists; its semantic is now carried by the file round-trip).
+
 ## [1.0.3] - 2026-04-17
 
 ### Fixed
