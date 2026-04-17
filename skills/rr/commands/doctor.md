@@ -1,3 +1,9 @@
+---
+name: rr:doctor
+description: "Environment health check for rr skill"
+allowed-tools: Read, Bash(which *), Bash(python3 *), Bash(ls *), Bash(curl *)
+---
+
 # rr:doctor — Environment Health Check
 
 Run these checks and report results. Do not proceed to any other action after.

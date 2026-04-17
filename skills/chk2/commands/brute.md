@@ -1,3 +1,9 @@
+---
+name: chk2:brute
+description: "Test session enumeration and brute force resistance"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:brute — Session Enumeration and Brute Force
 
 Test session ID and pair code entropy on https://myzr.io. Append results to `SECURITY_CHECK.md`.

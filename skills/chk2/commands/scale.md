@@ -1,3 +1,9 @@
+---
+name: chk2:scale
+description: "Test connection limits and payload handling"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:scale — Scaling and Resource Limits
 
 Test connection limits and payload handling on https://myzr.io. Append results to `SECURITY_CHECK.md`.

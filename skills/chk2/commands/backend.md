@@ -1,3 +1,9 @@
+---
+name: chk2:backend
+description: "Test backend fingerprinting exposure"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Bash(rm *), Write
+---
+
 # chk2:backend — Backend Fingerprinting
 
 Test backend fingerprinting exposure on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.

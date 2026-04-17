@@ -1,3 +1,9 @@
+---
+name: chk2:quick
+description: "Quick passive security check (headers+tls+dns+cors)"
+allowed-tools: Read, Write, AskUserQuestion
+---
+
 # chk2:quick — Quick Non-Invasive Check
 
 Run a fast, passive security check of https://myzr.io. No active testing, no session creation, no WebSocket connections.

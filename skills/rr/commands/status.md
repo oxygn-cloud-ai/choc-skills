@@ -1,3 +1,9 @@
+---
+name: rr:status
+description: "Check batch assessment progress"
+allowed-tools: Read, Bash(ls *), Bash(tail *)
+---
+
 # rr:status — Batch Progress Check
 
 Context from user: $ARGUMENTS

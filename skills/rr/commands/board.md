@@ -1,3 +1,9 @@
+---
+name: rr:board
+description: "Generate board risk oversight paper from completed assessments"
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(python3 *), Bash(curl *), Bash(bash *), Write, AskUserQuestion
+---
+
 # rr:board — Board Risk Oversight Paper
 
 Context from user: $ARGUMENTS

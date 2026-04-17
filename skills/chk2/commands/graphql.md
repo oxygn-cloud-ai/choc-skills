@@ -1,3 +1,9 @@
+---
+name: chk2:graphql
+description: "Test GraphQL security: introspection, depth, batching"
+allowed-tools: Read, Bash(curl *), Bash(echo *), Write
+---
+
 # chk2:graphql — GraphQL Security
 
 Test for GraphQL-related vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.

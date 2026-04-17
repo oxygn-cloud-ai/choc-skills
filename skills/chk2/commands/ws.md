@@ -1,3 +1,9 @@
+---
+name: chk2:ws
+description: "Test WebSocket security"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:ws — WebSocket Security
 
 Test WebSocket security on https://myzr.io. Append results to `SECURITY_CHECK.md`.

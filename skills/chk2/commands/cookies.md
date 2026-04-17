@@ -1,3 +1,9 @@
+---
+name: chk2:cookies
+description: "Test cookie security flags"
+allowed-tools: Read, Bash(curl *), Bash(echo *), Write
+---
+
 # chk2:cookies — Cookie Security
 
 Test cookie security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.

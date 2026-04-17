@@ -1,3 +1,9 @@
+---
+name: chk2:cache
+description: "Test cache security and deception"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:cache — Cache Security
 
 Test cache security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.

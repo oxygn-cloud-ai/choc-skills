@@ -1,3 +1,9 @@
+---
+name: chk2:timing
+description: "Test timing attacks and race conditions"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:timing — Timing Attacks and Race Conditions
 
 Test for timing-based vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.

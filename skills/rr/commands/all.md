@@ -1,3 +1,9 @@
+---
+name: rr:all
+description: "Batch risk register review — orchestrate parallel/sequential assessments"
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(rm *), Bash(date *), Bash(echo *), Bash(sed *), Bash(bash *), Bash(test *), Write, Agent, AskUserQuestion
+---
+
 # rr:all — Batch Risk Register Review
 
 Context from user: $ARGUMENTS

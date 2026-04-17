@@ -1,3 +1,9 @@
+---
+name: rr:remove
+description: "Delete review tickets from Jira (testing only)"
+allowed-tools: Bash(curl *), Bash(jq *), Bash(base64 *), Bash(echo *), Bash(sleep *)
+---
+
 # rr:remove — Delete Review Tickets from Jira (TESTING ONLY)
 
 **WARNING: This is a destructive, hidden testing command. It deletes Jira tickets.**

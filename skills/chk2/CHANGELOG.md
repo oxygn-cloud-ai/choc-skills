@@ -2,6 +2,17 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.3] - 2026-04-17
+
+### Changed
+- **Performance/Security**: Reduced SKILL.md router `allowed-tools` from 25 entries to 8 (`Read, Grep, Glob, Bash(curl *), Bash(which *), Bash(ls *), Write, AskUserQuestion`) (CPT-32).
+- Added YAML frontmatter with per-command `allowed-tools` to all 35 sub-command files.
+- Each sub-command now declares only the tools it needs (e.g., `tls.md` gets openssl, `dns.md` gets dig+host+nmap, `github.md` gets gh).
+- Eliminated `Bash(bash *)` catch-all from chk2 sub-commands (`update.md` uses scoped `Bash(bash install.sh *)` instead).
+
+### Note on version renumbering
+- CPT-32's source branch bumped 2.2.0 → 2.3.0 in isolation. By merge time, 2.3.0/2.3.1/2.3.2 had all shipped, so the Merger renumbered CPT-32 to 2.3.3. No code semantics changed.
+
 ## [2.3.2] - 2026-04-17
 
 ### Changed

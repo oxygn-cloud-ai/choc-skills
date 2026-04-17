@@ -1,3 +1,9 @@
+---
+name: chk2:reporting
+description: "Test security reporting configuration"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:reporting — Security Reporting Headers
 
 Test for security reporting configuration on https://myzr.io. Append results to `SECURITY_CHECK.md`.

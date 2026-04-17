@@ -1,10 +1,10 @@
 ---
 name: rr
-version: 5.2.8
+version: 5.3.0
 description: "Risk register assessment for Chocolate Finance. Invoke with /rr followed by a ticket key (e.g. /rr RR-220) or /rr all for batch mode."
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(jq *), Bash(git *), Bash(python3 *), Bash(shasum *), Bash(base64 *), Bash(ls *), Bash(cat *), Bash(mkdir *), Bash(date *), Bash(wc *), Bash(echo *), Bash(printf *), Bash(grep *), Bash(sed *), Bash(awk *), Bash(head *), Bash(tail *), Bash(tr *), Bash(sort *), Bash(tee *), Bash(flock *), Bash(test *), Write, Edit, Agent, AskUserQuestion, WebSearch
+allowed-tools: Read, Grep, Glob, Bash(ls *), AskUserQuestion
 argument-hint: [RR-NNN | all | board | status | monitor | fix | update | help | doctor | version]
 ---
 

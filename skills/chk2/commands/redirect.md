@@ -1,3 +1,9 @@
+---
+name: chk2:redirect
+description: "Test open redirect and redirect chain security"
+allowed-tools: Read, Bash(curl *), Bash(echo *), Write
+---
+
 # chk2:redirect — Open Redirect and Redirect Chain Security
 
 Test redirect security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.

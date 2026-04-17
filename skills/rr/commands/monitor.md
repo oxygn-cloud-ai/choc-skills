@@ -1,3 +1,9 @@
+---
+name: rr:monitor
+description: "Live batch progress dashboard via rich TUI"
+allowed-tools: Bash(python3 *), Bash(open *)
+---
+
 # rr:monitor — Live Batch Progress Dashboard
 
 Context from user: $ARGUMENTS

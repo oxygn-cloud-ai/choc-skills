@@ -1,3 +1,9 @@
+---
+name: chk2:sse
+description: "Test SSE security"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:sse — Server-Sent Events Security
 
 Test for SSE-related vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.

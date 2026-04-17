@@ -1,3 +1,9 @@
+---
+name: rr:fix
+description: "Re-run failed assessments from batch mode"
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(sed *), Bash(bash *), Write, Agent, AskUserQuestion
+---
+
 # rr:fix — Re-run Failed Assessments
 
 Context from user: $ARGUMENTS

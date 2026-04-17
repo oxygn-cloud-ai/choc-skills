@@ -1,3 +1,9 @@
+---
+name: rr:help
+description: "Display rr usage guide"
+allowed-tools: Read
+---
+
 # rr:help — Usage Guide
 
 First, read the `version:` field from `~/.claude/skills/rr/SKILL.md` frontmatter to get the current version number.

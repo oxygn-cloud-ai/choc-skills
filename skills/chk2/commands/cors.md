@@ -1,3 +1,9 @@
+---
+name: chk2:cors
+description: "Test CORS policy and WebSocket origin validation"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:cors — CORS and Origin Validation
 
 Test CORS policy and WebSocket origin validation on https://myzr.io. Append results to `SECURITY_CHECK.md`.

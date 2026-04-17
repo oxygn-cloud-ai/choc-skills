@@ -1,3 +1,9 @@
+---
+name: chk2:ipv6
+description: "Test IPv6 security and WAF bypass"
+allowed-tools: Read, Bash(dig *), Bash(curl *), Bash(echo *), Write
+---
+
 # chk2:ipv6 — IPv6 Security
 
 Test IPv6-related security on https://myzr.io. Append results to `SECURITY_CHECK.md`.

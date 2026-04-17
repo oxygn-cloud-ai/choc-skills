@@ -1,3 +1,9 @@
+---
+name: chk2:all
+description: "Run all security check categories"
+allowed-tools: Read, Write, AskUserQuestion
+---
+
 # chk2:all — Run All Security Checks
 
 Run every test category against https://myzr.io using parallel Agent dispatch. Write results to `SECURITY_CHECK.md` in the repo root.

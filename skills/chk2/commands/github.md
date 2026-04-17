@@ -1,3 +1,9 @@
+---
+name: chk2:github
+description: "Log security findings as GitHub Issues"
+allowed-tools: Read, Bash(gh *), Write
+---
+
 # chk2:github — Log Security Findings to GitHub Issues
 
 Read the most recent `SECURITY_CHECK.md` and create a GitHub Issue for every FAIL and WARN finding, assigning P1-P4 priority labels and category labels. Skip findings that already have an open issue (comment instead).

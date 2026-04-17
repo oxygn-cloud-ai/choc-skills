@@ -1,3 +1,9 @@
+---
+name: chk2:tls
+description: "Test TLS/SSL configuration and ciphers"
+allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(echo *), Write
+---
+
 # chk2:tls — TLS/SSL Configuration
 
 Test TLS configuration on https://myzr.io. Append results to `SECURITY_CHECK.md`.

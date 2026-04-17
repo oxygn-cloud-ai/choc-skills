@@ -1,3 +1,9 @@
+---
+name: chk2:transport
+description: "Test transport layer: HTTP/2, ALPN, Content-Type"
+allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(echo *), Write
+---
+
 # chk2:transport — Transport Layer Security
 
 Test transport layer configuration on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.

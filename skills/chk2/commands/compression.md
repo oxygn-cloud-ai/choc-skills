@@ -1,3 +1,9 @@
+---
+name: chk2:compression
+description: "Test BREACH, CRIME, and decompression attacks"
+allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:compression — Compression Attacks
 
 Test for compression-related vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.

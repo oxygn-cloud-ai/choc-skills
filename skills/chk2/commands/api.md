@@ -1,3 +1,9 @@
+---
+name: chk2:api
+description: "Test API injection, fuzzing, and type confusion"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:api — API Fuzzing, Injection, Type Confusion
 
 Test API input validation on https://myzr.io. Append results to `SECURITY_CHECK.md`.

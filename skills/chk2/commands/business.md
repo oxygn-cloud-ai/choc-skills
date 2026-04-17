@@ -1,3 +1,9 @@
+---
+name: chk2:business
+description: "Test business logic security"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:business — Business Logic
 
 Test business logic security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.

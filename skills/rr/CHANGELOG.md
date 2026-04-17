@@ -2,6 +2,15 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.3.0] - 2026-04-17
+
+### Changed
+- **Performance/Security**: Reduced SKILL.md router `allowed-tools` from 33 entries to 5 (`Read, Grep, Glob, Bash(ls *), AskUserQuestion`) (CPT-32).
+- Added YAML frontmatter with per-command `allowed-tools` to all 11 sub-command files.
+- Each sub-command now declares only the tools it actually needs (e.g., `review.md` gets WebSearch+Write+Agent, `help.md` gets only Read).
+
+Note: MINOR bump (5.2.8 → 5.3.0) is the source branch's intended version and lands as-is — no renumber required.
+
 ## [5.2.8] - 2026-04-17
 
 ### Security

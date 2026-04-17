@@ -1,3 +1,9 @@
+---
+name: chk2:update
+description: "Update chk2 skill to latest version"
+allowed-tools: Read, Bash(git *), Bash(bash install.sh *), Bash(curl *), Bash(grep *), Bash(sed *)
+---
+
 # chk2:update — Update Skill to Latest Version
 
 Context from user: $ARGUMENTS

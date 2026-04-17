@@ -1,3 +1,9 @@
+---
+name: chk2:dns
+description: "Test DNS, DNSSEC, SPF, DMARC configuration"
+allowed-tools: Read, Bash(dig *), Bash(curl *), Bash(host *), Bash(nmap *), Bash(echo *), Write
+---
+
 # chk2:dns — DNS and Email Security
 
 Test DNS configuration for myzr.io. Append results to `SECURITY_CHECK.md`.

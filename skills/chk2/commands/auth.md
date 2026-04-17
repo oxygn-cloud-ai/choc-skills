@@ -1,3 +1,9 @@
+---
+name: chk2:auth
+description: "Test authentication and session security"
+allowed-tools: Read, Bash(curl *), Bash(python3 *), Bash(echo *), Write
+---
+
 # chk2:auth — Authentication and Session Security
 
 Test authentication and session security on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.

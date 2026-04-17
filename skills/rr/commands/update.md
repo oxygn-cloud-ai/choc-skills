@@ -1,3 +1,9 @@
+---
+name: rr:update
+description: "Update rr skill to latest version"
+allowed-tools: Read, Bash(git *), Bash(bash *)
+---
+
 # rr:update — Update Skill to Latest Version
 
 Context from user: $ARGUMENTS

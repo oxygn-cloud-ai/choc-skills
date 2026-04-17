@@ -1,3 +1,9 @@
+---
+name: chk2:jwt
+description: "Test JWT/token security"
+allowed-tools: Read, Bash(curl *), Bash(openssl *), Bash(base64 *), Bash(echo *), Write
+---
+
 # chk2:jwt — JWT Security
 
 Test for JWT-related vulnerabilities on https://myzr.io. Append results to `SECURITY_CHECK.md`.

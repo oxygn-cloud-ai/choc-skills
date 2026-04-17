@@ -1,10 +1,10 @@
 ---
 name: chk2
-version: 2.3.2
+version: 2.3.3
 description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(dig *), Bash(openssl *), Bash(python3 *), Bash(jq *), Bash(nmap *), Bash(git *), Bash(host *), Bash(shasum *), Bash(echo *), Bash(cat *), Bash(base64 *), Bash(date *), Bash(ls *), Bash(grep *), Bash(sed *), Bash(awk *), Bash(head *), Bash(tail *), Bash(rm *), Write, Agent, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(curl *), Bash(which *), Bash(ls *), Write, AskUserQuestion
 argument-hint: [all | quick | headers | tls | dns | cors | api | ws | waf | infra | brute | scale | disclosure | cookies | cache | smuggling | auth | transport | redirect | fingerprint | timing | compression | jwt | graphql | sse | ipv6 | reporting | hardening | negotiation | proxy | business | backend | fix | github | update | help | doctor | version]
 ---
 
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk2 v2.3.2 — Adversarial Security Audit
+chk2 v2.3.3 — Adversarial Security Audit
 
 USAGE
   /chk2                Run all test categories (~211 checks)
@@ -106,7 +106,7 @@ chk2 doctor — Environment Health Check
   [PASS] websockets: installed
   [PASS] target reachable: https://myzr.io/ (200)
   [PASS] sub-commands: 35 files in ~/.claude/commands/chk2/
-  [PASS] version: 2.3.2
+  [PASS] version: 2.3.3
 
   Result: N passed, N warnings, N failed
 ```
@@ -118,7 +118,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-chk2 v2.3.2
+chk2 v2.3.3
 ```
 
 End of version output. Do not continue.

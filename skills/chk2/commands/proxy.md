@@ -1,3 +1,9 @@
+---
+name: chk2:proxy
+description: "Test proxy and CDN behavior"
+allowed-tools: Read, Bash(curl *), Bash(echo *), Write
+---
+
 # chk2:proxy — Proxy and CDN Behavior
 
 Test proxy, CDN, and service mesh behavior on https://${TARGET:-myzr.io}. Append results to `SECURITY_CHECK.md`.

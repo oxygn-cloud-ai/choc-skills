@@ -1,3 +1,9 @@
+---
+name: chk2:fix
+description: "Deep resolution helper for failed checks"
+allowed-tools: Read, AskUserQuestion
+---
+
 # chk2:fix — Deep Resolution Helper
 
 Context from user: $ARGUMENTS
