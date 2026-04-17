@@ -2,6 +2,55 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.1.8] - 2026-04-17
+
+### Added (CPT-83 Phase 3.0 — progress-registry helpers + schema + docs)
+
+First phase of the CPT-74 Phase 3 Jira-backed per-role progress registry. Ships the pure-helper library, JSON Schema, and docs — no Jira tickets created, no live-Jira round-trips. Phase 3.1 (follow-up) adds the bootstrap script that creates the real tickets and the rollover machinery. Phase 3.2 wires `/project:audit` + per-role `loops/loop.md` to use these helpers.
+
+- **`skills/project/bin/_progress-registry.sh`** — sourceable Bash helper library with deterministic, side-effect-free functions:
+  - `registry_extract_json <description>` — pull the ` ```json ` fenced block out of a Jira ticket description (uses `awk` for macOS + GNU compatibility).
+  - `registry_validate_json <json>` — validate against the schema via python3 + jsonschema (same hard deps as `scripts/validate-config.sh`).
+  - `registry_get_role_ticket <json> <role>` — return `currentProgressTicket` for a role via `jq`.
+  - `registry_format_cycle_comment <role> <n> <status> <since_last> <next_eta> <ctx_pct>` — produce the structured cycle-comment body per CPT-74 §3.3.
+  - `registry_needs_rollover <bytes> <comments>` — strict-greater-than check against 500 KB + 300-comment thresholds (overridable via env vars for Phase 3.1 tuning).
+  - `registry_new_ticket_summary <role> <n>` — format `"Progress: <role> #<n+1>"`.
+
+- **`skills/project/schemas/progress-registry.schema.json`** — JSON Schema draft 2020-12 for the registry document. Fields: `version` (const 1), `lastUpdated` (ISO-8601 Z pattern), `roles` (keyed by the 11 canonical role names via patternProperties). Rejects unknown role keys and missing required fields. Rollover timestamps are required and nullable (`oneOf: [null, iso-8601]`).
+
+- **`skills/project/docs/progress-registry.md`** — designer-facing doc covering topology (pinned registry + 11 progress tickets under CPT-3), the on-cycle read/write patterns, rollover thresholds + strict-greater semantics, relationship to MEMORY.md (durable cross-session vs tactical per-cycle), and a table of all helper functions.
+
+- **`skills/project/install.sh` Steps 5.1 / 5.2** — two new install steps copy `schemas/*.json` to `~/.claude/skills/project/schemas/` and `docs/*.md` to `~/.claude/skills/project/docs/`. `_progress-registry.sh` is picked up by the existing `bin/*.sh` loop without code changes.
+
+### Tests
+
+New `tests/progress-registry.bats` (20 tests). Coverage:
+
+- File presence: library + schema + docs exist at the expected source paths.
+- JSON Schema semantics: canonical registry validates; missing `version` rejected; invalid role name rejected.
+- Helper purity: `registry_extract_json` pulls clean JSON / returns exit-1 on no-JSON; `registry_validate_json` exits 0 on valid / non-zero on invalid; `registry_get_role_ticket` returns expected key / empty for absent role.
+- Cycle comment format: output contains role, cycle number, status, since-last text, next-eta timestamp, ctx-pct — all 6 required fields.
+- Rollover thresholds: strict-greater semantics (500000 bytes + 300 comments = NO rollover; 512001 bytes OR 301 comments = YES).
+- Ticket summary format: `"Progress: master #2"` on input `(master, 1)`.
+- Installer wiring: `bin/*.sh` loop catches `_progress-registry.sh`; explicit `schemas/` install step present; docs installed.
+
+Full suite: **100 / 100 green** (80 pre-existing + 20 new, no regressions).
+
+### Scope divergence from parent CPT-83 ticket (transparent)
+
+Parent CPT-83 scope is the full Jira-backed registry end-to-end: bootstrap, helpers, rollover, concurrency, audit integration, registry wiring into `loops/loop.md`. Realistic estimate 6–10 h — too large for one PR. Shipping as **Phase 3.0** (this PR, ~3 h) + Phase 3.1 (bootstrap + rollover, ~3 h, creates real Jira tickets) + Phase 3.2 (audit + loop.md integration, ~2 h). Rationale in the Jira comment on CPT-83.
+
+### Out of Phase 3.0 scope
+
+Deferred to follow-up tickets (will file after CPT-83 reviewer feedback):
+
+- `scripts/init-progress-registry.sh` — creates 1 registry + 11 progress tickets under CPT-3 (Phase 3.1, live Jira side effects).
+- `check_rollover <ticket>` + `rollover <ticket>` helpers that actually round-trip Jira (Phase 3.1).
+- Optimistic-locking concurrency via Jira `version` field + N=3 retry (Phase 3.1).
+- `/project:audit` check #17 — verify registry + 11 progress tickets exist + reachable (Phase 3.2).
+- Per-role `loops/loop.md` read/write wiring every cycle via MCP (Phase 3.2).
+- Rate-limit mitigation (cache registry JSON with 60 s TTL), local-file fallback when Jira unreachable, archival-status decision for rolled tickets (Phase 3.1 / 3.2).
+
 ## [2.1.1] - 2026-04-16
 
 ### Added (cave-inversion protection — behavioural layer)

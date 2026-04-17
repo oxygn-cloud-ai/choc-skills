@@ -346,6 +346,36 @@ else
   warn "PROJECT_CONFIG.schema.json not found at repo root — /project:new won't be able to copy it to new projects"
 fi
 
+# 5.1. Install schemas/ (CPT-83 progress-registry schema, future per-skill schemas)
+SCHEMAS_SOURCE="${SCRIPT_DIR}/schemas"
+SCHEMAS_TARGET="${SKILL_TARGET}/schemas"
+if [ -d "$SCHEMAS_SOURCE" ]; then
+  mkdir -p "$SCHEMAS_TARGET"
+  sch_count=0
+  for file in "${SCHEMAS_SOURCE}"/*.json; do
+    [ -f "$file" ] || continue
+    cp "$file" "${SCHEMAS_TARGET}/$(basename "$file")"
+    sch_count=$((sch_count + 1))
+  done
+  ok "schemas: ${sch_count} file(s) -> ${SCHEMAS_TARGET}/"
+else
+  warn "No schemas/ directory — progress-registry schema not installed; validate_json helpers will fail"
+fi
+
+# 5.2. Install docs/ (CPT-83 progress-registry doc, future per-skill docs)
+DOCS_SOURCE="${SCRIPT_DIR}/docs"
+DOCS_TARGET="${SKILL_TARGET}/docs"
+if [ -d "$DOCS_SOURCE" ]; then
+  mkdir -p "$DOCS_TARGET"
+  doc_count=0
+  for file in "${DOCS_SOURCE}"/*.md; do
+    [ -f "$file" ] || continue
+    cp "$file" "${DOCS_TARGET}/$(basename "$file")"
+    doc_count=$((doc_count + 1))
+  done
+  ok "docs: ${doc_count} file(s) -> ${DOCS_TARGET}/"
+fi
+
 # 6. Install hooks + register each in ~/.claude/settings.json hooks.PreToolUse
 # Hook files live in ~/.claude/hooks/ (machine-global, shared with other tools).
 # Registration is idempotent: re-running --force does not duplicate entries.
