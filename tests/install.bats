@@ -217,3 +217,20 @@ teardown() {
   # Quiet mode should produce no normal output lines
   [ -z "$output" ]
 }
+
+# --- Security: allowed-tools ---
+
+@test "rr SKILL.md does not grant dangerous Bash wildcards" {
+  # CPT-25: Verify rr's allowed-tools does not include overly broad patterns
+  local skill_md="${REPO_DIR}/skills/rr/SKILL.md"
+  local frontmatter
+  frontmatter=$(sed -n '/^---$/,/^---$/p' "$skill_md" | head -20)
+
+  # These patterns must NOT appear in allowed-tools
+  for pattern in 'Bash(rm ' 'Bash(bash ' 'Bash(chmod ' 'Bash(cp ' 'Bash(xargs '; do
+    if echo "$frontmatter" | grep -qF "$pattern"; then
+      echo "FAIL: rr SKILL.md allowed-tools contains dangerous pattern: $pattern" >&2
+      return 1
+    fi
+  done
+}

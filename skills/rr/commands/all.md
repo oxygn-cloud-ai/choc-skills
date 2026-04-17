@@ -40,9 +40,9 @@ Verify environment variables are set (do not display values):
 
 If `--reset` flag is set:
 1. Ask user to confirm: "This will delete the entire batch work directory at ${RR_WORK_DIR:-~/rr-work}. Continue? (y/n)"
-2. If confirmed:
+2. If confirmed, delegate to the bin script which has symlink validation (CPT-26) and marker-file safety checks:
    ```bash
-   rm -rf "${RR_WORK_DIR:-$HOME/rr-work}"
+   ~/.claude/skills/rr/bin/rr-prepare.sh --reset
    ```
 3. Report cleared and continue to launch
 

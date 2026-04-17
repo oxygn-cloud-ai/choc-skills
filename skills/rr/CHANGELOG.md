@@ -2,6 +2,16 @@
 
 All notable changes to the rr skill will be documented in this file.
 
+## [5.2.5] - 2026-04-17
+
+### Security
+- Removed 5 overly broad `allowed-tools` grants: `Bash(rm *)`, `Bash(bash *)`, `Bash(chmod *)`, `Bash(cp *)`, `Bash(xargs *)` (CPT-25).
+- Updated `commands/all.md` `--reset` to delegate to `rr-prepare.sh --reset` (which has symlink validation) instead of raw `rm -rf`.
+- Updated `commands/update.md` to use direct script execution instead of `bash` prefix.
+
+### Note on version renumbering
+- CPT-25's source branch bumped 5.2.1 → 5.2.2 in isolation. By merge time, 5.2.2/5.2.3/5.2.4 had already shipped, so the Merger renumbered CPT-25 to 5.2.5. No code semantics changed.
+
 ## [5.2.4] - 2026-04-17
 
 ### Fixed
