@@ -243,6 +243,21 @@ teardown() {
   [[ "$output" == *"Changelog"* ]]
 }
 
+@test "--changelog lists all skills with CHANGELOG.md" {
+  run bash "$INSTALLER" --changelog
+  [ "$status" -eq 0 ]
+  # Every skill that has a CHANGELOG.md must appear as a link in the root changelog
+  # Pattern: [skill_name](skills/skill_name/CHANGELOG.md)
+  local skill
+  for skill in "${SKILLS[@]}"; do
+    [ -f "${REPO_DIR}/skills/${skill}/CHANGELOG.md" ] || continue
+    [[ "$output" == *"[${skill}]"* ]] || {
+      echo "Skill '$skill' missing from --changelog output (expected [${skill}] link)" >&2
+      return 1
+    }
+  done
+}
+
 # --- Quiet mode ---
 
 @test "--quiet --force suppresses non-error output" {
