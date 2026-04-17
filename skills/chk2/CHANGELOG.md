@@ -2,6 +2,18 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.2] - 2026-04-17
+
+### Changed
+- **Performance**: fingerprint.md FP1-FP4 consolidated from 5 curl calls to 1 (saves 4 HTTP requests) (CPT-18)
+- **Performance**: reporting.md RC3+RC4 merged into single fetch — RC4 reuses security.txt content from RC3 (saves 2 HTTP requests) (CPT-18)
+- **Performance**: backend.md BF3 timing reduced from 5 to 3 iterations per path (saves 10 HTTP requests) (CPT-18)
+- **Performance**: timing.md TM1-TM2 reduced from 5 to 3 iterations each (saves 8 HTTP requests) (CPT-18)
+- **Performance**: waf.md F6 rate limit test now has `--max-time 5` per request (prevents hangs) (CPT-18)
+
+### Note on version renumbering
+- CPT-18's source branch bumped 2.2.0 → 2.2.2 in isolation. By merge time, 2.3.0 (CPT-8) and 2.3.1 (CPT-16) had already shipped, so the Merger renumbered CPT-18 to 2.3.2. No code semantics changed.
+
 ## [2.3.1] - 2026-04-17
 
 ### Changed

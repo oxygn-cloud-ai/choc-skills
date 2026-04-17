@@ -13,14 +13,16 @@ curl -sI "https://myzr.io/" -H "User-Agent: Mozilla/5.0" | grep -i "^nel:"
 ```
 
 ```bash
-# RC3: security.txt PGP signature
+# RC3 + RC4: security.txt — fetch once, check both PGP signature and Expires
 SECTXT=""
+SECTXT_PATH=""
 for path in /.well-known/security.txt /security.txt; do
   content=$(curl -s "https://myzr.io$path" -H "User-Agent: Mozilla/5.0" -w "\nHTTP_STATUS:%{http_code}")
   status=$(echo "$content" | grep "HTTP_STATUS:" | cut -d: -f2)
   body=$(echo "$content" | sed '/HTTP_STATUS:/d')
   if [ "$status" = "200" ]; then
     SECTXT="$body"
+    SECTXT_PATH="$path"
     echo "Found security.txt at $path"
     echo "$body"
     break
@@ -30,25 +32,18 @@ done
 if [ -z "$SECTXT" ]; then
   echo "No security.txt found"
 else
+  # RC3: PGP signature check
   echo "=== PGP signature check ==="
   echo "$SECTXT" | grep -c "BEGIN PGP SIGNATURE" || echo "No PGP signature block"
-fi
-```
 
-```bash
-# RC4: security.txt Expires field
-for path in /.well-known/security.txt /security.txt; do
-  content=$(curl -s "https://myzr.io$path" -H "User-Agent: Mozilla/5.0")
-  status=$(curl -s -o /dev/null -w "%{http_code}" "https://myzr.io$path" -H "User-Agent: Mozilla/5.0")
-  if [ "$status" = "200" ]; then
-    expires=$(echo "$content" | grep -i "^Expires:" | head -1)
-    if [ -n "$expires" ]; then
-      echo "Expires field: $expires"
-      # Parse and check if expired
-      exp_date=$(echo "$expires" | sed 's/^Expires:[[:space:]]*//')
-      python3 -c "
+  # RC4: Expires field check (reuses SECTXT from RC3 — no extra curl)
+  echo "=== Expires field check ==="
+  expires=$(echo "$SECTXT" | grep -i "^Expires:" | head -1)
+  if [ -n "$expires" ]; then
+    echo "Expires field: $expires"
+    exp_date=$(echo "$expires" | sed 's/^Expires:[[:space:]]*//')
+    python3 -c "
 from datetime import datetime, timezone
-import sys
 try:
     exp = datetime.fromisoformat('$exp_date'.replace('Z', '+00:00'))
     now = datetime.now(timezone.utc)
@@ -59,12 +54,10 @@ try:
 except Exception as e:
     print(f'PARSE ERROR: {e}')
 "
-    else
-      echo "No Expires field found"
-    fi
-    break
+  else
+    echo "No Expires field found"
   fi
-done
+fi
 ```
 
 ## Checks

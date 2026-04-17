@@ -5,20 +5,16 @@ Test fingerprinting-resistance and cross-origin isolation headers on https://${T
 ## Tests
 
 ```bash
-# FP1-FP4: Cross-origin and isolation headers
-curl -sI "https://${TARGET:-myzr.io}/" -H "User-Agent: Mozilla/5.0" | grep -iE "permissions-policy|cross-origin-opener|cross-origin-embedder|cross-origin-resource"
-
-# FP1: Permissions-Policy
-curl -sI "https://${TARGET:-myzr.io}/" -H "User-Agent: Mozilla/5.0" | grep -i "permissions-policy"
-
-# FP2: Cross-Origin-Opener-Policy
-curl -sI "https://${TARGET:-myzr.io}/" -H "User-Agent: Mozilla/5.0" | grep -i "cross-origin-opener-policy"
-
-# FP3: Cross-Origin-Embedder-Policy
-curl -sI "https://${TARGET:-myzr.io}/" -H "User-Agent: Mozilla/5.0" | grep -i "cross-origin-embedder-policy"
-
-# FP4: Cross-Origin-Resource-Policy
-curl -sI "https://${TARGET:-myzr.io}/" -H "User-Agent: Mozilla/5.0" | grep -i "cross-origin-resource-policy"
+# FP1-FP4: Cross-origin and isolation headers (single curl, extract all 4 headers)
+HEADERS=$(curl -sI "https://${TARGET:-myzr.io}/" -H "User-Agent: Mozilla/5.0")
+echo "=== FP1: Permissions-Policy ==="
+echo "$HEADERS" | grep -i "permissions-policy" || echo "(absent)"
+echo "=== FP2: Cross-Origin-Opener-Policy ==="
+echo "$HEADERS" | grep -i "cross-origin-opener-policy" || echo "(absent)"
+echo "=== FP3: Cross-Origin-Embedder-Policy ==="
+echo "$HEADERS" | grep -i "cross-origin-embedder-policy" || echo "(absent)"
+echo "=== FP4: Cross-Origin-Resource-Policy ==="
+echo "$HEADERS" | grep -i "cross-origin-resource-policy" || echo "(absent)"
 
 # FP5: Certificate Transparency SCT
 echo | openssl s_client -connect ${TARGET:-myzr.io}:443 -servername ${TARGET:-myzr.io} -ct 2>/dev/null | grep -iE "SCT|signed certificate timestamp"

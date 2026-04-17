@@ -11,7 +11,7 @@ VALID_SID=$(curl -s "https://myzr.io/api" -X POST -H "Content-Type: application/
 
 # Time 5 requests with valid session ID
 echo "Valid session timings:"
-for i in $(seq 1 5); do
+for i in $(seq 1 3); do
   curl -s -o /dev/null -w "%{time_total}\n" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d "{\"action\":\"game-state\",\"sessionId\":\"$VALID_SID\"}" \
@@ -20,7 +20,7 @@ done
 
 # Time 5 requests with invalid session ID
 echo "Invalid session timings:"
-for i in $(seq 1 5); do
+for i in $(seq 1 3); do
   curl -s -o /dev/null -w "%{time_total}\n" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d '{"action":"game-state","sessionId":"nonexistent-session-id-00000"}' \
@@ -32,7 +32,7 @@ done
 # TM2: Timing leak on pair codes
 # Time 5 requests with a plausible pair code
 echo "Plausible pair code timings:"
-for i in $(seq 1 5); do
+for i in $(seq 1 3); do
   curl -s -o /dev/null -w "%{time_total}\n" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d '{"action":"join-game","pairCode":"AAAA"}' \
@@ -41,7 +41,7 @@ done
 
 # Time 5 requests with an obviously invalid pair code
 echo "Invalid pair code timings:"
-for i in $(seq 1 5); do
+for i in $(seq 1 3); do
   curl -s -o /dev/null -w "%{time_total}\n" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d '{"action":"join-game","pairCode":"ZZZZZZZZZZ"}' \

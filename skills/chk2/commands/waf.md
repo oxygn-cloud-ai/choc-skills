@@ -17,7 +17,7 @@ for i in $(seq 1 35); do
   code=$(curl -s -o /dev/null -w "%{http_code}" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d '{"action":"game-action","sessionId":"test","gameAction":"createSkill"}' \
-    -H "User-Agent: Mozilla/5.0")
+    -H "User-Agent: Mozilla/5.0" --max-time 5)
   if [ "$code" = "429" ]; then echo "Rate limited at $i"; break; fi
 done
 
