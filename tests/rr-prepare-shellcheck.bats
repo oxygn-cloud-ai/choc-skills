@@ -50,11 +50,34 @@ REPO_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   [ "$status" -ne 0 ]
 }
 
-@test "tests/rr-prepare.bats: runtime-probe helper is shared across symlink tests (CPT-122)" {
-  # The helper should be defined once at the top of the file and called from
-  # every symlink test rather than inlined per-test. Expect at least 3 calls
-  # to the helper — one for each of the three symlink-attack tests.
-  run grep -cE '(probe_attack_dir|_rr_probe_attack_dir)' "$REPO_DIR/tests/rr-prepare.bats"
-  [ "$status" -eq 0 ]
-  [ "$output" -ge 4 ]  # 1 definition + ≥3 call sites
+@test "tests/rr-prepare.bats: runtime-probe helper is defined exactly once (CPT-122)" {
+  # The helper must be defined once at the top of the file as a function.
+  # CPT-153: the previous "≥4 textual occurrences" guard counted comment
+  # mentions, so a regression that dropped one call + kept the comment
+  # still satisfied the threshold. Split into two stricter greps: one
+  # asserts exactly one function definition, the other asserts ≥3 call
+  # sites (comments can't match either shape).
+  local def_count
+  def_count=$(grep -cE '^[[:space:]]*(probe_attack_dir|_rr_probe_attack_dir)[[:space:]]*\(\)[[:space:]]*\{' \
+                   "$REPO_DIR/tests/rr-prepare.bats" || true)
+  if [ "$def_count" -ne 1 ]; then
+    echo "expected exactly 1 definition of probe_attack_dir(); got $def_count" >&2
+    return 1
+  fi
+}
+
+@test "tests/rr-prepare.bats: runtime-probe helper is called from every symlink test (CPT-122, CPT-153)" {
+  # Count call-site shapes only. A call site is either:
+  #   - `$(probe_attack_dir ...)` — command substitution assignment form
+  #   - a bare `probe_attack_dir ...` command invocation at line start
+  # Comments (anywhere containing the name as prose) are excluded because
+  # the patterns require specific non-comment syntax.
+  local call_count
+  call_count=$(grep -cE '\$\((probe_attack_dir|_rr_probe_attack_dir)([[:space:]]|\))' \
+                    "$REPO_DIR/tests/rr-prepare.bats" || true)
+  if [ "$call_count" -lt 3 ]; then
+    echo "expected ≥3 call sites of probe_attack_dir; got $call_count" >&2
+    grep -nE '(probe_attack_dir|_rr_probe_attack_dir)' "$REPO_DIR/tests/rr-prepare.bats" >&2
+    return 1
+  fi
 }
