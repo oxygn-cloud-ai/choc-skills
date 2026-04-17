@@ -5,7 +5,7 @@ VERSION="2.1.1"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
-  printf "Error: bash 3.2+ required (found %s). Upgrade bash and try again.\n" "$BASH_VERSION" >&2
+  printf "Error: bash 3+ required (found %s). Upgrade bash and try again.\n" "$BASH_VERSION" >&2
   exit 1
 fi
 
