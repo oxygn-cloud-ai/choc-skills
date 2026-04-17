@@ -73,7 +73,7 @@ methods_and_data = {
 for label, path in paths.items():
     timings = []
     method, data = methods_and_data[label]
-    for _ in range(3):
+    for _ in range(5):
         req = urllib.request.Request(
             f"https://{TARGET}{path}",
             data=data,

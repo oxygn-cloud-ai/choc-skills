@@ -2,6 +2,14 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.13] - 2026-04-17
+
+### Fixed
+- **Timing-test sample stability on CDN-fronted targets**: CPT-18 reduced TM1/TM2 (timing.md) and BF3 (backend.md) from 5 → 3 samples per side for perf. Against a CDN, a single slow response moves the 3-sample mean by more than the 50 ms PASS/WARN threshold, flipping verdicts on network jitter rather than application behaviour. Restored to 5 samples per side and updated the Checks table to specify "median" as the comparison statistic so the auditor uses a robust stat. No net runtime regression — same as pre-CPT-18 cost (CPT-106).
+- **Vacuous RC4 regression test**: `tests/chk2-redundant-requests.bats` RC4 test used `sed -n '/^# RC4/,/^\`\`\`$/p'` against a file where `# RC4` is an indented comment inside an else-branch — the range never matched, `grep -c curl` returned 0, and the test silently passed regardless of content. Rewrote to inspect the merged RC3+RC4 block directly (from `# RC3 + RC4:` header through the closing outer `fi`) and assert exactly 1 curl call. A future edit that reintroduces a dedicated RC4 curl would now drive the count to ≥2 and fail this test (CPT-106).
+
+**Note on version renumbering**: This entry originally targeted 2.3.12 on `fix/CPT-106-chk2-timing-samples-rc4-test`, but CPT-101 (reporting RCE fix) landed on `main` and claimed 2.3.12 first. Renumbered to 2.3.13 as part of the merge sequence; no code semantics changed from the original branch.
+
 ## [2.3.12] - 2026-04-17
 
 ### Security

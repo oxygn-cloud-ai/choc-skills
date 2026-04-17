@@ -17,7 +17,7 @@ VALID_SID=$(curl -s "https://myzr.io/api" -X POST -H "Content-Type: application/
 
 # Time 5 requests with valid session ID
 echo "Valid session timings:"
-for i in $(seq 1 3); do
+for i in $(seq 1 5); do
   curl -s -o /dev/null -w "%{time_total}\n" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d "{\"action\":\"game-state\",\"sessionId\":\"$VALID_SID\"}" \
@@ -26,7 +26,7 @@ done
 
 # Time 5 requests with invalid session ID
 echo "Invalid session timings:"
-for i in $(seq 1 3); do
+for i in $(seq 1 5); do
   curl -s -o /dev/null -w "%{time_total}\n" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d '{"action":"game-state","sessionId":"nonexistent-session-id-00000"}' \
@@ -38,7 +38,7 @@ done
 # TM2: Timing leak on pair codes
 # Time 5 requests with a plausible pair code
 echo "Plausible pair code timings:"
-for i in $(seq 1 3); do
+for i in $(seq 1 5); do
   curl -s -o /dev/null -w "%{time_total}\n" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d '{"action":"join-game","pairCode":"AAAA"}' \
@@ -47,7 +47,7 @@ done
 
 # Time 5 requests with an obviously invalid pair code
 echo "Invalid pair code timings:"
-for i in $(seq 1 3); do
+for i in $(seq 1 5); do
   curl -s -o /dev/null -w "%{time_total}\n" "https://myzr.io/api" -X POST \
     -H "Content-Type: application/json" \
     -d '{"action":"join-game","pairCode":"ZZZZZZZZZZ"}' \
@@ -101,8 +101,8 @@ print(f"TM4: {unique_sessions} unique sessions from 10 concurrent requests")
 
 | # | Test | Pass Condition |
 |---|------|---------------|
-| TM1 | Constant-time session lookup | Average response time difference between valid and invalid session IDs is <=50ms (WARN if >50ms) |
-| TM2 | Timing leak on pair codes | Average response time difference between plausible and invalid pair codes is <=50ms (WARN if >50ms) |
+| TM1 | Constant-time session lookup | Median response time difference between valid and invalid session IDs is <=50ms (WARN if >50ms). Use the median of the 5 samples per side rather than the mean so a single CDN-jitter outlier does not flip the verdict (CPT-106). |
+| TM2 | Timing leak on pair codes | Median response time difference between plausible and invalid pair codes is <=50ms (WARN if >50ms). Use the median of the 5 samples per side rather than the mean so a single CDN-jitter outlier does not flip the verdict (CPT-106). |
 | TM3 | Race condition on game actions | Only 1 of 10 simultaneous identical actions is processed (PASS if deduplicated) |
 | TM4 | Idempotency on creation | 10 concurrent new-game requests do NOT all create separate sessions (WARN if all 10 create unique sessions) |
 
@@ -115,8 +115,8 @@ Write to `SECURITY_CHECK.parts/timing.md`:
 
 | # | Test | Result | Evidence |
 |---|------|--------|----------|
-| TM1 | Constant-time session lookup | {PASS/WARN} | {avg valid vs avg invalid ms, delta} |
-| TM2 | Timing leak on pair codes | {PASS/WARN} | {avg plausible vs avg invalid ms, delta} |
+| TM1 | Constant-time session lookup | {PASS/WARN} | {median valid vs median invalid ms, delta} |
+| TM2 | Timing leak on pair codes | {PASS/WARN} | {median plausible vs median invalid ms, delta} |
 | TM3 | Race condition on game actions | {PASS/WARN} | {N of 10 succeeded} |
 | TM4 | Idempotency on creation | {PASS/WARN} | {N unique sessions from 10 concurrent} |
 ```

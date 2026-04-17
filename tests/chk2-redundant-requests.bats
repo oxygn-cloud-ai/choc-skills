@@ -17,20 +17,27 @@ CHK2_DIR="skills/chk2/commands"
 
 @test "reporting.md RC4 reuses security.txt from RC3 not a separate curl" {
   [ -f "$CHK2_DIR/reporting.md" ] || skip "reporting.md not found"
-  # RC4 should reference the variable from RC3 (SECTXT) not make its own curl calls
-  # Count curl calls in RC4 section
-  rc4_curls=$(sed -n '/^# RC4/,/^```$/p' "$CHK2_DIR/reporting.md" | grep -c 'curl ' || true)
-  [ "$rc4_curls" -eq 0 ]
+  # CPT-106: the prior `^# RC4` sed range matched nothing after CPT-18 merged
+  # RC3+RC4 (the heading is indented inside an else-branch, so `^` doesn't hit)
+  # and the test silently passed regardless of content. Switched to inspecting
+  # the merged block directly — from the "# RC3 + RC4:" header through the
+  # closing outer `fi` — and asserting exactly one curl call.
+  local merged_curls
+  merged_curls=$(sed -n '/# RC3 + RC4:/,/^fi[[:space:]]*$/p' "$CHK2_DIR/reporting.md" | grep -c 'curl ' || true)
+  [ "$merged_curls" -eq 1 ] || { echo "expected exactly 1 curl in RC3+RC4 merged block, got $merged_curls" >&2; return 1; }
 }
 
-# --- Finding 3: backend.md BF3 reduces request count ---
+# --- Finding 3: backend.md BF3 iteration count (CPT-18 baseline → CPT-106 correction) ---
 
-@test "backend.md BF3 timing uses 3 iterations not 5" {
+@test "backend.md BF3 timing uses 5 iterations (CPT-106 corrected CPT-18)" {
   [ -f "$CHK2_DIR/backend.md" ] || skip "backend.md not found"
-  # Should use range(3) not range(5) to reduce from 25 to 15 requests
-  run grep -c 'range(5)' "$CHK2_DIR/backend.md"
+  # CPT-18 reduced BF3 from 5→3 iterations for perf. CPT-106 showed 3 samples
+  # sits below the noise floor of a CDN-fronted target — single-outlier swings
+  # can invalidate the timing measurement. Restored to 5, which is the same
+  # runtime cost as the pre-CPT-18 code but stable against jitter.
+  run grep -c 'range(3)' "$CHK2_DIR/backend.md"
   [ "$output" = "0" ] || [ "$status" -ne 0 ]
-  run grep 'range(3)' "$CHK2_DIR/backend.md"
+  run grep 'range(5)' "$CHK2_DIR/backend.md"
   [ "$status" -eq 0 ]
 }
 
@@ -44,13 +51,21 @@ CHK2_DIR="skills/chk2/commands"
   echo "$output" | grep -q 'max-time'
 }
 
-# --- Finding 5: timing.md uses parallel or fewer sequential requests ---
+# --- Finding 5: timing.md TM1-TM2 iteration count (CPT-18 baseline → CPT-106 correction) ---
 
-@test "timing.md TM1-TM2 use 3 iterations not 5" {
+@test "timing.md TM1-TM2 use 5 iterations per side (CPT-106 corrected CPT-18)" {
   [ -f "$CHK2_DIR/timing.md" ] || skip "timing.md not found"
-  # Should use seq 1 3 not seq 1 5 for the timing measurements
-  run grep -c 'seq 1 5' "$CHK2_DIR/timing.md"
+  # CPT-18 reduced TM1/TM2 from 5→3 iterations per side for perf. CPT-106
+  # showed 3 samples sit below the noise floor of a CDN-fronted target —
+  # single slow responses can move the mean by more than the 50 ms PASS/WARN
+  # threshold, flipping verdicts on jitter. Restored to 5 samples per side
+  # and switched the Checks table to "median" so the downstream auditor
+  # uses a robust statistic.
+  run grep -c 'for i in \$(seq 1 3)' "$CHK2_DIR/timing.md"
   [ "$output" = "0" ] || [ "$status" -ne 0 ]
+  run grep -c 'for i in \$(seq 1 5)' "$CHK2_DIR/timing.md"
+  # Four timing loops: TM1 valid, TM1 invalid, TM2 plausible, TM2 invalid
+  [ "$output" -ge 4 ] || { echo "expected >=4 'seq 1 5' timing loops, got $output" >&2; return 1; }
 }
 
 # --- Finding 6: scale.md RE4 has socket timeout ---
