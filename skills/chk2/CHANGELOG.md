@@ -2,6 +2,14 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.8] - 2026-04-17
+
+### Fixed
+- **P1 circuit breaker**: `/chk2:all`'s rate-limit circuit breaker had no wire protocol between sub-agents and orchestrator — counter would either never trip (signal missed) or trip spuriously (over-match on "429" in free text). Each of the 30 category sub-skills now ends its response with exactly one final `CHK2-STATUS: OK|RATE_LIMITED|ERROR` line. The orchestrator parses only that line, tracks a `rate_limited_streak`, resets to 0 on OK waves, and aborts after 3 consecutive RATE_LIMITED waves. Contract documented in `SKILL.md` (CPT-89).
+
+### Note on version renumbering
+- CPT-89 source branch targeted 2.3.5; 2.3.5–2.3.7 all shipped earlier this cycle, so renumbered to 2.3.8.
+
 ## [2.3.7] - 2026-04-17
 
 ### Fixed

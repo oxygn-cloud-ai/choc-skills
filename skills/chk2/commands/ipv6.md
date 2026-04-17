@@ -86,3 +86,11 @@ Write to `SECURITY_CHECK.parts/ipv6.md`:
 ## After
 
 Ask the user: **Do you want help fixing the IPv6 issues found?** If yes, invoke `/chk2:fix` with context about which IPv6 tests failed.
+
+## Status signal
+
+End your response with exactly one of these lines (orchestrator parses only this last signal — do not include any other "CHK2-STATUS:" text in your response):
+
+- `CHK2-STATUS: OK` — all checks completed normally
+- `CHK2-STATUS: RATE_LIMITED` — one or more target requests returned HTTP 429 (or Cloudflare 1015)
+- `CHK2-STATUS: ERROR` — prerequisites missing, or the category could not complete

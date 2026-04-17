@@ -73,7 +73,21 @@ Parallel Agent waves (six concurrent writers) cannot safely share a single `SECU
    - `/chk2:scale`
    - `/chk2:timing`
 
-   **Between waves:** Check for rate-limit signals (429 or 1015 responses). If any Agent in the wave reported a rate limit, wait 65 seconds before starting the next wave. If 3 consecutive waves trigger rate limits, abort remaining waves and report that the target is rate-limiting — do not continue sending requests.
+   **Between waves — rate-limit circuit breaker (CHK2-STATUS protocol):**
+
+   Every category sub-skill ends its response with exactly one final line:
+   - `CHK2-STATUS: OK` — checks completed normally
+   - `CHK2-STATUS: RATE_LIMITED` — HTTP 429 / Cloudflare 1015 observed
+   - `CHK2-STATUS: ERROR` — prerequisites missing or category could not run
+
+   Parse **only** the last `CHK2-STATUS:` line of each sub-agent response. Free-text mentions of "429" inside a category's evidence are NOT signals.
+
+   **Wave classification**: a wave is `RATE_LIMITED` if any sub-agent in it returned `CHK2-STATUS: RATE_LIMITED`. Otherwise the wave is `OK` (ERROR sub-agents do not count as rate-limited — they are logged but do not trip the breaker).
+
+   **Counter semantics**: track `rate_limited_streak`, initialized to 0. After each wave:
+   - If the wave is `RATE_LIMITED`: increment the counter and wait 65 seconds before starting the next wave.
+   - If the wave is `OK`: **reset the counter to 0** (the streak is only consecutive waves).
+   - If `rate_limited_streak` reaches 3 consecutive `RATE_LIMITED` waves: abort remaining waves and report that the target is rate-limiting — do not continue sending requests.
 
 3. **Merge per-category part files into SECURITY_CHECK.md** in wave order, deterministically:
 

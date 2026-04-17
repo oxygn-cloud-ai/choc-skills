@@ -1,6 +1,6 @@
 ---
 name: chk2
-version: 2.3.7
+version: 2.3.8
 description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true
@@ -19,7 +19,7 @@ Check $ARGUMENTS before proceeding. If it matches one of the following subcomman
 If $ARGUMENTS equals "help", "--help", or "-h", display the following usage guide and stop.
 
 ```
-chk2 v2.3.7 — Adversarial Security Audit
+chk2 v2.3.8 — Adversarial Security Audit
 
 USAGE
   /chk2                Run all test categories (~211 checks)
@@ -106,7 +106,7 @@ chk2 doctor — Environment Health Check
   [PASS] websockets: installed
   [PASS] target reachable: https://myzr.io/ (200)
   [PASS] sub-commands: 35 files in ~/.claude/commands/chk2/
-  [PASS] version: 2.3.7
+  [PASS] version: 2.3.8
 
   Result: N passed, N warnings, N failed
 ```
@@ -118,7 +118,7 @@ End of doctor output. Do not continue.
 If $ARGUMENTS equals "version", "--version", or "-v", output the version and stop.
 
 ```
-chk2 v2.3.7
+chk2 v2.3.8
 ```
 
 End of version output. Do not continue.
@@ -187,6 +187,16 @@ Parse $ARGUMENTS and route:
 If the sub-command `.md` files exist in `~/.claude/commands/chk2/`, invoke them via the Skill tool. Otherwise, execute the tests inline using the definitions below.
 
 ---
+
+## Sub-skill → orchestrator contract (CHK2-STATUS)
+
+When a category sub-skill runs under `/chk2:all` (via the Agent tool), it **must** end its response with exactly one final line so the orchestrator's rate-limit circuit breaker can track wave state:
+
+- `CHK2-STATUS: OK` — all checks completed normally
+- `CHK2-STATUS: RATE_LIMITED` — one or more requests returned HTTP 429 (or Cloudflare 1015)
+- `CHK2-STATUS: ERROR` — prerequisites missing, or the category could not complete
+
+The orchestrator parses only the last `CHK2-STATUS:` line in each sub-agent's return text — free-text mentions of "429" inside evidence are not signals. After each wave, the orchestrator increments a `rate_limited_streak` counter on a `RATE_LIMITED` wave, resets it to 0 on an `OK` wave, and aborts remaining waves once the streak reaches 3.
 
 ## Output Format
 
