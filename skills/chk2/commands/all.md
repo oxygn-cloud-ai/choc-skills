@@ -26,7 +26,7 @@ Parallel Agent waves (six concurrent writers) cannot safely share a single `SECU
 **Target**: https://myzr.io
 ```
 
-2. Dispatch categories in parallel waves using the Agent tool. Each wave launches up to 6 concurrent Agent calls. Each Agent runs one category skill and writes its section to `SECURITY_CHECK.parts/<category>.md` (its own file — no concurrent-write race).
+2. Dispatch categories in parallel waves using the Agent tool. Each wave launches up to 6 concurrent Agent calls with **`subagent_type: general-purpose`** (explicit — the Agent tool would otherwise default silently, hiding the decision). Each Agent runs one category skill and writes its section to `SECURITY_CHECK.parts/<category>.md` (its own file — no concurrent-write race).
 
    **Wave 1 — Passive reconnaissance (no active probing):**
    Launch these 6 categories as parallel Agent calls:
@@ -112,11 +112,15 @@ Parallel Agent waves (six concurrent writers) cannot safely share a single `SECU
 ```markdown
 ## Summary
 
-| Category | Pass | Fail | Warn | Total |
-|----------|------|------|------|-------|
+| Category | Pass | Fail | Warn | Skipped | Reason | Total |
+|----------|------|------|------|---------|--------|-------|
+| headers | 14 | 0 | 0 | 0 | — | 14 |
+| api | — | — | — | 17 | circuit breaker aborted wave 5 | 17 |
 | ... |
 
-**Overall**: X passed, Y failed, Z warnings out of N tests
+Mark categories as SKIPPED (with reason) when the circuit breaker aborts their wave, when prerequisites fail, or when any sub-agent returns `CHK2-STATUS: ERROR`. Do NOT fabricate zero counts for categories that didn't actually run — that hides gaps in audit coverage.
+
+**Overall**: X passed, Y failed, Z warnings, S skipped out of N tests
 
 ## Recommendations
 

@@ -1,6 +1,6 @@
 ---
 name: chk2
-version: 2.3.9
+version: 2.3.10
 description: Adversarial security audit for web services. 211 checks across 30 categories. Outputs SECURITY_CHECK.md.
 user-invocable: true
 disable-model-invocation: true

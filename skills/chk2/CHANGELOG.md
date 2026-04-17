@@ -2,6 +2,11 @@
 
 All notable changes to the chk2 skill will be documented in this file.
 
+## [2.3.10] - 2026-04-17
+
+### Fixed
+- **Design precision**: `/chk2:all` orchestrator now (1) explicitly specifies `subagent_type: general-purpose` in Agent dispatch — previously omitted, silently defaulting — and (2) adds `Skipped` + `Reason` columns to the summary table so circuit-breaker-aborted waves are surfaced as SKIPPED with cause, rather than omitted silently or faked with zero counts. Prevents misleading audit summaries when waves abort or sub-agents return `CHK2-STATUS: ERROR` (CPT-90).
+
 ## [2.3.9] - 2026-04-17
 
 ### Fixed
