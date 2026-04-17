@@ -169,9 +169,10 @@ phase_discovery() {
     local jql="project = $PROJECT_KEY AND issuetype = Risk ORDER BY key ASC"
     [ -n "$CATEGORY_FILTER" ] && jql="project = $PROJECT_KEY AND issuetype = Risk AND summary ~ \"[$CATEGORY_FILTER]\" ORDER BY key ASC"
 
-    local all_risks="[]"
     local next_page_token=""
     local page=0
+    local tmp_risks
+    tmp_risks=$(mktemp)
 
     while true; do
         page=$((page + 1))
@@ -180,6 +181,7 @@ phase_discovery() {
         response=$(jira_search "$jql" 100 "$next_page_token")
 
         if [ -z "$response" ] || ! echo "$response" | jq -e '.issues' >/dev/null 2>&1; then
+            rm -f "$tmp_risks"
             die "Failed to query Jira"
         fi
 
@@ -187,7 +189,8 @@ phase_discovery() {
         batch_count=$(echo "$response" | jq '.issues | length')
         log "Page $page: $batch_count risks"
 
-        all_risks=$(echo "$all_risks" "$response" | jq -s '.[0] + .[1].issues')
+        # Append issues as individual JSON lines (avoids O(P*N) re-parse accumulation)
+        echo "$response" | jq -c '.issues[]' >> "$tmp_risks"
 
         # Cursor-based pagination: nextPageToken is authoritative
         next_page_token=$(echo "$response" | jq -r '.nextPageToken // empty')
@@ -195,6 +198,14 @@ phase_discovery() {
             break
         fi
     done
+
+    local all_risks
+    if [ -s "$tmp_risks" ]; then
+        all_risks=$(jq -s '.' "$tmp_risks")
+    else
+        all_risks="[]"
+    fi
+    rm -f "$tmp_risks"
 
     local risk_count
     risk_count=$(echo "$all_risks" | jq 'length')
@@ -247,7 +258,8 @@ phase_filter() {
 
     # Query for existing reviews this quarter (cursor-paginated)
     local jql="project = $PROJECT_KEY AND issuetype = Review AND created >= $quarter_start"
-    local all_reviews="[]"
+    local tmp_reviews
+    tmp_reviews=$(mktemp)
     local next_page_token=""
     while true; do
         local reviews_response
@@ -255,16 +267,27 @@ phase_filter() {
         if [ -z "$reviews_response" ] || ! echo "$reviews_response" | jq -e '.issues' >/dev/null 2>&1; then
             break
         fi
-        all_reviews=$(echo "$all_reviews" "$reviews_response" | jq -s '.[0] + .[1].issues')
+        # Append issues as JSON lines (avoids O(P*N) re-parse accumulation)
+        echo "$reviews_response" | jq -c '.issues[]' >> "$tmp_reviews"
         next_page_token=$(echo "$reviews_response" | jq -r '.nextPageToken // empty')
         [ -z "$next_page_token" ] && break
     done
 
-    # Extract parent keys of existing reviews
-    local reviewed_parents
-    reviewed_parents=$(echo "$all_reviews" | jq -r '[.[].fields.parent.key // empty] | unique | .[]')
+    # Build space-delimited set of reviewed parent keys for O(|set|) lookup.
+    # Bash 3.2-compatible alternative to `declare -A` (associative arrays are
+    # bash 4+; macOS ships /bin/bash 3.2.57). At realistic register sizes
+    # (≲ hundreds of reviewed parents) this is indistinguishable from O(1) in
+    # wall-clock terms, and still eliminates the per-risk grep subprocess fork
+    # that was the original CPT-10 hotspot.
+    local reviewed_set=" "
+    if [ -s "$tmp_reviews" ]; then
+        while IFS= read -r parent_key; do
+            [ -n "$parent_key" ] && reviewed_set="${reviewed_set}${parent_key} "
+        done < <(jq -rs '[.[].fields.parent.key // empty] | unique | .[]' "$tmp_reviews")
+    fi
+    rm -f "$tmp_reviews"
 
-    # Filter out already-reviewed risks (temp file approach to avoid O(n^2) jq)
+    # Filter out already-reviewed risks using pure-bash case-pattern lookup.
     local reviewed_count=0
     local tmp_filter
     tmp_filter=$(mktemp)
@@ -272,11 +295,10 @@ phase_filter() {
     while read -r risk; do
         local key
         key=$(echo "$risk" | jq -r '.key')
-        if echo "$reviewed_parents" | grep -q "^${key}$"; then
-            reviewed_count=$((reviewed_count + 1))
-        else
-            echo "$risk" >> "$tmp_filter"
-        fi
+        case "$reviewed_set" in
+            *" $key "*) reviewed_count=$((reviewed_count + 1)) ;;
+            *)          echo "$risk" >> "$tmp_filter" ;;
+        esac
     done < <(jq -c '.risks[]' "$WORK_DIR/discovery.json")
 
     local to_process
