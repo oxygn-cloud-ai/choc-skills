@@ -25,20 +25,24 @@ fi
 clear_screen() { printf '\033[2J\033[H'; }
 
 draw_box_top() {
-  local w=$1
-  printf '┌'; printf '─%.0s' $(seq 1 "$w"); printf '┐\n'
+  local w=$1 line
+  printf -v line '%*s' "$w" ''
+  printf '┌%s┐\n' "${line// /─}"
 }
 
 draw_box_bottom() {
-  local w=$1
-  printf '└'; printf '─%.0s' $(seq 1 "$w"); printf '┘\n'
+  local w=$1 line
+  printf -v line '%*s' "$w" ''
+  printf '└%s┘\n' "${line// /─}"
 }
 
 draw_row() {
   local w=$1 content=$2
-  # Strip ANSI for length calculation
-  local stripped
-  stripped=$(echo -e "$content" | sed 's/\x1b\[[0-9;]*m//g')
+  # Strip ANSI for length calculation using bash parameter expansion (no fork)
+  local stripped="$content"
+  while [[ "$stripped" =~ $'\033'\[[0-9\;]*m ]]; do
+    stripped="${stripped//${BASH_REMATCH[0]}/}"
+  done
   local slen=${#stripped}
   local pad=$((w - slen))
   [ "$pad" -lt 0 ] && pad=0
@@ -55,20 +59,17 @@ get_windows() {
   tmux list-windows -t "$session" -F '#{window_name} #{window_activity}' 2>/dev/null || true
 }
 
-get_window_count() {
-  local session=$1
-  tmux list-windows -t "$session" 2>/dev/null | wc -l | tr -d ' '
-}
-
-get_active_count() {
-  local session=$1 count=0 now
+get_window_stats() {
+  # Returns "window_count active_count" from a single tmux call
+  local session=$1 wcount=0 acount=0 now
   now=$(date +%s)
   while read -r activity; do
     [ -z "$activity" ] && continue
+    wcount=$((wcount + 1))
     local diff=$((now - activity))
-    [ "$diff" -lt 300 ] && count=$((count + 1))
+    [ "$diff" -lt 300 ] && acount=$((acount + 1))
   done < <(tmux list-windows -t "$session" -F '#{window_activity}' 2>/dev/null)
-  echo "$count"
+  echo "$wcount $acount"
 }
 
 format_age() {
@@ -114,10 +115,8 @@ show_projects() {
     local idx=0
     for session in "${sessions[@]}"; do
       local letter="${LETTERS[$idx]}"
-      local wcount
-      wcount=$(get_window_count "$session")
-      local acount
-      acount=$(get_active_count "$session")
+      local wcount acount
+      read -r wcount acount <<< "$(get_window_stats "$session")"
       local indicator
       if [ "$acount" -gt 0 ]; then
         indicator="${GREEN}●${RESET}"
@@ -190,11 +189,8 @@ show_roles() {
 
     local windows=()
     local activities=()
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      local wname wactivity
-      wname=$(echo "$line" | awk '{print $1}')
-      wactivity=$(echo "$line" | awk '{print $2}')
+    while read -r wname wactivity; do
+      [ -z "$wname" ] && continue
       windows+=("$wname")
       activities+=("$wactivity")
     done < <(get_windows "$session")

@@ -2,6 +2,15 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.1] - 2026-04-14
+
+### Changed
+- **Performance**: `project-picker.sh` draw_box_top/bottom use `printf -v` instead of `$(seq)` fork (was 2 forks per render)
+- **Performance**: `project-picker.sh` draw_row uses bash parameter expansion instead of `echo|sed` for ANSI stripping (was 2 forks per row per render)
+- **Performance**: `project-picker.sh` show_roles uses `read -r` instead of `echo|awk` for field extraction (was 2 forks per window per render)
+- **Performance**: `project-picker.sh` merged get_window_count + get_active_count into single `get_window_stats` (was 2 tmux calls per session, now 1)
+- **Performance**: `tmux-iterm-tabs.sh` lookup_label inlines sanitize_name logic (avoids subshell fork per directory iteration)
+
 ## [1.2.0] - 2026-04-12
 
 ### Added

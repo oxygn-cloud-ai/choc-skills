@@ -34,8 +34,14 @@ lookup_label() {
   for dir in "$REPOS_DIR"/*/; do
     [[ -d "$dir" ]] || continue
     local name safe
-    name="$(basename "$dir")"
-    safe="$(sanitize_name "$name")"
+    name="${dir%/}"
+    name="${name##*/}"
+    # Inline sanitize_name logic (avoids subshell fork per iteration)
+    safe="${name//\./-}"
+    safe="${safe//:/-}"
+    safe="${safe//=/-}"
+    safe="${safe//+/-}"
+    safe="${safe// /-}"
     if [[ "$safe" == "$session" ]]; then
       echo "$name"
       return
