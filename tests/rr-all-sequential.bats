@@ -43,19 +43,58 @@ ALL_MD="${REPO_DIR}/skills/rr/commands/all.md"
   # through. Dropped the outer gate: ANY match of the regex in the loop
   # section is a regression.
   #
-  # The per-phase compaction re-check lines (CPT-133) use the shape
-  # `\`step-N.md\` heading is still retrievable (re-read on miss)` —
-  # "re-read" appears AFTER the step-N.md filename on the same line, so
-  # the regex `(read|Read).*step-[0-9].*\.md` does not match that prose.
+  # The per-phase compaction re-check lines (CPT-133/CPT-157) use the
+  # sanctioned recovery phrase `re-read <step-N.md> on miss`. The
+  # leading `(^|[^-])` alternation in the regex explicitly excludes
+  # `read` preceded by `-` (the `re-read` case), so any rephrase of
+  # that recovery prose is allowed; any UNHYPHENATED `read step-N.md`
+  # instruction (the actual 6N-reread anti-pattern) is still caught.
+  # CPT-164: previous regex was order-sensitive; a reasonable rephrase
+  # putting `re-read` BEFORE the filename would have spuriously failed.
 
   local loop_section
   loop_section=$(sed -n '/^### Process Each Risk/,/^### Progress File Status/p' "$ALL_MD")
 
-  if echo "$loop_section" | grep -iqE '(read|Read).*step-[0-9].*\.md'; then
+  if echo "$loop_section" | grep -iqE '(^|[^-])(read|Read).*step-[0-9].*\.md'; then
     echo "per-risk loop instructs reading a step-N.md file — should be pre-loaded" >&2
-    echo "$loop_section" | grep -inE '(read|Read).*step-[0-9].*\.md' >&2
+    echo "$loop_section" | grep -inE '(^|[^-])(read|Read).*step-[0-9].*\.md' >&2
     return 1
   fi
+}
+
+# CPT-164 fixture-based regression tests for the re-read-exclusion boundary.
+# These lock the regex semantics in isolation so future edits to the regex
+# can't silently widen/narrow what counts as the per-risk-read anti-pattern.
+
+@test "CPT-164: 're-read step-N.md on miss' prose is NOT flagged (regex fixture)" {
+  # Legitimate CPT-133/CPT-157 recovery prose — `re-read` has a `-` before
+  # `read`, so the (^|[^-]) alternation excludes it.
+  local line='on miss, re-read step-5-finalise.md'
+  run bash -c "printf '%s\n' '$line' | grep -iqE '(^|[^-])(read|Read).*step-[0-9].*\\.md'"
+  [ "$status" -ne 0 ]  # No match — prose is allowed.
+}
+
+@test "CPT-164: 'read step-N.md' prose IS flagged (regex fixture)" {
+  # The actual anti-pattern — unhyphenated `read` preceding `step-N.md`.
+  local line='Step 5: read step-5-finalise.md before starting.'
+  run bash -c "printf '%s\n' '$line' | grep -iqE '(^|[^-])(read|Read).*step-[0-9].*\\.md'"
+  [ "$status" -eq 0 ]  # Match — anti-pattern caught.
+}
+
+@test "CPT-164: 'Read step-N.md' at start of line IS flagged (regex fixture)" {
+  # Covers the ^ branch of the alternation.
+  local line='Read step-3-rectify.md'
+  run bash -c "printf '%s\n' '$line' | grep -iqE '(^|[^-])(read|Read).*step-[0-9].*\\.md'"
+  [ "$status" -eq 0 ]
+}
+
+@test "CPT-164: backtick-wrapped 'step-N.md heading is still retrievable (re-read on miss)' prose is NOT flagged (regex fixture)" {
+  # The shipped CPT-133 prose form — re-read appears AFTER the filename.
+  # The existing regex already handled this via position; the new regex
+  # must still not flag it.
+  local line='Verify `step-1-extract.md` heading is still retrievable (re-read on miss), then extract...'
+  run bash -c "printf '%s\n' '$line' | grep -iqE '(^|[^-])(read|Read).*step-[0-9].*\\.md'"
+  [ "$status" -ne 0 ]
 }
 
 @test "per-risk loop references pre-loaded workflow content instead of re-reading" {

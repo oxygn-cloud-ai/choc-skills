@@ -80,10 +80,36 @@ ALL_MD="${REPO_DIR}/skills/chk2/commands/all.md"
   fi
 }
 
+# CPT-164: extracted helper — emit one `<heading>\t<start>\t<end>` record per
+# Wave block in a markdown file. A Wave block ends at the NEXT Wave heading,
+# the `**Between waves**` / `**Retry failures**` indented-bold anchors, or a
+# `^## ` section heading — whichever comes first. Falls back to EOF only if a
+# Wave has no trailing anchor at all. Previously (pre-CPT-164) the awk END
+# branch always used `NR` (EOF) for the last Wave, so any `- /chk2:foo` bullet
+# appearing anywhere after Wave 5's heading — in post-dispatch docs, a new
+# section, even prose — silently inflated Wave 5's category count.
+_waves_from_md() {
+  awk '
+    /^[[:space:]]+\*\*Wave [0-9]+ / {
+      if (prev) print prev_line "\t" prev + 1 "\t" NR - 1
+      prev = NR
+      prev_line = $0
+      next
+    }
+    /^[[:space:]]+\*\*(Between waves|Retry failures)/ || /^## / {
+      if (prev) { print prev_line "\t" prev + 1 "\t" NR - 1; prev = 0 }
+    }
+    END {
+      if (prev) print prev_line "\t" prev + 1 "\t" NR
+    }
+  ' "$1"
+}
+
 @test "chk2 all.md has exactly 6 categories per wave (CPT-94)" {
   # Parse each Wave block (from `**Wave N — ...**` to the next Wave or the
-  # "Between waves" / "Retry failures" end-of-section anchor) and count
-  # the `- /chk2:<cat>` bullet lines within. Each wave must have exactly 6.
+  # "Between waves" / "Retry failures" / next `## ` heading end-of-section
+  # anchor) and count the `- /chk2:<cat>` bullet lines within. Each wave
+  # must have exactly 6.
   local wave_idx=0
   local offenders=""
   while IFS=$'\t' read -r wave_line start end; do
@@ -95,22 +121,108 @@ ALL_MD="${REPO_DIR}/skills/chk2/commands/all.md"
     if [ "$cat_count" -ne 6 ]; then
       offenders="$offenders wave${wave_idx}=${cat_count}"
     fi
-  done < <(
-    # Line numbers of each "**Wave N —" heading, paired with the start
-    # of the next Wave (or a far-out sentinel). Delimiter: tab.
-    awk '
-      /^[[:space:]]+\*\*Wave [0-9]+ /{
-        if (prev) print prev_line "\t" prev + 1 "\t" NR - 1
-        prev = NR
-        prev_line = $0
-      }
-      END {
-        if (prev) print prev_line "\t" prev + 1 "\t" NR
-      }
-    ' "$ALL_MD"
-  )
+  done < <(_waves_from_md "$ALL_MD")
   if [ -n "$offenders" ]; then
     echo "wave(s) with wrong category count:$offenders" >&2
     return 1
   fi
+}
+
+# CPT-164 fixture-based regression tests for the Wave-range helper. These
+# lock _waves_from_md's anchor semantics independently of skills/chk2/
+# commands/all.md so future edits can't silently widen/narrow the scope.
+
+@test "CPT-164: Wave block range stops at **Between waves anchor (fixture)" {
+  local fixture
+  fixture=$(mktemp)
+  cat > "$fixture" <<'EOF'
+   **Wave 5 — Heavy/rate-sensitive tests:**
+   - `/chk2:cat1`
+   - `/chk2:cat2`
+   - `/chk2:cat3`
+   - `/chk2:cat4`
+   - `/chk2:cat5`
+   - `/chk2:cat6`
+
+   **Between waves — rate-limit circuit breaker:**
+   - `/chk2:post-wave-prose-bullet`
+EOF
+
+  local record start end
+  record=$(_waves_from_md "$fixture")
+  start=$(echo "$record" | awk -F'\t' '{print $2}')
+  end=$(echo "$record" | awk -F'\t' '{print $3}')
+  local cat_count
+  cat_count=$(sed -n "${start},${end}p" "$fixture" | grep -cE '^[[:space:]]+-[[:space:]]+`/chk2:')
+
+  rm -f "$fixture"
+
+  [ "$cat_count" -eq 6 ] || {
+    echo "expected 6 Wave 5 bullets stopping at **Between waves; got $cat_count" >&2
+    return 1
+  }
+}
+
+@test "CPT-164: Wave block range stops at next ## heading (fixture)" {
+  # Use INDENTED bullets in the post-anchor section — they match the
+  # Wave-counter's `^[[:space:]]+-` grep, so without the anchor rule
+  # they would over-inflate Wave 5's category count.
+  local fixture
+  fixture=$(mktemp)
+  cat > "$fixture" <<'EOF'
+   **Wave 5 — Heavy/rate-sensitive tests:**
+   - `/chk2:cat1`
+   - `/chk2:cat2`
+   - `/chk2:cat3`
+   - `/chk2:cat4`
+   - `/chk2:cat5`
+   - `/chk2:cat6`
+
+## Troubleshooting
+
+   - `/chk2:retry-flaky1`
+   - `/chk2:retry-flaky2`
+EOF
+
+  local record start end
+  record=$(_waves_from_md "$fixture")
+  start=$(echo "$record" | awk -F'\t' '{print $2}')
+  end=$(echo "$record" | awk -F'\t' '{print $3}')
+  local cat_count
+  cat_count=$(sed -n "${start},${end}p" "$fixture" | grep -cE '^[[:space:]]+-[[:space:]]+`/chk2:')
+
+  rm -f "$fixture"
+
+  [ "$cat_count" -eq 6 ] || {
+    echo "expected 6 Wave 5 bullets stopping at ## Docs; got $cat_count (over-reach across section boundary)" >&2
+    return 1
+  }
+}
+
+@test "CPT-164: Wave with no trailing anchor still uses EOF as end (fixture)" {
+  # Regression guard: the EOF fallback must still work when a Wave has no
+  # anchor after it (e.g. a test fixture that intentionally omits the
+  # **Between waves** / ## closer).
+  local fixture
+  fixture=$(mktemp)
+  cat > "$fixture" <<'EOF'
+   **Wave 5 — Heavy/rate-sensitive tests:**
+   - `/chk2:cat1`
+   - `/chk2:cat2`
+   - `/chk2:cat3`
+   - `/chk2:cat4`
+   - `/chk2:cat5`
+   - `/chk2:cat6`
+EOF
+
+  local record start end
+  record=$(_waves_from_md "$fixture")
+  start=$(echo "$record" | awk -F'\t' '{print $2}')
+  end=$(echo "$record" | awk -F'\t' '{print $3}')
+  local cat_count
+  cat_count=$(sed -n "${start},${end}p" "$fixture" | grep -cE '^[[:space:]]+-[[:space:]]+`/chk2:')
+
+  rm -f "$fixture"
+
+  [ "$cat_count" -eq 6 ]
 }
