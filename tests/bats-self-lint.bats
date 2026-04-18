@@ -269,3 +269,45 @@ _tokenize_line() {
   local line; line=$(printf '  run\tcmd arg')
   [ -z "$(_tokenize_line "$line")" ]
 }
+
+# --- CPT-171 fixtures: shell-operator boundaries also start comments.
+#
+# POSIX shell: `#` starts a comment when preceded by whitespace OR by a
+# shell operator (`;`, `|`, `&`, `(`, `)`). CPT-170's `token == ""`
+# guard only handled the whitespace case. These fixtures lock operator
+# boundaries.
+
+@test "CPT-171 (tokenizer): 'run cmd;# comment mentioning <file' NOT flagged (semicolon boundary)" {
+  # Semi-colon is an operator boundary — `#` after it starts a comment.
+  # Pre-CPT-171 the `;` was appended to the current token so `token` was
+  # `"cmd;"` when `#` was hit; guard failed; `<file` later was flagged.
+  local line='  run cmd;# comment with <file'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-171 (tokenizer): 'run cmd|#comment <file' NOT flagged (pipe boundary)" {
+  local line='  run cmd|#comment <file'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-171 (tokenizer): 'run cmd&& # comment <file' NOT flagged (space + # word-start after operator)" {
+  # Current CPT-170 fix already handles space + `#`; this fixture
+  # guards against operator handling accidentally breaking it.
+  local line='  run cmd && # comment with <file'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-171 (tokenizer): 'run cmd; real-cmd <input.txt' FLAGGED (operator boundary, no comment, real redirect)" {
+  # Baseline: after `;`, the real `<input.txt` redirect is still a top-
+  # level argv-as-literal bug. Operator flush mustn't swallow real
+  # redirects on the other side of the operator.
+  local line='  run cmd; real-cmd <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-171 (tokenizer): 'run cmd1|cmd2 <input.txt' FLAGGED (pipe, then real redirect)" {
+  # Pipe at top level is bats-broken anyway (argv literal), but even
+  # so, a `<file` AFTER the pipe is still a real redirect bug.
+  local line='  run cmd1|cmd2 <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
+}

@@ -57,15 +57,27 @@ function tokenize_and_flag(line,    i, c, state, token, n, tokens, len, j, t, t1
 
         if (state == 0) {
             # Outside quotes.
-            # CPT-170: `#` only starts a comment when it's at a word
-            # boundary (i.e. token is currently empty, meaning we just
-            # finished a whitespace separator or we're at the start).
-            # Inside a word, `#` is a literal char. POSIX shell semantics.
-            # Pre-CPT-170 the unconditional break terminated parsing on
-            # `run bash -c "echo hi"#suffix _ <file` after the closing
-            # `"`, missing the top-level `<file` redirect bug.
+            # CPT-170: `#` only starts a comment at a word boundary
+            # (token is empty — we just crossed whitespace or we're at
+            # start). Inside a word, `#` is a literal char. POSIX shell
+            # semantics.
+            # CPT-171: shell operators (`;`, `|`, `&`, `(`, `)`) are
+            # ALSO word boundaries — after them, `#` starts a comment.
+            # The operator cases below flush the current token, so the
+            # `token == ""` guard here fires correctly on the next iter.
             if (c == "#" && token == "") break
             if (c == " " || c == "\t") {
+                if (token != "") { n++; tokens[n] = token; token = "" }
+                i++
+                continue
+            }
+            # CPT-171: shell operator flush. `;`, `|`, `&`, `(`, `)` are
+            # shell-syntax token terminators; the shell starts a new
+            # command context after them. Flush the current token and
+            # advance past the operator char; do NOT emit the operator
+            # into tokens[] — it's not argv and emitting it would add
+            # noise to the `<`-start rule.
+            if (c == ";" || c == "|" || c == "&" || c == "(" || c == ")") {
                 if (token != "") { n++; tokens[n] = token; token = "" }
                 i++
                 continue
