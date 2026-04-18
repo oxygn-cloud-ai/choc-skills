@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="2.1.9"
+VERSION="2.1.10"
 
 # --- Bash version check ---
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] 2>/dev/null; then
@@ -133,7 +133,7 @@ list_skills() {
     standalone_list+=$(printf "  ${BOLD}%-14s${RESET} %-70s ${YELLOW}[standalone]${RESET}" "$name" "$desc")$'\n'
   done
   if [ "$standalone_count" -gt 0 ]; then
-    printf "${BOLD}Companion tools${RESET} (standalone — run ${BOLD}skills/<name>/install.sh${RESET} directly):\n\n"
+    printf "${BOLD}Companion tools${RESET} (standalone — run ${BOLD}bash skills/<name>/install.sh${RESET}):\n\n"
     printf "%s" "$standalone_list"
     echo ""
     printf "  ${DIM}%d companion tool(s) available${RESET}\n\n" "$standalone_count"

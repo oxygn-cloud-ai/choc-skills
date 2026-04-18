@@ -90,6 +90,28 @@ teardown() {
   }
 }
 
+# --- CPT-163: exec-bit-stripped safety — the advertised install command
+#     must be `bash skills/<name>/install.sh`, not `skills/<name>/install.sh`
+#     directly. Users downloading via GitHub zip, Windows file shares, or
+#     some corporate shared filesystems lose the exec bit; a direct
+#     invocation then fails with "Permission denied". The bash wrapper
+#     runs regardless of exec bit. CPT-80's `[ -f ... ]` guard only checks
+#     existence, not executability, so the hint must be robust by shape.
+
+@test "CPT-163: --list advertises bash-prefix install command (exec-bit-stripped safety)" {
+  run bash "$INSTALLER" --list
+  [ "$status" -eq 0 ]
+  # The Companion tools header must advertise `bash skills/<name>/install.sh`
+  # so the printed command works even when the install.sh exec bit is absent.
+  if ! echo "$output" | grep -qE 'bash[[:space:]]+skills/[^[:space:]]+install\.sh'; then
+    echo "--list companion-tools header does not advertise bash-prefix invocation" >&2
+    echo "Expected pattern: 'bash skills/<name>/install.sh'" >&2
+    echo "Actual output:" >&2
+    echo "$output" >&2
+    return 1
+  fi
+}
+
 # --- Static: list_skills() has a standalone-tool enumeration block ---
 
 @test "CPT-80: install.sh list_skills() enumerates install.sh-without-SKILL.md directories" {
