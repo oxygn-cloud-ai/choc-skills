@@ -227,3 +227,45 @@ _tokenize_line() {
   local line='  echo "run cat <file"'
   [ -z "$(_tokenize_line "$line")" ]
 }
+
+# --- CPT-170 fixtures: shell-syntax edge cases in the tokenizer ---
+
+@test "CPT-170 (tokenizer): flags 'run<TAB>cat <input.txt' (tab separator after run)" {
+  # POSIX shell accepts ANY whitespace (space or tab) after a command.
+  # Pre-CPT-170 the tokenizer required a literal space and silently
+  # skipped tab-separated `run\tcat <file` — a false negative.
+  local line; line=$(printf '  run\tcat <input.txt')
+  [ -n "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-170 (tokenizer): flags 'run bash -c \"echo hi\"#suffix _ <input.txt' (# inside a word)" {
+  # POSIX shell: `#` starts a comment only when it's at the beginning
+  # of a new word. `"echo hi"#suffix` is a single word joining a
+  # quoted substring and a literal `#suffix`. Pre-CPT-170 the
+  # tokenizer's unconditional `if (c == "#") break` terminated parsing
+  # at the `#`, missing the top-level `<input.txt` bug.
+  local line='  run bash -c "echo hi"#suffix _ <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-170 (tokenizer): 'run cmd # comment with <file' still NOT flagged (real comment still works)" {
+  # Baseline: a legitimate top-level bash comment must still terminate
+  # parsing so `<file` inside the comment isn't spuriously flagged.
+  # The fix only changes `#` handling mid-word, not at word-start.
+  local line='  run cmd arg  # later words mention <file'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-170 (tokenizer): 'run cmd#weird <file' flags the real <file redirect" {
+  # Word containing `#` at top level is treated as a single literal
+  # token. The trailing `<file` is still a top-level redirect bug.
+  local line='  run cmd#weird <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-170 (tokenizer): plain 'run\tcmd arg' with no redirect is NOT flagged" {
+  # Tab-after-run acceptance mustn't over-correct — a plain tab-spaced
+  # run line with no redirect must still pass the lint.
+  local line; line=$(printf '  run\tcmd arg')
+  [ -z "$(_tokenize_line "$line")" ]
+}

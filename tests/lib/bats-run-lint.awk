@@ -42,16 +42,29 @@ function tokenize_and_flag(line,    i, c, state, token, n, tokens, len, j, t, t1
     i = 1
     while (i <= len && substr(line, i, 1) ~ /[[:space:]]/) i++
 
-    # Line must start with "run " after leading whitespace.
-    if (substr(line, i, 4) != "run ") return 0
-    i += 4
+    # Line must start with "run" followed by ANY whitespace (space or tab).
+    # CPT-170: the previous literal `"run "` check required a space and
+    # silently accepted no match on `run\tcat ...` — a false negative for
+    # a valid shell syntax.
+    if (substr(line, i, 3) != "run") return 0
+    i += 3
+    if (i > len) return 0
+    if (substr(line, i, 1) !~ /[[:space:]]/) return 0
+    i++
 
     while (i <= len) {
         c = substr(line, i, 1)
 
         if (state == 0) {
             # Outside quotes.
-            if (c == "#") break  # top-level comment — stop tokenizing
+            # CPT-170: `#` only starts a comment when it's at a word
+            # boundary (i.e. token is currently empty, meaning we just
+            # finished a whitespace separator or we're at the start).
+            # Inside a word, `#` is a literal char. POSIX shell semantics.
+            # Pre-CPT-170 the unconditional break terminated parsing on
+            # `run bash -c "echo hi"#suffix _ <file` after the closing
+            # `"`, missing the top-level `<file` redirect bug.
+            if (c == "#" && token == "") break
             if (c == " " || c == "\t") {
                 if (token != "") { n++; tokens[n] = token; token = "" }
                 i++
