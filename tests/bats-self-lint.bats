@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# CPT-162 + CPT-165 + CPT-167: bats-self-lint.
+# CPT-162 + CPT-165 + CPT-167 + CPT-168: bats-self-lint.
 #
 # The bats `run` helper captures both stdout and stderr into `$output`
 # by default, and does NOT spawn a shell for plain `run <cmd>` — argv is
@@ -20,20 +20,29 @@
 #  - exclude lines with `run (bash|sh) -c` via a post-grep filter step
 #    (the `<` is then inside a quoted shell string, which the inner
 #    shell performs — legitimate usage, not the argv-as-literal bug)
+# CPT-168 re-captures the case CPT-167's filter over-suppressed:
+#  - `run bash -c '...' _ <file` — redirect AFTER the closing quote of
+#    the inner shell script is still top-level argv (argv-as-literal
+#    bug). Added as a second candidate regex (candidate_b) that the
+#    filter doesn't drop.
 #
-# Regex shapes (all anchored to start/end-of-line so quoted-string uses
-# inside `run bash -c "..."` — which end in `"` then optional args — are
-# not flagged):
+# Regex shapes (all anchored to start-of-line):
 #
-#   2>&1:         ^[[:space:]]*run[[:space:]].*[[:space:]]2>&1[[:space:]]*(#.*)?$
-#   <file:        ^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$
-#                 (then filter out lines matching 'run[[:space:]]+(bash|sh)[[:space:]]+-c')
+#   2>&1:          ^[[:space:]]*run[[:space:]].*[[:space:]]2>&1[[:space:]]*(#.*)?$
+#   <file cand_a:  ^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$
+#                  filter OUT:   run[[:space:]]+(bash|sh)[[:space:]]+-c
+#   <file cand_b:  ^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]
+#                  (single-quoted script; double-quoted variant via separate regex)
 #
 # The `<` lint excludes `< <(...)` process substitution by requiring the
 # char immediately after `<` to be non-space non-paren. It also excludes
-# `<<` (heredoc) by adding `<` to the char class. The `run (bash|sh) -c`
-# filter covers the remaining case where `<` is embedded inside a quoted
-# shell script passed to an inner shell (correct usage by intent).
+# `<<` (heredoc) via `<` in the char class. The `bash|sh -c` filter
+# drops lines where `<` is inside the quoted script; candidate_b
+# re-captures the narrow case where `<` appears AFTER the close-quote.
+#
+# Chain note: CPT-162 → 165 → 167 → 168 has been four successive Codex
+# refinements. If this grows again, replace the grep-chain with a small
+# awk/python tokenizer that actually tracks quote state.
 
 REPO_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 TESTS_DIR="${REPO_DIR}/tests"
@@ -77,19 +86,36 @@ TESTS_DIR="${REPO_DIR}/tests"
   # the `<`; the optional trailing `([[:space:]].*)?` allows more argv
   # after, and `(#.*)?$` allows an end-of-line bash comment.
   #
-  # CPT-167 post-grep filter: candidate offenders are then filtered to
+  # CPT-167 post-grep filter (candidate_a): offenders are filtered to
   # drop any line matching `run[[:space:]]+(bash|sh)[[:space:]]+-c`.
-  # Those lines have `<` embedded inside a quoted shell script passed
-  # to an inner shell — the redirect is performed by the inner shell,
-  # which is the correct pattern, not the argv-as-literal bug.
-  local candidates offenders
-  candidates=$(grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' "$TESTS_DIR"/*.bats || true)
-  offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
+  # Those lines typically have `<` embedded INSIDE a quoted shell
+  # script passed to an inner shell — the redirect is performed by
+  # the inner shell, which is the correct pattern.
+  #
+  # CPT-168 re-capture (candidate_b): the CPT-167 filter was too
+  # coarse — it also dropped lines where `<file` appears AFTER the
+  # closing quote of the bash-c script, e.g.
+  #   run bash -c 'cat "$1"' _ <input.txt
+  # Here `<input.txt` is a top-level argv literal, exactly the bug
+  # the lint exists to catch. Candidate B re-captures those by
+  # matching lines with a full `run (bash|sh) -c '...'` (or `"..."`)
+  # span followed by `[[:space:]]<[^ |(<]`. Two separate regexes
+  # (single-quoted, double-quoted) avoid ERE backreferences which
+  # aren't portable across grep implementations.
+
+  local candidates_a offenders_a candidates_b_sq candidates_b_dq offenders
+  candidates_a=$(grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' "$TESTS_DIR"/*.bats || true)
+  offenders_a=$(echo "$candidates_a" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
+  # Single-quoted bash-c script with trailing top-level redirect after close-quote.
+  candidates_b_sq=$(grep -nE "^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]" "$TESTS_DIR"/*.bats || true)
+  # Double-quoted bash-c script with trailing top-level redirect after close-quote.
+  candidates_b_dq=$(grep -nE '^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+"[^"]*".*[[:space:]]<[^ |(<]' "$TESTS_DIR"/*.bats || true)
+  offenders=$(printf '%s\n%s\n%s\n' "$offenders_a" "$candidates_b_sq" "$candidates_b_dq" | sed '/^$/d' | sort -u)
 
   if [ -n "$offenders" ]; then
-    echo "CPT-165: the following lines use bare 'run ... <file' at the top level." >&2
+    echo "CPT-165/CPT-168: the following lines use bare-top-level 'run ... <file'." >&2
     echo "bats does not invoke a shell for plain 'run <cmd>', so '<file' is argv, not stdin." >&2
-    echo "If you need stdin redirection, wrap in 'run bash -c \"... <file\"':" >&2
+    echo "If you need stdin redirection, wrap in 'run bash -c \"... <file\"' (with '<' INSIDE the quoted script):" >&2
     echo "$offenders" >&2
     return 1
   fi
@@ -196,4 +222,46 @@ TESTS_DIR="${REPO_DIR}/tests"
   candidates=$(printf '%s\n' "$line" | grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' || true)
   offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
   [ -n "$offenders" ]
+}
+
+# --- CPT-168 fixtures: re-capture top-level `<file` that appears AFTER
+#     the closing quote of a `bash -c '...'` or `bash -c "..."` script.
+#     CPT-167's filter dropped these wholesale; candidate_b restores.
+
+@test "CPT-168: candidate_b DOES flag 'run bash -c <single-quoted> _ <file' (top-level redirect after close-quote)" {
+  # The argv-as-literal bug CPT-167's filter over-suppressed. `_` is a
+  # conventional placeholder for $0 when passing positional args to
+  # bash -c; `<input.txt` is then a top-level redirect (argv literal
+  # under bats) that the inner shell never sees.
+  local line="  run bash -c 'cat \"\$1\"' _ <input.txt"
+  run bash -c "printf '%s\n' \"$line\" | grep -qE \"^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]\""
+  [ "$status" -eq 0 ]  # MATCH — re-captured.
+}
+
+@test "CPT-168: candidate_b DOES flag 'run bash -c <double-quoted> _ <file' (double-quoted variant)" {
+  # Use a simpler double-quoted bash -c script to avoid nested-escape tangle.
+  local line='  run bash -c "cat input" _ <input.txt'
+  if echo "$line" | grep -qE '^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+"[^"]*".*[[:space:]]<[^ |(<]'; then
+    :  # matched — pass
+  else
+    echo "double-quoted bash-c with trailing redirect should match candidate_b" >&2
+    echo "line: $line" >&2
+    return 1
+  fi
+}
+
+@test "CPT-168: candidate_b does NOT flag 'run bash -c <script>' with NO trailing redirect" {
+  # Sanity — a plain `bash -c 'cmd'` with no trailing `<` must not match
+  # the re-capture regex. (The filter drops it at candidate_a stage.)
+  local line="  run bash -c 'echo hello'"
+  run bash -c "printf '%s\n' \"$line\" | grep -qE \"^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]\""
+  [ "$status" -ne 0 ]
+}
+
+@test "CPT-168: candidate_b does NOT flag 'run bash -c <cmd-with-interior-<file>' (redirect stays inside quoted script)" {
+  # The old CPT-167 case that must still pass through — `<` is inside
+  # the quoted script; no `<` after the close-quote.
+  local line="  run bash -c 'cat <input.txt'"
+  run bash -c "printf '%s\n' \"$line\" | grep -qE \"^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]\""
+  [ "$status" -ne 0 ]
 }
