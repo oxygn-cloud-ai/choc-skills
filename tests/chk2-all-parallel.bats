@@ -80,14 +80,18 @@ ALL_MD="${REPO_DIR}/skills/chk2/commands/all.md"
   fi
 }
 
-# CPT-164: extracted helper — emit one `<heading>\t<start>\t<end>` record per
-# Wave block in a markdown file. A Wave block ends at the NEXT Wave heading,
-# the `**Between waves**` / `**Retry failures**` indented-bold anchors, or a
-# `^## ` section heading — whichever comes first. Falls back to EOF only if a
-# Wave has no trailing anchor at all. Previously (pre-CPT-164) the awk END
-# branch always used `NR` (EOF) for the last Wave, so any `- /chk2:foo` bullet
-# appearing anywhere after Wave 5's heading — in post-dispatch docs, a new
-# section, even prose — silently inflated Wave 5's category count.
+# CPT-164/CPT-166: extracted helper — emit one `<heading>\t<start>\t<end>`
+# record per Wave block in a markdown file. A Wave block ends at the NEXT
+# Wave heading, the `**Between waves**` / `**Retry failures**` indented-bold
+# anchors, or ANY heading of depth `##` or deeper (`##`, `###`, `####`, ...)
+# — whichever comes first. Top-level `#` (doc title) is intentionally NOT an
+# anchor. Falls back to EOF only if a Wave has no trailing anchor at all.
+#
+# Pre-CPT-164: the awk END branch always used `NR` (EOF) for the last Wave,
+# inflating Wave 5's count with any post-dispatch bullets.
+# Pre-CPT-166: the `^## ` anchor missed `### Troubleshooting`-style
+# subsections — a subsection under the same `## ` parent would not
+# terminate Wave 5, so its indented `/chk2:` bullets inflated the count.
 _waves_from_md() {
   awk '
     /^[[:space:]]+\*\*Wave [0-9]+ / {
@@ -96,7 +100,7 @@ _waves_from_md() {
       prev_line = $0
       next
     }
-    /^[[:space:]]+\*\*(Between waves|Retry failures)/ || /^## / {
+    /^[[:space:]]+\*\*(Between waves|Retry failures)/ || /^##+[[:space:]]/ {
       if (prev) { print prev_line "\t" prev + 1 "\t" NR - 1; prev = 0 }
     }
     END {
@@ -197,6 +201,105 @@ EOF
     echo "expected 6 Wave 5 bullets stopping at ## Docs; got $cat_count (over-reach across section boundary)" >&2
     return 1
   }
+}
+
+@test "CPT-166: Wave block range stops at ### subheading (fixture)" {
+  # Pre-CPT-166 the `^## ` anchor required EXACTLY two `#`s, so a
+  # `### Troubleshooting` post-Wave-5 subsection wouldn't terminate the
+  # block; its indented `/chk2:foo` bullets would inflate Wave 5's count
+  # the same way post-## bullets did. The `^##+[[:space:]]` anchor
+  # catches any depth `##+`.
+  local fixture
+  fixture=$(mktemp)
+  cat > "$fixture" <<'EOF'
+   **Wave 5 — Heavy/rate-sensitive tests:**
+   - `/chk2:cat1`
+   - `/chk2:cat2`
+   - `/chk2:cat3`
+   - `/chk2:cat4`
+   - `/chk2:cat5`
+   - `/chk2:cat6`
+
+### Troubleshooting
+
+   - `/chk2:retry-flaky-a`
+   - `/chk2:retry-flaky-b`
+EOF
+
+  local record start end
+  record=$(_waves_from_md "$fixture")
+  start=$(echo "$record" | awk -F'\t' '{print $2}')
+  end=$(echo "$record" | awk -F'\t' '{print $3}')
+  local cat_count
+  cat_count=$(sed -n "${start},${end}p" "$fixture" | grep -cE '^[[:space:]]+-[[:space:]]+`/chk2:')
+
+  rm -f "$fixture"
+
+  [ "$cat_count" -eq 6 ] || {
+    echo "expected 6 Wave 5 bullets stopping at ### Troubleshooting; got $cat_count (anchor doesn't cover subheadings)" >&2
+    return 1
+  }
+}
+
+@test "CPT-166: Wave block range stops at #### deeper subheading too (fixture)" {
+  # `^##+[[:space:]]` should catch any heading depth >= 2.
+  local fixture
+  fixture=$(mktemp)
+  cat > "$fixture" <<'EOF'
+   **Wave 5 — Heavy/rate-sensitive tests:**
+   - `/chk2:cat1`
+   - `/chk2:cat2`
+   - `/chk2:cat3`
+   - `/chk2:cat4`
+   - `/chk2:cat5`
+   - `/chk2:cat6`
+
+#### Deeply Nested Subsection
+
+   - `/chk2:extra-a`
+   - `/chk2:extra-b`
+EOF
+
+  local record start end
+  record=$(_waves_from_md "$fixture")
+  start=$(echo "$record" | awk -F'\t' '{print $2}')
+  end=$(echo "$record" | awk -F'\t' '{print $3}')
+  local cat_count
+  cat_count=$(sed -n "${start},${end}p" "$fixture" | grep -cE '^[[:space:]]+-[[:space:]]+`/chk2:')
+
+  rm -f "$fixture"
+
+  [ "$cat_count" -eq 6 ]
+}
+
+@test "CPT-166: top-level # doc-title heading does NOT terminate a Wave (fixture)" {
+  # The anchor deliberately requires `##+` (two or more hashes), not `#+`,
+  # so a document's single `# Title` at the start doesn't truncate
+  # processing prematurely. This fixture puts a `# Foo` line AFTER Wave 5
+  # content — a contrived case, but proves the anchor isn't overly greedy.
+  local fixture
+  fixture=$(mktemp)
+  cat > "$fixture" <<'EOF'
+   **Wave 5 — Heavy/rate-sensitive tests:**
+   - `/chk2:cat1`
+   - `/chk2:cat2`
+# Not-a-real-section-header
+   - `/chk2:cat3`
+   - `/chk2:cat4`
+   - `/chk2:cat5`
+   - `/chk2:cat6`
+EOF
+
+  local record start end
+  record=$(_waves_from_md "$fixture")
+  start=$(echo "$record" | awk -F'\t' '{print $2}')
+  end=$(echo "$record" | awk -F'\t' '{print $3}')
+  local cat_count
+  cat_count=$(sed -n "${start},${end}p" "$fixture" | grep -cE '^[[:space:]]+-[[:space:]]+`/chk2:')
+
+  rm -f "$fixture"
+
+  [ "$cat_count" -eq 6 ]
 }
 
 @test "CPT-164: Wave with no trailing anchor still uses EOF as end (fixture)" {
