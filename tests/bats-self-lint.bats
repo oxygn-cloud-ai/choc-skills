@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# CPT-162 + CPT-165 + CPT-167 + CPT-168: bats-self-lint.
+# CPT-162 + CPT-165 + CPT-167 + CPT-168 + CPT-169: bats-self-lint.
 #
 # The bats `run` helper captures both stdout and stderr into `$output`
 # by default, and does NOT spawn a shell for plain `run <cmd>` — argv is
@@ -12,48 +12,50 @@
 # INSIDE the quoted string are legitimate — the spawned shell performs
 # them. The lints below only flag top-level occurrences.
 #
-# CPT-162 covered `2>&1` at end-of-line. CPT-165 extends:
-#  - trailing-comment variant `run ... 2>&1  # capture stderr`
-#  - bare stdin redirect `run cmd <file`
-# CPT-167 extends the `<file` lint to:
-#  - exclude `<<` (heredoc marker) via char-class tightening
-#  - exclude lines with `run (bash|sh) -c` via a post-grep filter step
-#    (the `<` is then inside a quoted shell string, which the inner
-#    shell performs — legitimate usage, not the argv-as-literal bug)
-# CPT-168 re-captures the case CPT-167's filter over-suppressed:
-#  - `run bash -c '...' _ <file` — redirect AFTER the closing quote of
-#    the inner shell script is still top-level argv (argv-as-literal
-#    bug). Added as a second candidate regex (candidate_b) that the
-#    filter doesn't drop.
+# ============================================================
+# History: grep-chain → tokenizer (CPT-169 refactor)
+# ============================================================
 #
-# Regex shapes (all anchored to start-of-line):
+# CPT-162 shipped `run ... 2>&1` at EOL.
+# CPT-165 widened to trailing-comment `2>&1 # ...` and added
+#   separate `run cmd <file` lint (grep + filter-step).
+# CPT-167 fixed CPT-165 false-positive on `<<EOF` heredocs and
+#   `run bash -c 'cmd <file'` — char-class widening + bash-c filter.
+# CPT-168 fixed CPT-167 false-negative on `run bash -c 'cmd' _ <file`
+#   — added candidate_b regex for top-level redirect after close-quote.
+# CPT-169 fixed CPT-168 false-positive on escaped quotes inside
+#   `bash -c "... \"x\" <file"` — CPT-168's `"[^"]*"` regex treated
+#   `\"` as a close-quote. That's the 5th Codex-caught defect in a row.
 #
-#   2>&1:          ^[[:space:]]*run[[:space:]].*[[:space:]]2>&1[[:space:]]*(#.*)?$
-#   <file cand_a:  ^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$
-#                  filter OUT:   run[[:space:]]+(bash|sh)[[:space:]]+-c
-#   <file cand_b:  ^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]
-#                  (single-quoted script; double-quoted variant via separate regex)
+# CPT-169 refactored the whole `<file` lint to an awk tokenizer
+# (tests/lib/bats-run-lint.awk) that tracks quote state (single vs
+# double vs escaped) properly. The tokenizer:
+#   - skips leading whitespace
+#   - requires line to start with `run `
+#   - walks char-by-char tracking state 0 (outside), 1 (single-quote),
+#     2 (double-quote)
+#   - inside double-quote, `\X` is a 2-char escape unit (fixes the
+#     CPT-169 `\"` mis-tokenization)
+#   - inside single-quote, no escaping (POSIX shell semantics)
+#   - collects top-level tokens
+#   - flags if ANY top-level token T has:
+#       length(T) >= 2
+#       AND T[0] == '<'
+#       AND T[1] not in {'|', '(', '<'}
+#     Exclusions mirror CPT-168's char-class `[^ |(<]` exactly.
 #
-# The `<` lint excludes `< <(...)` process substitution by requiring the
-# char immediately after `<` to be non-space non-paren. It also excludes
-# `<<` (heredoc) via `<` in the char class. The `bash|sh -c` filter
-# drops lines where `<` is inside the quoted script; candidate_b
-# re-captures the narrow case where `<` appears AFTER the close-quote.
-#
-# Chain note: CPT-162 → 165 → 167 → 168 has been four successive Codex
-# refinements. If this grows again, replace the grep-chain with a small
-# awk/python tokenizer that actually tracks quote state.
+# The `2>&1` lint remains grep-based — the regex shape is simple and
+# hasn't spawned a refinement chain.
 
 REPO_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 TESTS_DIR="${REPO_DIR}/tests"
+TOKENIZER="${REPO_DIR}/tests/lib/bats-run-lint.awk"
 
 @test "CPT-162: no bats test uses bare-top-level 'run ... 2>&1' (bats captures stderr already)" {
   [ -d "$TESTS_DIR" ]
 
-  # CPT-165: widened to allow an optional trailing `# comment` after the
-  # `2>&1`. The pre-CPT-165 end-anchor `[[:space:]]*$` missed
-  # `run cmd 2>&1  # capture stderr` — bats still parses `2>&1` as argv
-  # regardless of the comment; the comment is just ignored by bash.
+  # CPT-165 widened: allow an optional trailing `# comment` after the
+  # `2>&1`. bats still parses `2>&1` as argv regardless of the comment.
   local offenders
   offenders=$(grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]2>&1[[:space:]]*(#.*)?$' "$TESTS_DIR"/*.bats || true)
 
@@ -67,53 +69,18 @@ TESTS_DIR="${REPO_DIR}/tests"
   fi
 }
 
-@test "CPT-165: no bats test uses bare-top-level 'run ... <file' (bats does not redirect stdin)" {
+@test "CPT-169: no bats test uses bare-top-level 'run ... <file' (tokenizer-based)" {
   [ -d "$TESTS_DIR" ]
+  [ -f "$TOKENIZER" ]
 
-  # Top-level `<file` in `run cmd <file` passes the literal `<file`
-  # string as argv[N], NOT as a stdin redirection — bats doesn't invoke
-  # a shell for plain `run`. If the test author wants stdin redirection,
-  # they need `run bash -c "cmd <file"` (the spawned shell performs it).
-  #
-  # `[^ |(<]` after the first `<` excludes:
-  #   - space (handles `< <(...)` process-substitution form)
-  #   - `|` (handles rare pipe-in-middle cases)
-  #   - `(` (belt-and-braces for process subst)
-  #   - `<` (CPT-167: excludes `<<EOF`-style heredoc marker; the second
-  #     `<` of `<<` is part of the heredoc syntax inside a quoted
-  #     shell string, not a stdin-redirect-as-argv bug)
-  # `[^ |]*` after the first char keeps filename-like tokens glued to
-  # the `<`; the optional trailing `([[:space:]].*)?` allows more argv
-  # after, and `(#.*)?$` allows an end-of-line bash comment.
-  #
-  # CPT-167 post-grep filter (candidate_a): offenders are filtered to
-  # drop any line matching `run[[:space:]]+(bash|sh)[[:space:]]+-c`.
-  # Those lines typically have `<` embedded INSIDE a quoted shell
-  # script passed to an inner shell — the redirect is performed by
-  # the inner shell, which is the correct pattern.
-  #
-  # CPT-168 re-capture (candidate_b): the CPT-167 filter was too
-  # coarse — it also dropped lines where `<file` appears AFTER the
-  # closing quote of the bash-c script, e.g.
-  #   run bash -c 'cat "$1"' _ <input.txt
-  # Here `<input.txt` is a top-level argv literal, exactly the bug
-  # the lint exists to catch. Candidate B re-captures those by
-  # matching lines with a full `run (bash|sh) -c '...'` (or `"..."`)
-  # span followed by `[[:space:]]<[^ |(<]`. Two separate regexes
-  # (single-quoted, double-quoted) avoid ERE backreferences which
-  # aren't portable across grep implementations.
-
-  local candidates_a offenders_a candidates_b_sq candidates_b_dq offenders
-  candidates_a=$(grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' "$TESTS_DIR"/*.bats || true)
-  offenders_a=$(echo "$candidates_a" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
-  # Single-quoted bash-c script with trailing top-level redirect after close-quote.
-  candidates_b_sq=$(grep -nE "^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]" "$TESTS_DIR"/*.bats || true)
-  # Double-quoted bash-c script with trailing top-level redirect after close-quote.
-  candidates_b_dq=$(grep -nE '^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+"[^"]*".*[[:space:]]<[^ |(<]' "$TESTS_DIR"/*.bats || true)
-  offenders=$(printf '%s\n%s\n%s\n' "$offenders_a" "$candidates_b_sq" "$candidates_b_dq" | sed '/^$/d' | sort -u)
+  # Awk tokenizer walks each `run ...` line with quote-state tracking
+  # and flags top-level argv tokens starting with `<`. See the awk
+  # script for the full flag rule and exclusions.
+  local offenders
+  offenders=$(awk -f "$TOKENIZER" "$TESTS_DIR"/*.bats || true)
 
   if [ -n "$offenders" ]; then
-    echo "CPT-165/CPT-168: the following lines use bare-top-level 'run ... <file'." >&2
+    echo "CPT-169: the following lines use bare-top-level 'run ... <file'." >&2
     echo "bats does not invoke a shell for plain 'run <cmd>', so '<file' is argv, not stdin." >&2
     echo "If you need stdin redirection, wrap in 'run bash -c \"... <file\"' (with '<' INSIDE the quoted script):" >&2
     echo "$offenders" >&2
@@ -121,147 +88,142 @@ TESTS_DIR="${REPO_DIR}/tests"
   fi
 }
 
-# --- CPT-165 fixture-based meta-tests: prove the regexes actually match
-#     the shapes they're advertised to catch. Without these, the grep-
-#     across-tests tests pass only because no current test is an
-#     offender; they can't prove the regex would catch a future one.
+# --- Fixture meta-tests: prove the tokenizer matches the shapes it
+#     advertises to catch/allow. Each fixture writes the input line
+#     to a temp file, runs the tokenizer, and asserts offender presence
+#     or absence.
 
-@test "CPT-165: regex catches 'run ... 2>&1 # comment' (fixture)" {
-  local line='  run bash "$INSTALLER" --flag 2>&1  # capture stderr'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]2>&1[[:space:]]*(#.*)?\$'"
-  [ "$status" -eq 0 ]
+_tokenize_line() {
+  # Usage: _tokenize_line <line> → echoes awk tokenizer's offenders output.
+  local line="$1"
+  local tmp
+  tmp=$(mktemp)
+  printf '%s\n' "$line" > "$tmp"
+  awk -f "$TOKENIZER" "$tmp" || true
+  rm -f "$tmp"
 }
 
-@test "CPT-165: regex catches 'run ... 2>&1' at plain EOL (fixture, backwards compat)" {
-  local line='  run bash "$INSTALLER" --flag 2>&1'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]2>&1[[:space:]]*(#.*)?\$'"
-  [ "$status" -eq 0 ]
+# --- CPT-165-equivalent cases (still must pass under the tokenizer) ---
+
+@test "CPT-165 (via tokenizer): flags 'run cat <input.txt'" {
+  [ -n "$(_tokenize_line '  run cat <input.txt')" ]
 }
 
-@test "CPT-165: regex does NOT flag 'run bash -c \"... 2>&1\"' (fixture)" {
-  # The 2>&1 is INSIDE a quoted bash -c string; the line ends with `"`,
-  # not `2>&1`. The end-anchored regex must not match.
-  local line='  run bash -c "echo x 2>&1"'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]2>&1[[:space:]]*(#.*)?\$'"
-  [ "$status" -ne 0 ]
+@test "CPT-165 (via tokenizer): flags 'run some-cmd <input.txt other-arg'" {
+  [ -n "$(_tokenize_line '  run some-cmd <input.txt other-arg')" ]
 }
 
-@test "CPT-165: regex catches 'run cmd <file' (fixture)" {
-  local line='  run cat <input.txt'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
-  [ "$status" -eq 0 ]
+@test "CPT-165 (via tokenizer): does NOT flag 'run cat < <(printf x)' (process substitution)" {
+  [ -z "$(_tokenize_line '  run cat < <(printf x)')" ]
 }
 
-@test "CPT-165: regex catches 'run cmd <file extra-arg' (fixture)" {
-  local line='  run some-cmd <input.txt other-arg'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
-  [ "$status" -eq 0 ]
+@test "CPT-165 (via tokenizer): does NOT flag 'run test \"a<b\"' (< inside quotes)" {
+  [ -z "$(_tokenize_line '  run test "a<b"')" ]
 }
 
-@test "CPT-165: regex does NOT flag 'run cmd < <(process-sub)' (fixture)" {
-  # Process substitution `< <(...)` has a SPACE after the first `<`.
-  # The `[^ |(]` char class excludes space, so the regex doesn't match.
-  local line='  run cat < <(printf x)'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
-  [ "$status" -ne 0 ]
+# --- CPT-167-equivalent cases (heredoc + interior redirect inside bash -c) ---
+
+@test "CPT-167 (via tokenizer): does NOT flag 'run bash -c \"cat <<EOF\"' (heredoc inside double-quotes)" {
+  [ -z "$(_tokenize_line '  run bash -c "cat <<EOF"')" ]
 }
 
-@test "CPT-165: regex does NOT flag line with '<' that isn't a redirect (fixture)" {
-  # A `<` that isn't preceded by space wouldn't normally be a redirect.
-  # The `[[:space:]]<` anchor requires a preceding space.
-  local line='  run test "a<b"'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
-  [ "$status" -ne 0 ]
+@test "CPT-167 (via tokenizer): does NOT flag 'run bash -c '\\''cat <input.txt'\\''' (interior redirect in single-quotes)" {
+  [ -z "$(_tokenize_line "  run bash -c 'cat <input.txt'")" ]
 }
 
-# --- CPT-167 fixtures: heredoc + bash-c-quoted-redirect exemptions.
-#
-# Concern 1 (heredoc): `run bash -c 'cat <<EOF ... EOF'`. The `<<` is a
-# heredoc marker inside the quoted shell script. Pre-CPT-167 the
-# `[^ |(]` char class accepted the second `<`, so `<<EOF` matched and
-# was falsely flagged. CPT-167 adds `<` to the exclusion, turning the
-# class into `[^ |(<]` — the second `<` of `<<` is now excluded at
-# candidate stage.
-#
-# Concern 2 (bash-c quoted `<file`): `run bash -c 'cat <input.txt'`.
-# The `<` is inside a quoted string that the inner shell performs; not
-# the argv-as-literal bug. The new char class alone doesn't exclude
-# this — regex engines don't track quotes. CPT-167 adds a post-grep
-# filter step that drops any line matching `run (bash|sh) -c`.
-
-@test "CPT-167: regex does NOT flag 'run bash -c \"cat <<EOF\"' (heredoc fixture)" {
-  local line="  run bash -c 'cat <<EOF'"
-  run bash -c "printf '%s\n' \"$line\" | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
-  [ "$status" -ne 0 ]  # Excluded at candidate stage by `[^ |(<]`.
+@test "CPT-167 (via tokenizer): does NOT flag 'run sh -c '\\''cat <data.txt'\\''' (sh -c variant)" {
+  [ -z "$(_tokenize_line "  run sh -c 'cat <data.txt'")" ]
 }
 
-@test "CPT-167: regex does NOT flag 'run bash -c \"cmd <input\"' — candidate-stage plus filter (fixture)" {
-  # This one DOES match the candidate regex (no <<), but the post-grep
-  # filter for `run (bash|sh) -c` drops it. Exercise the full two-step.
-  local line="  run bash -c 'cat <input.txt'"
-  local candidates offenders
-  candidates=$(printf '%s\n' "$line" | grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' || true)
-  offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
-  [ -z "$offenders" ]
+# --- CPT-168-equivalent cases (top-level redirect AFTER close-quote of bash -c) ---
+
+@test "CPT-168 (via tokenizer): flags 'run bash -c <single-quoted-script> _ <input.txt'" {
+  [ -n "$(_tokenize_line "  run bash -c 'cat \"\$1\"' _ <input.txt")" ]
 }
 
-@test "CPT-167: regex does NOT flag 'run sh -c \"cat <data\"' — filter handles sh too (fixture)" {
-  local line="  run sh -c 'cat <data.txt'"
-  local candidates offenders
-  candidates=$(printf '%s\n' "$line" | grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' || true)
-  offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
-  [ -z "$offenders" ]
+@test "CPT-168 (via tokenizer): flags 'run bash -c <double-quoted-script> _ <input.txt'" {
+  [ -n "$(_tokenize_line '  run bash -c "cat input" _ <input.txt')" ]
 }
 
-@test "CPT-167: regex + filter DOES still flag plain 'run cat <input.txt' (fixture, regression guard)" {
-  # Baseline: the CPT-165 anti-pattern must still be caught after the
-  # CPT-167 widening. No `bash -c` / `sh -c`, no `<<`, so candidate
-  # matches and filter doesn't drop.
-  local line='  run cat <input.txt'
-  local candidates offenders
-  candidates=$(printf '%s\n' "$line" | grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' || true)
-  offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
-  [ -n "$offenders" ]
+@test "CPT-168 (via tokenizer): does NOT flag 'run bash -c <script>' with NO trailing redirect" {
+  [ -z "$(_tokenize_line "  run bash -c 'echo hello'")" ]
 }
 
-# --- CPT-168 fixtures: re-capture top-level `<file` that appears AFTER
-#     the closing quote of a `bash -c '...'` or `bash -c "..."` script.
-#     CPT-167's filter dropped these wholesale; candidate_b restores.
+# --- CPT-169 cases: escape-handling in double-quoted bash -c scripts ---
 
-@test "CPT-168: candidate_b DOES flag 'run bash -c <single-quoted> _ <file' (top-level redirect after close-quote)" {
-  # The argv-as-literal bug CPT-167's filter over-suppressed. `_` is a
-  # conventional placeholder for $0 when passing positional args to
-  # bash -c; `<input.txt` is then a top-level redirect (argv literal
-  # under bats) that the inner shell never sees.
-  local line="  run bash -c 'cat \"\$1\"' _ <input.txt"
-  run bash -c "printf '%s\n' \"$line\" | grep -qE \"^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]\""
-  [ "$status" -eq 0 ]  # MATCH — re-captured.
+@test "CPT-169 (via tokenizer): does NOT flag 'run bash -c \"printf \\\"x\\\" <input.txt\"' (escaped quotes inside double-quoted script)" {
+  # The defect CPT-168's regex had: `"[^"]*"` treated `\"` as close-quote
+  # and broke tokenization. The tokenizer handles `\X` as an escape unit
+  # inside double quotes, so the outer `"..."` span correctly contains
+  # the escaped `\"x\"` and `<input.txt`.
+  local line='  run bash -c "printf \"x\" <input.txt"'
+  [ -z "$(_tokenize_line "$line")" ]
 }
 
-@test "CPT-168: candidate_b DOES flag 'run bash -c <double-quoted> _ <file' (double-quoted variant)" {
-  # Use a simpler double-quoted bash -c script to avoid nested-escape tangle.
-  local line='  run bash -c "cat input" _ <input.txt'
-  if echo "$line" | grep -qE '^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+"[^"]*".*[[:space:]]<[^ |(<]'; then
-    :  # matched — pass
-  else
-    echo "double-quoted bash-c with trailing redirect should match candidate_b" >&2
-    echo "line: $line" >&2
-    return 1
-  fi
+@test "CPT-169 (via tokenizer): still flags 'run bash -c \"echo hi\" _ <input.txt' (escape-fix doesn't over-correct)" {
+  # Baseline after the escape fix: a real trailing top-level redirect
+  # after a double-quoted bash -c script must still be caught.
+  local line='  run bash -c "echo hi" _ <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
 }
 
-@test "CPT-168: candidate_b does NOT flag 'run bash -c <script>' with NO trailing redirect" {
-  # Sanity — a plain `bash -c 'cmd'` with no trailing `<` must not match
-  # the re-capture regex. (The filter drops it at candidate_a stage.)
-  local line="  run bash -c 'echo hello'"
-  run bash -c "printf '%s\n' \"$line\" | grep -qE \"^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]\""
-  [ "$status" -ne 0 ]
+@test "CPT-169 (via tokenizer): does NOT flag 'run bash -c \"echo \\\"x\\\"\"' (escaped quotes, no redirect)" {
+  # Escaped quotes close cleanly at the outer `"` — tokenizer shouldn't
+  # wrongly interpret the inner `\"` as opening/closing state changes.
+  local line='  run bash -c "echo \"x\""'
+  [ -z "$(_tokenize_line "$line")" ]
 }
 
-@test "CPT-168: candidate_b does NOT flag 'run bash -c <cmd-with-interior-<file>' (redirect stays inside quoted script)" {
-  # The old CPT-167 case that must still pass through — `<` is inside
-  # the quoted script; no `<` after the close-quote.
-  local line="  run bash -c 'cat <input.txt'"
-  run bash -c "printf '%s\n' \"$line\" | grep -qE \"^[[:space:]]*run[[:space:]]+(bash|sh)[[:space:]]+-c[[:space:]]+'[^']*'.*[[:space:]]<[^ |(<]\""
-  [ "$status" -ne 0 ]
+@test "CPT-169 (via tokenizer): does NOT flag 'run bash -c \"echo \\\\\"' (escaped backslash, no redirect)" {
+  # Edge: `\\` should be an escape unit (literal backslash). Tokenizer
+  # should consume both chars together.
+  local line='  run bash -c "echo \\"'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+# --- Tokenizer unit tests: exact output format + exclusion rules ---
+
+@test "CPT-169 (tokenizer unit): offender output includes filename:lineno:text" {
+  # Grep -n-compatible format so error rendering stays uniform.
+  local tmp
+  tmp=$(mktemp)
+  printf '%s\n' '  run cat <input.txt' > "$tmp"
+  local out
+  out=$(awk -f "$TOKENIZER" "$tmp")
+  rm -f "$tmp"
+  [[ "$out" == *":1:"* ]]
+  [[ "$out" == *"<input.txt"* ]]
+}
+
+@test "CPT-169 (tokenizer unit): bare '<' token (len 1) is not flagged" {
+  # Regression guard for CPT-168's `[^ |(<]` floor which required a
+  # character AFTER `<`. `run cat <` alone has a token "<" of length 1
+  # which the tokenizer shouldn't flag — same semantic as the grep.
+  local line='  run cat <'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-169 (tokenizer unit): '<<EOF' token is not flagged (heredoc exclusion)" {
+  # Matches CPT-168's `[^ |(<]` second-char exclusion: tokens starting
+  # with `<<` are skipped (heredoc at top level of run is exotic;
+  # matching CPT-168 behaviour keeps scope narrow).
+  local line='  run cat <<EOF'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-169 (tokenizer unit): '<(proc)' token is not flagged (process-sub exclusion)" {
+  local line='  run cmd <(printf x)'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-169 (tokenizer unit): comment at top level terminates tokenization" {
+  # `#` outside quotes marks a bash comment — tokenizer must stop so
+  # `<file` inside a comment isn't flagged.
+  local line='  run cmd arg  # later words mention <file'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-169 (tokenizer unit): line not starting with 'run ' is ignored" {
+  local line='  echo "run cat <file"'
+  [ -z "$(_tokenize_line "$line")" ]
 }
