@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# CPT-162 + CPT-165: bats-self-lint.
+# CPT-162 + CPT-165 + CPT-167: bats-self-lint.
 #
 # The bats `run` helper captures both stdout and stderr into `$output`
 # by default, and does NOT spawn a shell for plain `run <cmd>` — argv is
@@ -15,20 +15,25 @@
 # CPT-162 covered `2>&1` at end-of-line. CPT-165 extends:
 #  - trailing-comment variant `run ... 2>&1  # capture stderr`
 #  - bare stdin redirect `run cmd <file`
+# CPT-167 extends the `<file` lint to:
+#  - exclude `<<` (heredoc marker) via char-class tightening
+#  - exclude lines with `run (bash|sh) -c` via a post-grep filter step
+#    (the `<` is then inside a quoted shell string, which the inner
+#    shell performs — legitimate usage, not the argv-as-literal bug)
 #
 # Regex shapes (all anchored to start/end-of-line so quoted-string uses
 # inside `run bash -c "..."` — which end in `"` then optional args — are
 # not flagged):
 #
 #   2>&1:         ^[[:space:]]*run[[:space:]].*[[:space:]]2>&1[[:space:]]*(#.*)?$
-#   <file:        ^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(][^ |]*([[:space:]].*)?(#.*)?$
+#   <file:        ^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$
+#                 (then filter out lines matching 'run[[:space:]]+(bash|sh)[[:space:]]+-c')
 #
 # The `<` lint excludes `< <(...)` process substitution by requiring the
-# char immediately after `<` to be non-space non-paren. It does not
-# perfectly distinguish `run cmd <file` from `run bash -c 'cmd <file'`
-# (the `<` inside a single-quoted string) — accepted trade-off. No
-# current test uses that shape; if it appears, the author can add
-# `# noqa: CPT-165` handling or wrap differently.
+# char immediately after `<` to be non-space non-paren. It also excludes
+# `<<` (heredoc) by adding `<` to the char class. The `run (bash|sh) -c`
+# filter covers the remaining case where `<` is embedded inside a quoted
+# shell script passed to an inner shell (correct usage by intent).
 
 REPO_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 TESTS_DIR="${REPO_DIR}/tests"
@@ -61,13 +66,25 @@ TESTS_DIR="${REPO_DIR}/tests"
   # a shell for plain `run`. If the test author wants stdin redirection,
   # they need `run bash -c "cmd <file"` (the spawned shell performs it).
   #
-  # `[^ |(]` after `<` excludes `< <(...)` process-substitution form
-  # (rare but legitimate inside bash -c). `[^ |]*` after the first char
-  # keeps filename-like tokens glued to the `<`; the optional trailing
-  # `([[:space:]].*)?` allows more argv after, and `(#.*)?$` allows an
-  # end-of-line bash comment.
-  local offenders
-  offenders=$(grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(][^ |]*([[:space:]].*)?(#.*)?$' "$TESTS_DIR"/*.bats || true)
+  # `[^ |(<]` after the first `<` excludes:
+  #   - space (handles `< <(...)` process-substitution form)
+  #   - `|` (handles rare pipe-in-middle cases)
+  #   - `(` (belt-and-braces for process subst)
+  #   - `<` (CPT-167: excludes `<<EOF`-style heredoc marker; the second
+  #     `<` of `<<` is part of the heredoc syntax inside a quoted
+  #     shell string, not a stdin-redirect-as-argv bug)
+  # `[^ |]*` after the first char keeps filename-like tokens glued to
+  # the `<`; the optional trailing `([[:space:]].*)?` allows more argv
+  # after, and `(#.*)?$` allows an end-of-line bash comment.
+  #
+  # CPT-167 post-grep filter: candidate offenders are then filtered to
+  # drop any line matching `run[[:space:]]+(bash|sh)[[:space:]]+-c`.
+  # Those lines have `<` embedded inside a quoted shell script passed
+  # to an inner shell — the redirect is performed by the inner shell,
+  # which is the correct pattern, not the argv-as-literal bug.
+  local candidates offenders
+  candidates=$(grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' "$TESTS_DIR"/*.bats || true)
+  offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
 
   if [ -n "$offenders" ]; then
     echo "CPT-165: the following lines use bare 'run ... <file' at the top level." >&2
@@ -105,13 +122,13 @@ TESTS_DIR="${REPO_DIR}/tests"
 
 @test "CPT-165: regex catches 'run cmd <file' (fixture)" {
   local line='  run cat <input.txt'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(][^ |]*([[:space:]].*)?(#.*)?\$'"
+  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
   [ "$status" -eq 0 ]
 }
 
 @test "CPT-165: regex catches 'run cmd <file extra-arg' (fixture)" {
   local line='  run some-cmd <input.txt other-arg'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(][^ |]*([[:space:]].*)?(#.*)?\$'"
+  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
   [ "$status" -eq 0 ]
 }
 
@@ -119,7 +136,7 @@ TESTS_DIR="${REPO_DIR}/tests"
   # Process substitution `< <(...)` has a SPACE after the first `<`.
   # The `[^ |(]` char class excludes space, so the regex doesn't match.
   local line='  run cat < <(printf x)'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(][^ |]*([[:space:]].*)?(#.*)?\$'"
+  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
   [ "$status" -ne 0 ]
 }
 
@@ -127,6 +144,56 @@ TESTS_DIR="${REPO_DIR}/tests"
   # A `<` that isn't preceded by space wouldn't normally be a redirect.
   # The `[[:space:]]<` anchor requires a preceding space.
   local line='  run test "a<b"'
-  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(][^ |]*([[:space:]].*)?(#.*)?\$'"
+  run bash -c "printf '%s\n' '$line' | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
   [ "$status" -ne 0 ]
+}
+
+# --- CPT-167 fixtures: heredoc + bash-c-quoted-redirect exemptions.
+#
+# Concern 1 (heredoc): `run bash -c 'cat <<EOF ... EOF'`. The `<<` is a
+# heredoc marker inside the quoted shell script. Pre-CPT-167 the
+# `[^ |(]` char class accepted the second `<`, so `<<EOF` matched and
+# was falsely flagged. CPT-167 adds `<` to the exclusion, turning the
+# class into `[^ |(<]` — the second `<` of `<<` is now excluded at
+# candidate stage.
+#
+# Concern 2 (bash-c quoted `<file`): `run bash -c 'cat <input.txt'`.
+# The `<` is inside a quoted string that the inner shell performs; not
+# the argv-as-literal bug. The new char class alone doesn't exclude
+# this — regex engines don't track quotes. CPT-167 adds a post-grep
+# filter step that drops any line matching `run (bash|sh) -c`.
+
+@test "CPT-167: regex does NOT flag 'run bash -c \"cat <<EOF\"' (heredoc fixture)" {
+  local line="  run bash -c 'cat <<EOF'"
+  run bash -c "printf '%s\n' \"$line\" | grep -qE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?\$'"
+  [ "$status" -ne 0 ]  # Excluded at candidate stage by `[^ |(<]`.
+}
+
+@test "CPT-167: regex does NOT flag 'run bash -c \"cmd <input\"' — candidate-stage plus filter (fixture)" {
+  # This one DOES match the candidate regex (no <<), but the post-grep
+  # filter for `run (bash|sh) -c` drops it. Exercise the full two-step.
+  local line="  run bash -c 'cat <input.txt'"
+  local candidates offenders
+  candidates=$(printf '%s\n' "$line" | grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' || true)
+  offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
+  [ -z "$offenders" ]
+}
+
+@test "CPT-167: regex does NOT flag 'run sh -c \"cat <data\"' — filter handles sh too (fixture)" {
+  local line="  run sh -c 'cat <data.txt'"
+  local candidates offenders
+  candidates=$(printf '%s\n' "$line" | grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' || true)
+  offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
+  [ -z "$offenders" ]
+}
+
+@test "CPT-167: regex + filter DOES still flag plain 'run cat <input.txt' (fixture, regression guard)" {
+  # Baseline: the CPT-165 anti-pattern must still be caught after the
+  # CPT-167 widening. No `bash -c` / `sh -c`, no `<<`, so candidate
+  # matches and filter doesn't drop.
+  local line='  run cat <input.txt'
+  local candidates offenders
+  candidates=$(printf '%s\n' "$line" | grep -nE '^[[:space:]]*run[[:space:]].*[[:space:]]<[^ |(<][^ |]*([[:space:]].*)?(#.*)?$' || true)
+  offenders=$(echo "$candidates" | grep -vE 'run[[:space:]]+(bash|sh)[[:space:]]+-c' || true)
+  [ -n "$offenders" ]
 }
