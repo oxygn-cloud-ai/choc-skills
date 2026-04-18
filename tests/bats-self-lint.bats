@@ -311,3 +311,54 @@ _tokenize_line() {
   local line='  run cmd1|cmd2 <input.txt'
   [ -n "$(_tokenize_line "$line")" ]
 }
+
+# --- CPT-172 fixtures: $(...) and $((...)) are single shell words.
+#
+# CPT-171's blanket `)` operator flush broke command substitution
+# `$(cmd)` and arithmetic expansion `$((expr))`. Inside them the whole
+# span is ONE token, so `$(printf x)#suffix` is `x#suffix` after
+# expansion, and `#` there is NOT a comment start.
+
+@test "CPT-172 (tokenizer): 'run echo \$(printf x)#suffix _ <input.txt' FLAGGED (cmd-subst is single word)" {
+  # Pre-CPT-172 the `)` flushed, then `#` hit token=="" and broke;
+  # `<input.txt` was never reached and the bug silently passed.
+  local line='  run echo $(printf x)#suffix _ <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-172 (tokenizer): 'run echo \$((1+2))#suffix _ <input.txt' FLAGGED (arithmetic is single word)" {
+  # Arithmetic expansion uses `$((` / `))`. Depth tracking naturally
+  # handles the matched pairs: entering on `$(` goes to depth 1, the
+  # second `(` bumps to 2, matching `))` brings depth back to 0.
+  local line='  run echo $((1+2))#suffix _ <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-172 (tokenizer): nested \$(echo \$(date))#suffix <file FLAGGED (nested cmd-subst)" {
+  # Nested $(... $(...) ...) — the outer `)` shouldn't flush until
+  # the inner `$()` is fully closed.
+  local line='  run echo $(echo $(date))#suffix <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-172 (tokenizer): plain '(cmd) # comment <file' NOT flagged (subshell + word-start #)" {
+  # Bare `(cmd)` is a subshell — `)` IS a real operator boundary, and
+  # `# comment` after whitespace is a legitimate comment. The `(` at
+  # position 0 of token would trigger the subshell-operator flush
+  # (cs_depth is 0 since no preceding `$`).
+  local line='  run (cmd) # comment with <file'
+  [ -z "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-172 (tokenizer): 'run echo \$(printf x) <input.txt' FLAGGED (plain redirect after cmd-subst)" {
+  # Baseline guard: redirect AFTER a correctly-tokenized cmd-subst,
+  # with a space separator, is still the argv-as-literal bug.
+  local line='  run echo $(printf x) <input.txt'
+  [ -n "$(_tokenize_line "$line")" ]
+}
+
+@test "CPT-172 (tokenizer): 'run echo \$(printf x)' with NO redirect is NOT flagged" {
+  # Sanity — cmd-subst at top level with no redirect must still pass.
+  local line='  run echo $(printf x)'
+  [ -z "$(_tokenize_line "$line")" ]
+}

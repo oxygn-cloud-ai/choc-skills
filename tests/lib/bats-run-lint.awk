@@ -32,10 +32,11 @@
 # Output: `<filename>:<line-number>:<line-text>` for each offender.
 # Matches `grep -n` format so downstream error rendering is unchanged.
 
-function tokenize_and_flag(line,    i, c, state, token, n, tokens, len, j, t, t1, t2) {
+function tokenize_and_flag(line,    i, c, state, token, n, tokens, len, j, t, t1, t2, cs_depth) {
     state = 0
     token = ""
     n = 0
+    cs_depth = 0
     len = length(line)
 
     # Skip leading whitespace.
@@ -56,7 +57,33 @@ function tokenize_and_flag(line,    i, c, state, token, n, tokens, len, j, t, t1
         c = substr(line, i, 1)
 
         if (state == 0) {
-            # Outside quotes.
+            # CPT-172: command substitution `$(...)` and arithmetic
+            # expansion `$((...))` are single shell words — the whole
+            # span is concatenated with whatever follows (including any
+            # `#suffix`). Detect entry via `$(` lookahead and stay in
+            # cs-mode until paren depth returns to 0. Inside cs-mode,
+            # ALL chars append to token — no operator flushes, no
+            # whitespace splits. Arithmetic `$((` naturally handled by
+            # the second `(` bumping depth to 2; matched by `))`.
+            if (c == "$" && i < len && substr(line, i + 1, 1) == "(") {
+                token = token "$("
+                cs_depth++
+                i += 2
+                continue
+            }
+            if (cs_depth > 0) {
+                # Inside command subst / arithmetic — append literally
+                # and track paren depth. Quotes inside are not strictly
+                # tracked here (they'd need full recursive parsing); for
+                # the `<`-start rule the whole span becomes one token
+                # regardless, so depth tracking alone is sufficient.
+                token = token c
+                if (c == "(") cs_depth++
+                else if (c == ")") cs_depth--
+                i++
+                continue
+            }
+            # Outside quotes and outside cmd-subst.
             # CPT-170: `#` only starts a comment at a word boundary
             # (token is empty — we just crossed whitespace or we're at
             # start). Inside a word, `#` is a literal char. POSIX shell
@@ -77,6 +104,9 @@ function tokenize_and_flag(line,    i, c, state, token, n, tokens, len, j, t, t1
             # advance past the operator char; do NOT emit the operator
             # into tokens[] — it's not argv and emitting it would add
             # noise to the `<`-start rule.
+            # Note: `(` outside `$(` is a subshell opener (legitimate
+            # operator boundary); `$(` is handled above, so by the time
+            # we reach this branch, a bare `(` really is a subshell.
             if (c == ";" || c == "|" || c == "&" || c == "(" || c == ")") {
                 if (token != "") { n++; tokens[n] = token; token = "" }
                 i++
