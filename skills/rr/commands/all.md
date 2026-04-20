@@ -17,7 +17,7 @@ Parse any flags or filters from $ARGUMENTS (everything after the `all` keyword):
 Check if the batch scripts are available by running these checks via Bash:
 
 ```bash
-test -x ~/.claude/skills/rr/bin/rr-prepare.sh && echo "bin_available"
+test -x ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-prepare.sh && echo "bin_available"
 test -n "${JIRA_EMAIL:-}" && test -n "${JIRA_API_KEY:-}" && echo "jira_creds_set"
 ```
 
@@ -60,7 +60,7 @@ Monitor progress: /rr monitor (in separate terminal)
 Build the command with applicable flags and run via Bash tool:
 
 ```bash
-RR_CATEGORY_FILTER="${category_filter}" ~/.claude/skills/rr/bin/rr-prepare.sh [--force] [--qtr:Q1|Q2|Q3|Q4]
+RR_CATEGORY_FILTER="${category_filter}" ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-prepare.sh [--force] [--qtr:Q1|Q2|Q3|Q4]
 ```
 
 Capture the batch count from the last line of stdout. If 0, report "No risks to process" and stop.
@@ -76,7 +76,7 @@ Capture the batch count from the last line of stdout. If 0, report "No risks to 
 
 2. Read the sub-agent prompt template:
    ```
-   ~/.claude/skills/rr/bin/sub-agent-prompt.md
+   ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/sub-agent-prompt.md
    ```
 
 3. List all batch files:
@@ -108,7 +108,7 @@ For each wave of batches:
        - Replace every occurrence of `{{BATCH_ID}}` with the actual batch number
        - Replace every occurrence of `{{BATCH_FILE}}` with the actual absolute path to the batch extract file
        - Replace every occurrence of `{{WORK_DIR}}` with the actual absolute path to the work directory
-       - Replace every occurrence of `{{SKILLS_DIR}}` with `~/.claude/skills/rr`
+       - Replace every occurrence of `{{SKILLS_DIR}}` with `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr`
 
    Launch ALL agents in this wave in a single message (parallel Agent tool calls).
 
@@ -125,7 +125,7 @@ For each wave of batches:
 
 4. Update CPT with wave progress (non-blocking) via Bash:
    ```bash
-   ~/.claude/skills/rr/bin/_update_cpt.sh dispatch_progress "Wave N of M complete: X succeeded, Y failed" || true
+   ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh dispatch_progress "Wave N of M complete: X succeeded, Y failed" || true
    ```
 
 5. Proceed to the next wave.
@@ -156,7 +156,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dispatch complete: ${succeeded}/${total} ba
 Run via Bash tool:
 
 ```bash
-~/.claude/skills/rr/bin/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4]
+${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4]
 ```
 
 ### Report to User
@@ -182,7 +182,7 @@ Report to user why batch script mode is not available, then proceed sequentially
 
 At the start of sequential processing, update CPT via Bash (non-blocking):
 ```bash
-~/.claude/skills/rr/bin/_update_cpt.sh started "Sequential mode: processing N risks" || true
+${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh started "Sequential mode: processing N risks" || true
 ```
 Do NOT update CPT per-risk (avoids spam). Only update at completion.
 
@@ -241,12 +241,12 @@ For each pending risk in the progress file:
 
 1. Update status to `current` in progress file
 2. Read all workflow step files and execute the full 6-step workflow inline:
-   - Step 1: Extract and draft (read `~/.claude/skills/rr/references/workflow/step-1-extract.md`)
-   - Step 2: Adversarial review (read `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`)
-   - Step 3: Rectified assessment (read `~/.claude/skills/rr/references/workflow/step-3-rectify.md`)
+   - Step 1: Extract and draft (read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-1-extract.md`)
+   - Step 2: Adversarial review (read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-2-adversarial.md`)
+   - Step 3: Rectified assessment (read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-3-rectify.md`)
    - Step 4: Discussion — **in batch mode, skip interactive discussion** and auto-resolve based on adversarial findings
-   - Step 5: Final assessment (read `~/.claude/skills/rr/references/workflow/step-5-finalise.md`)
-   - Step 6: Publish to Jira (read `~/.claude/skills/rr/references/workflow/step-6-publish.md`)
+   - Step 5: Final assessment (read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-5-finalise.md`)
+   - Step 6: Publish to Jira (read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-6-publish.md`)
 3. After completion: update progress file — set status to `done` with timestamp
 4. Mark next risk as `current`
 5. After each risk: check context capacity
@@ -276,7 +276,7 @@ For each pending risk in the progress file:
 
 After all risks are processed (or context limit reached), update CPT via Bash (non-blocking):
 ```bash
-~/.claude/skills/rr/bin/_update_cpt.sh complete "Sequential mode: N/M risks processed" || true
+${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh complete "Sequential mode: N/M risks processed" || true
 ```
 
 ## After

@@ -11,7 +11,14 @@ fi
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="${REPO_DIR}/skills"
-TARGET_BASE="${HOME}/.claude/skills"
+
+# Resolve the Claude config dir. CLAUDE_CONFIG_DIR takes precedence when set and
+# non-empty (the `:-` fallback also covers the "set but empty" case); otherwise
+# default to ~/.claude. This mirrors how Claude Code itself resolves the config
+# dir at runtime, so the install tree lands where the runtime actually reads
+# from. See CPT-174.
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+TARGET_BASE="${CLAUDE_DIR}/skills"
 
 # --- Colors (disabled if not a terminal) ---
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -69,10 +76,14 @@ ${BOLD}EXAMPLES${RESET}
   ./install.sh --uninstall chk1   Remove chk1
   ./install.sh --check            Verify all installations are healthy
 
+${BOLD}ENVIRONMENT${RESET}
+  ${BOLD}CLAUDE_CONFIG_DIR${RESET}    Claude config directory (default: ~/.claude).
+                       Resolves to: ${CLAUDE_DIR}
+
 ${BOLD}MANUAL INSTALL${RESET} (no clone needed — SKILL.md only, no sub-commands or routers)
-  mkdir -p ~/.claude/skills/chk1
+  mkdir -p "\${CLAUDE_CONFIG_DIR:-\$HOME/.claude}/skills/chk1"
   curl -sL https://raw.githubusercontent.com/oxygn-cloud-ai/choc-skills/main/skills/chk1/SKILL.md \\
-    -o ~/.claude/skills/chk1/SKILL.md
+    -o "\${CLAUDE_CONFIG_DIR:-\$HOME/.claude}/skills/chk1/SKILL.md"
   # Note: Skills with sub-commands (chk1, chk2, rr) need the per-skill installer
   # for full functionality. Clone the repo and run: cd skills/<name> && ./install.sh
 EOF
@@ -195,7 +206,7 @@ install_skill() {
 
   # Create target directory
   if ! mkdir -p "$target" 2>/dev/null; then
-    die "Cannot create ${target} — check permissions on ~/.claude/"
+    die "Cannot create ${target} — check permissions on ${CLAUDE_DIR}/"
   fi
 
   # Copy SKILL.md
@@ -258,7 +269,7 @@ check_health() {
 
   printf "\n${BOLD}Installation health check${RESET}\n\n"
 
-  # Check ~/.claude/skills exists
+  # Check ${CLAUDE_DIR}/skills exists (honors CLAUDE_CONFIG_DIR)
   if [ ! -d "$TARGET_BASE" ]; then
     warn "Skills directory does not exist: ${TARGET_BASE}"
     info "Run ./install.sh to create it and install skills"
@@ -334,14 +345,14 @@ preflight() {
   fi
 
   # Verify we can write to ~/.claude
-  if [ ! -d "${HOME}/.claude" ]; then
-    if ! mkdir -p "${HOME}/.claude" 2>/dev/null; then
-      die "Cannot create ${HOME}/.claude — check home directory permissions"
+  if [ ! -d "${CLAUDE_DIR}" ]; then
+    if ! mkdir -p "${CLAUDE_DIR}" 2>/dev/null; then
+      die "Cannot create ${CLAUDE_DIR} — check home directory permissions"
     fi
   fi
 
-  if [ ! -w "${HOME}/.claude" ]; then
-    die "${HOME}/.claude is not writable — check permissions"
+  if [ ! -w "${CLAUDE_DIR}" ]; then
+    die "${CLAUDE_DIR} is not writable — check permissions"
   fi
 }
 

@@ -13,7 +13,7 @@ Context from user: $ARGUMENTS
 - Optional: path to assessment directory (default: most recent in RA_OUTPUT_DIR)
 
 ## Configuration
-Read: `~/.claude/skills/ra/references/jira-config.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/jira-config.md`
 
 ## Pre-requisites
 1. `assessment_final.json` must exist in the specified directory

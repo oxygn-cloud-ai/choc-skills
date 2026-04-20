@@ -8,7 +8,7 @@ allowed-tools:
 
 # project:version — Show Installed Version
 
-Read the `version:` line from `~/.claude/skills/project/SKILL.md` frontmatter and output:
+Read the `version:` line from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/SKILL.md` frontmatter and output:
 
 ```
 project vX.Y.Z

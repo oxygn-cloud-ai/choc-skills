@@ -18,12 +18,12 @@ Launch tmux sessions with Claude Code running in each worktree session for a pro
 ## Step 0: Pre-checks
 
 Verify dependencies exist:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error.
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error.
 - `command -v tmux` — if missing: **STOP** with error: "tmux is required. Install with: brew install tmux"
 - `command -v claude` — if missing: **STOP** with error: "Claude Code CLI is required."
 - `command -v jq` — if missing: **STOP** with error: "jq is required for PROJECT_CONFIG.json reading."
 - `command -v bash` — if missing: **STOP** (the per-role launch script requires bash). macOS and Linux always have bash; this check guards against exotic environments.
-- `command -v ~/.local/bin/project-launch-session.sh` — if missing: **STOP** with error: "project-launch-session.sh not installed. Re-run `~/.claude/skills/project/install.sh --force`."
+- `command -v ~/.local/bin/project-launch-session.sh` — if missing: **STOP** with error: "project-launch-session.sh not installed. Re-run `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/install.sh --force`."
 
 ## Step 1: Detect project (worktree-aware)
 
@@ -73,7 +73,7 @@ done
 
 ## Step 3: Read architecture and config
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the role list.
+Read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` for the role list.
 
 Read `$REPO_ROOT/PROJECT_CONFIG.json` for:
 - Project type (`project.type`)

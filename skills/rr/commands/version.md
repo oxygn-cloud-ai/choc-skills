@@ -1,6 +1,6 @@
 # rr:version — Show Installed Version
 
-Read the `version:` field from `~/.claude/skills/rr/SKILL.md` frontmatter and display:
+Read the `version:` field from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/SKILL.md` frontmatter and display:
 
 ```
 rr v<version>

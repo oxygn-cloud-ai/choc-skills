@@ -12,7 +12,7 @@ allowed-tools:
 ---
 
 <objective>
-Create a new project repository fully configured per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/PROJECT_STANDARDS.md.
+Create a new project repository fully configured per ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md and ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md.
 </objective>
 
 <process>
@@ -45,12 +45,12 @@ Before anything else, verify this is safe to run:
 ## Step 1: Verify dependencies and read the architecture
 
 Verify dependencies exist before reading:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file defines the multi-session workflow and is required for project creation."
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. This file defines project standards for branch protection, CI, and documentation."
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md not found. This file defines the multi-session workflow and is required for project creation."
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md not found. This file defines project standards for branch protection, CI, and documentation."
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions, worktree layout, and Jira structure. This is the authoritative reference — do not hardcode or inline its contents.
+Read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` for role definitions, worktree layout, and Jira structure. This is the authoritative reference — do not hardcode or inline its contents.
 
-Read `~/.claude/PROJECT_STANDARDS.md` for branch protection, CI templates, and documentation requirements.
+Read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md` for branch protection, CI templates, and documentation requirements.
 
 ## Step 2: Gather basics
 
@@ -130,7 +130,7 @@ Create these files at the repo root:
 - `env`: `{ "project": {}, "sessions": {} }` — empty by default, populated via `/project:config`
 - `coverage`, `sandbox`, `servers`, `deviations`: as applicable
 
-**PROJECT_CONFIG.schema.json** — copy from `~/.claude/skills/project/PROJECT_CONFIG.schema.json` (installed with the skill). This enables `scripts/validate-config.sh` for the new project.
+**PROJECT_CONFIG.schema.json** — copy from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/PROJECT_CONFIG.schema.json` (installed with the skill). This enables `scripts/validate-config.sh` for the new project.
 
 **Language-specific scaffolding** (Software only):
 - Python: `pyproject.toml` (with version 0.1.0), `src/<name>/__init__.py`, `tests/conftest.py`, `.gitignore`
@@ -142,7 +142,7 @@ Create these files at the repo root:
 ## Step 6: Delete GitHub-default labels
 
 GitHub Issues are disabled project-wide (Jira is the single source of truth per
-`~/.claude/PROJECT_STANDARDS.md`). The 9 GitHub-default labels serve no purpose
+`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md`). The 9 GitHub-default labels serve no purpose
 with Issues off and must be removed. Project-specific labels for PR organisation
 (scope labels like `skill:*`, category labels for chk1/chk2 findings, dependabot
 labels `dependencies` / `ci`, etc.) may be declared in `.github/labels.yml` and
@@ -191,7 +191,7 @@ git push -u origin main
 
 ## Step 9: Create session worktrees
 
-Read the worktree setup from `~/.claude/MULTI_SESSION_ARCHITECTURE.md` section 7.
+Read the worktree setup from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` section 7.
 
 For Software (all 11 sessions):
 ```bash
@@ -227,7 +227,7 @@ Template:
 You are the **<Role>** for <project-name>.
 
 ## Protocol
-Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
+Read ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
 
 ## Project
 - Jira epic: <epic-key>
@@ -271,7 +271,7 @@ Recurring task: scan Jira for issues needing triage.
 3. Check "Ready for Coding" queue: flag aging issues (>7 days) to Master
 4. Escalate anything P1 directly to Master
 
-Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 11 for full triager protocol.
+Read ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md section 11 for full triager protocol.
 ```
 
 Tailor the loop content per role:
@@ -293,8 +293,8 @@ Default loop intervals (written to PROJECT_CONFIG.json in Step 5):
 
 Create `.github/workflows/test.yml` with a language-appropriate test job. **Do not
 add `notify-failure` / `notify-recovery` jobs by default** — the default CI
-failure tracking pattern is Master-session-handled per `~/.claude/PROJECT_STANDARDS.md`
-section 3 and `~/.claude/MULTI_SESSION_ARCHITECTURE.md` section 5: the Master
+failure tracking pattern is Master-session-handled per `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md`
+section 3 and `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` section 5: the Master
 session on the host machine polls `gh run list`, files Jira tasks on failure,
 and transitions them to Done on recovery. No Jira secrets in GitHub Actions
 are required.
@@ -326,7 +326,7 @@ EOF
 
 ```bash
 ENCODED=$(echo "<path>" | sed 's|/|-|g' | sed 's|^-||')
-mkdir -p "$HOME/.claude/projects/$ENCODED/memory"
+mkdir -p "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/$ENCODED/memory"
 ```
 
 Write initial `MEMORY.md` (index) and `project_status.md` with project name, type, version, creation date, and Jira epic key.

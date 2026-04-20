@@ -27,7 +27,7 @@ Wait for them to confirm before proceeding.
 Run the monitor server in the background and open the dashboard in the user's browser:
 
 ```bash
-python3 ~/.claude/skills/rr/bin/monitor.py &
+python3 ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/monitor.py &
 echo "Monitor server running at http://localhost:8770"
 open "http://localhost:8770"
 ```

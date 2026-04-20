@@ -2,6 +2,14 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.2.1] - 2026-04-20
+
+### Fixed
+
+- **Installer + skill runtime now honour `CLAUDE_CONFIG_DIR`** (CPT-174 part 2). The v2.2.0 installer introduced `HOOKS_SOURCE` / `HOOKS_TARGET` / `GLOBAL_SOURCE` / `GLOBAL_TARGET` / `SETTINGS_FILE` — all hardcoded against `${HOME}/.claude`. On machines where Claude Code resolves its config dir via `$CLAUDE_CONFIG_DIR` (e.g. `/workspace/.claude`), the installer's PreToolUse hook registrations landed in the wrong `settings.json` and the enforcement hooks (`block-worktree-add.sh`, `verify-jira-parent.sh`) were silently inert — the exact cave-rule failure mode the skill was built to prevent (see `skills/project/CLAUDE.md` "Failure mode this rule exists to prevent"). Installer now resolves `CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"` and uses `${CLAUDE_DIR}` for all install targets including hooks, global docs, and `settings.json`. All nine command files (`audit`, `config`, `doctor`, `help`, `launch`, `new`, `status`, `update`, `version`) + `SKILL.md` now use inline `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/` for every runtime path, so `/project:audit` etc. work correctly on `CLAUDE_CONFIG_DIR` machines. Companion to PR #45 on `main` which fixes the same pattern at the v1.2.10-level code.
+
+Zero behaviour change for machines without `CLAUDE_CONFIG_DIR` set — the `:-` fallback preserves the default `$HOME/.claude` resolution.
+
 ## [2.2.0] - 2026-04-19
 
 ### Added

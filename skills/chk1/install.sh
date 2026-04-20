@@ -2,12 +2,16 @@
 set -euo pipefail
 
 # Per-skill installer for chk1
-# Installs SKILL.md to ~/.claude/skills/chk1/
-# Installs sub-command .md files to ~/.claude/commands/chk1/
-# Installs router to ~/.claude/commands/chk1.md
+# Installs SKILL.md to ${CLAUDE_CONFIG_DIR:-~/.claude}/skills/chk1/
+# Installs sub-command .md files to ${CLAUDE_CONFIG_DIR:-~/.claude}/commands/chk1/
+# Installs router to ${CLAUDE_CONFIG_DIR:-~/.claude}/commands/chk1.md
 
 SKILL_NAME="chk1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# CLAUDE_CONFIG_DIR honoured (CPT-174). Falls back to ~/.claude when unset or
+# empty, matching how Claude Code itself resolves the config dir at runtime.
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
 
 # Colors
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -23,8 +27,8 @@ warn() { printf "${YELLOW}warn${RESET}  %s\n" "$*" >&2; }
 info() { printf "${CYAN}info${RESET}  %s\n" "$*"; }
 die()  { err "$@"; exit 1; }
 
-SKILL_TARGET="${HOME}/.claude/skills/${SKILL_NAME}"
-COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
+SKILL_TARGET="${CLAUDE_DIR}/skills/${SKILL_NAME}"
+COMMANDS_TARGET="${CLAUDE_DIR}/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
 
@@ -52,9 +56,9 @@ ${BOLD}USAGE${RESET}
   ./install.sh --help       Show this help
 
 ${BOLD}INSTALLS TO${RESET}
-  ~/.claude/skills/chk1/SKILL.md       Main skill file
-  ~/.claude/commands/chk1.md           Router
-  ~/.claude/commands/chk1/*.md         Sub-command files
+  ${CLAUDE_DIR}/skills/chk1/SKILL.md       Main skill file
+  ${CLAUDE_DIR}/commands/chk1.md           Router
+  ${CLAUDE_DIR}/commands/chk1/*.md         Sub-command files
 EOF
   exit 0
 fi
@@ -71,7 +75,7 @@ if [ "${1:-}" = "--uninstall" ]; then
   info "Uninstalling chk1..."
   [ -d "$SKILL_TARGET" ] && rm -rf "$SKILL_TARGET" && ok "Removed ${SKILL_TARGET}" || warn "Skill not installed"
   [ -d "$COMMANDS_TARGET" ] && rm -rf "$COMMANDS_TARGET" && ok "Removed ${COMMANDS_TARGET}" || warn "Commands not installed"
-  [ -f "${HOME}/.claude/commands/chk1.md" ] && rm -f "${HOME}/.claude/commands/chk1.md" && ok "Removed router" || true
+  [ -f "${CLAUDE_DIR}/commands/chk1.md" ] && rm -f "${CLAUDE_DIR}/commands/chk1.md" && ok "Removed router" || true
   ok "chk1 uninstalled"
   exit 0
 fi
@@ -88,8 +92,8 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     err "SKILL.md not found at ${SKILL_TARGET}/SKILL.md"; issues=$((issues + 1))
   fi
 
-  if [ -f "${HOME}/.claude/commands/chk1.md" ]; then
-    ok "Router: ~/.claude/commands/chk1.md"
+  if [ -f "${CLAUDE_DIR}/commands/chk1.md" ]; then
+    ok "Router: ${CLAUDE_DIR}/commands/chk1.md"
   else
     err "Router not found"; issues=$((issues + 1))
   fi
@@ -127,8 +131,8 @@ cp "$SKILL_SOURCE" "${SKILL_TARGET}/SKILL.md"
 ok "SKILL.md -> ${SKILL_TARGET}/SKILL.md"
 
 # 2. Install router command
-mkdir -p "${HOME}/.claude/commands"
-cat > "${HOME}/.claude/commands/chk1.md" <<'ROUTER'
+mkdir -p "${CLAUDE_DIR}/commands"
+cat > "${CLAUDE_DIR}/commands/chk1.md" <<'ROUTER'
 # chk1 — Adversarial Implementation Audit Router
 
 Parse the argument from: $ARGUMENTS
@@ -152,7 +156,7 @@ Route to the appropriate sub-skill based on the argument:
 
 Invoke the matching skill using the Skill tool.
 ROUTER
-ok "Router -> ~/.claude/commands/chk1.md"
+ok "Router -> ${CLAUDE_DIR}/commands/chk1.md"
 
 # 3. Install sub-commands (if directory exists)
 if [ -d "$COMMANDS_SOURCE" ]; then
@@ -183,7 +187,7 @@ ok "chk1 v${ver} installed successfully"
 echo ""
 info "Files installed:"
 printf "  ${DIM}%-50s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
-printf "  ${DIM}%-50s${RESET} (router)\n" "${HOME}/.claude/commands/chk1.md"
+printf "  ${DIM}%-50s${RESET} (router)\n" "${CLAUDE_DIR}/commands/chk1.md"
 [ -d "$COMMANDS_TARGET" ] && printf "  ${DIM}%-50s${RESET} (sub-commands)\n" "${COMMANDS_TARGET}/"
 echo ""
 info "Usage: /chk1 or /chk1 help"

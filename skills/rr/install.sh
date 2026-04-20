@@ -2,13 +2,17 @@
 set -euo pipefail
 
 # Per-skill installer for rr
-# Installs SKILL.md to ~/.claude/skills/rr/
-# Installs sub-command .md files to ~/.claude/commands/rr/
-# Installs bin scripts to ~/.claude/skills/rr/bin/
-# Installs reference files to ~/.claude/skills/rr/references/
+# Installs SKILL.md to ${CLAUDE_CONFIG_DIR:-~/.claude}/skills/rr/
+# Installs sub-command .md files to ${CLAUDE_CONFIG_DIR:-~/.claude}/commands/rr/
+# Installs bin scripts to ${CLAUDE_CONFIG_DIR:-~/.claude}/skills/rr/bin/
+# Installs reference files to ${CLAUDE_CONFIG_DIR:-~/.claude}/skills/rr/references/
 
 SKILL_NAME="rr"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# CLAUDE_CONFIG_DIR honoured (CPT-174). Falls back to ~/.claude when unset or
+# empty, matching how Claude Code itself resolves the config dir at runtime.
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
 
 # Colors
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -24,8 +28,8 @@ warn() { printf "${YELLOW}warn${RESET}  %s\n" "$*" >&2; }
 info() { printf "${CYAN}info${RESET}  %s\n" "$*"; }
 die()  { err "$@"; exit 1; }
 
-SKILL_TARGET="${HOME}/.claude/skills/${SKILL_NAME}"
-COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
+SKILL_TARGET="${CLAUDE_DIR}/skills/${SKILL_NAME}"
+COMMANDS_TARGET="${CLAUDE_DIR}/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
 BIN_SOURCE="${SCRIPT_DIR}/bin"
@@ -53,12 +57,12 @@ ${BOLD}USAGE${RESET}
   ./install.sh --help       Show this help
 
 ${BOLD}INSTALLS TO${RESET}
-  ~/.claude/skills/rr/SKILL.md             Main skill file
-  ~/.claude/skills/rr/.source-repo         Repo path marker (for /rr update)
-  ~/.claude/skills/rr/bin/        Batch bin scripts (9 files)
-  ~/.claude/skills/rr/references/          Schemas, workflow, context (16+ files)
-  ~/.claude/commands/rr/*.md               Sub-command files (11 files)
-  ~/.claude/commands/rr.md                 Router file
+  ${CLAUDE_DIR}/skills/rr/SKILL.md             Main skill file
+  ${CLAUDE_DIR}/skills/rr/.source-repo         Repo path marker (for /rr update)
+  ${CLAUDE_DIR}/skills/rr/bin/        Batch bin scripts (9 files)
+  ${CLAUDE_DIR}/skills/rr/references/          Schemas, workflow, context (16+ files)
+  ${CLAUDE_DIR}/commands/rr/*.md               Sub-command files (11 files)
+  ${CLAUDE_DIR}/commands/rr.md                 Router file
 EOF
   exit 0
 fi
@@ -85,9 +89,9 @@ if [ "${1:-}" = "--uninstall" ]; then
   else
     warn "Commands not installed at ${COMMANDS_TARGET}"
   fi
-  if [ -f "${HOME}/.claude/commands/rr.md" ]; then
-    rm -f "${HOME}/.claude/commands/rr.md"
-    ok "Removed router: ~/.claude/commands/rr.md"
+  if [ -f "${CLAUDE_DIR}/commands/rr.md" ]; then
+    rm -f "${CLAUDE_DIR}/commands/rr.md"
+    ok "Removed router: ${CLAUDE_DIR}/commands/rr.md"
   fi
   ok "rr uninstalled"
   exit 0
@@ -108,10 +112,10 @@ if [ "${1:-}" = "--check" ]; then
   fi
 
   # Router
-  if [ -f "${HOME}/.claude/commands/rr.md" ]; then
-    ok "Router: ~/.claude/commands/rr.md"
+  if [ -f "${CLAUDE_DIR}/commands/rr.md" ]; then
+    ok "Router: ${CLAUDE_DIR}/commands/rr.md"
   else
-    err "Router not found: ~/.claude/commands/rr.md"
+    err "Router not found: ${CLAUDE_DIR}/commands/rr.md"
     issues=$((issues + 1))
   fi
 
@@ -242,8 +246,8 @@ echo "$SCRIPT_DIR" > "${SKILL_TARGET}/.source-repo"
 ok "Source repo marker -> ${SKILL_TARGET}/.source-repo"
 
 # 3. Install router command
-mkdir -p "${HOME}/.claude/commands"
-cat > "${HOME}/.claude/commands/rr.md" <<'ROUTER'
+mkdir -p "${CLAUDE_DIR}/commands"
+cat > "${CLAUDE_DIR}/commands/rr.md" <<'ROUTER'
 # rr — Risk Register Assessment Router
 
 Parse the argument from: $ARGUMENTS
@@ -266,7 +270,7 @@ Route to the appropriate sub-skill based on the argument:
 
 Invoke the matching skill using the Skill tool.
 ROUTER
-ok "Router -> ~/.claude/commands/rr.md"
+ok "Router -> ${CLAUDE_DIR}/commands/rr.md"
 
 # 4. Install sub-commands (clean stale files from previous version)
 if [ -d "$COMMANDS_TARGET" ]; then
@@ -327,7 +331,7 @@ ok "rr v${ver} installed successfully"
 echo ""
 info "Files installed:"
 printf "  ${DIM}%-55s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
-printf "  ${DIM}%-55s${RESET} (router)\n" "${HOME}/.claude/commands/rr.md"
+printf "  ${DIM}%-55s${RESET} (router)\n" "${CLAUDE_DIR}/commands/rr.md"
 printf "  ${DIM}%-55s${RESET} (${count} sub-commands)\n" "${COMMANDS_TARGET}/"
 printf "  ${DIM}%-55s${RESET} (${bin_count} bin files)\n" "${SKILL_TARGET}/bin/"
 printf "  ${DIM}%-55s${RESET} (${ref_count} reference files)\n" "${SKILL_TARGET}/references/"

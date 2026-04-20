@@ -6,7 +6,7 @@ allowed-tools: Read
 
 # ra:help — Usage Guide
 
-Read version from `~/.claude/skills/ra/SKILL.md` frontmatter.
+Read version from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/SKILL.md` frontmatter.
 
 Display:
 ```
@@ -45,9 +45,9 @@ ENVIRONMENT VARIABLES
   JIRA_API_KEY          Required for Jira publication
 
 LOCATION
-  ~/.claude/skills/ra/SKILL.md
-  ~/.claude/commands/ra/*.md (sub-commands)
-  ~/.claude/skills/ra/references/ (schemas, workflow, context)
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/SKILL.md
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/ra/*.md (sub-commands)
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/ (schemas, workflow, context)
 ```
 
 End of help output. Do not continue.

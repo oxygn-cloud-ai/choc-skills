@@ -9,7 +9,7 @@ allowed-tools:
 ---
 
 <objective>
-Audit the current project against ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/PROJECT_STANDARDS.md. Report compliance gaps with PASS/FAIL/WARN/SKIP verdicts.
+Audit the current project against ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md and ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md. Report compliance gaps with PASS/FAIL/WARN/SKIP verdicts.
 </objective>
 
 <process>
@@ -24,11 +24,11 @@ If not in a git repo: "Not in a git repository. Navigate to a project and try ag
 ## Step 2: Verify dependencies and read standards
 
 Before reading, verify the dependency files exist:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file is required for project auditing. Restore it or check your ~/.claude configuration."
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. This file is required for project auditing."
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md not found. This file is required for project auditing. Restore it or check your ~/.claude configuration."
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md not found. This file is required for project auditing."
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the full role list and requirements.
-Read `~/.claude/PROJECT_STANDARDS.md` for branch protection, CI, and documentation requirements.
+Read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` for the full role list and requirements.
+Read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md` for branch protection, CI, and documentation requirements.
 Read the project's `PROJECT_CONFIG.json` to understand project type and documented deviations.
 
 ## Step 3: Determine project type

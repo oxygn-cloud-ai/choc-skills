@@ -7,7 +7,7 @@ allowed-tools:
 
 # project:help — Usage Guide
 
-Read the installed skill version from `~/.claude/skills/project/SKILL.md` frontmatter, then display:
+Read the installed skill version from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/SKILL.md` frontmatter, then display:
 
 ```
 project vX.Y.Z — Project Repository Administration
@@ -30,7 +30,7 @@ PROJECT TYPES
   software         11 sessions, CI, branch protection, code scaffolding
   non-software     8 sessions (no chk1/chk2/playtester), no CI
 
-STANDARD WORKTREE SESSIONS (per ~/.claude/MULTI_SESSION_ARCHITECTURE.md)
+STANDARD WORKTREE SESSIONS (per ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md)
   master           Supervisor — alignment, cooperation, orderly updates
   planner          Feature request creation (after deep human discussion)
   implementer      Feature implementation (picks up Feature Request issues)
@@ -49,13 +49,13 @@ ISSUE TRACKING
   Workflow: New → Needs Triage → Ready for Coding → In Progress → In Review → Done
 
 REFERENCE FILES
-  Architecture:  ~/.claude/MULTI_SESSION_ARCHITECTURE.md
-  Standards:     ~/.claude/PROJECT_STANDARDS.md
-  Global rules:  ~/.claude/CLAUDE.md
-  User guide:    ~/.claude/skills/project/USER_GUIDE.md
+  Architecture:  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md
+  Standards:     ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md
+  Global rules:  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/CLAUDE.md
+  User guide:    ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/USER_GUIDE.md
 
 LOCATION
-  ~/.claude/skills/project/SKILL.md  (installed)
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/SKILL.md  (installed)
   Source:      see .source-repo marker
 ```
 

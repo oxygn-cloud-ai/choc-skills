@@ -1,6 +1,6 @@
 # rr:help — Usage Guide
 
-First, read the `version:` field from `~/.claude/skills/rr/SKILL.md` frontmatter to get the current version number.
+First, read the `version:` field from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/SKILL.md` frontmatter to get the current version number.
 
 Display the following and stop. Do not proceed to any other action. Replace `{version}` with the actual version read above.
 
@@ -43,10 +43,10 @@ WORKFLOW (Single Risk)
   Step 6: Publish to Jira     Create Review child ticket
 
 LOCATION
-  ~/.claude/skills/rr/SKILL.md
-  ~/.claude/commands/rr/*.md (sub-commands)
-  ~/.claude/skills/rr/bin/ (batch scripts)
-  ~/.claude/skills/rr/references/ (schemas, workflow, context)
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/SKILL.md
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/rr/*.md (sub-commands)
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/ (batch scripts)
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/ (schemas, workflow, context)
 ```
 
 End of help output. Do not continue.

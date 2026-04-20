@@ -6,7 +6,7 @@ allowed-tools: Read
 
 # ra:version — Show Installed Version
 
-Read `version:` from `~/.claude/skills/ra/SKILL.md` frontmatter and display:
+Read `version:` from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/SKILL.md` frontmatter and display:
 ```
 ra v<version>
 ```

@@ -12,27 +12,27 @@ Run these checks and report results. Do not proceed to any other action after.
    - `JIRA_EMAIL`
    - `JIRA_API_KEY`
 6. Check reference files exist:
-   - `ls ~/.claude/skills/rr/references/schemas/enums.schema.json`
-   - `ls ~/.claude/skills/rr/references/business-context.md`
-   - `ls ~/.claude/skills/rr/references/jira-config.md`
-   - `ls ~/.claude/skills/rr/references/workflow/step-1-extract.md`
-   - `ls ~/.claude/skills/rr/references/workflow/step-2-adversarial.md`
-   - `ls ~/.claude/skills/rr/references/workflow/step-3-rectify.md`
-   - `ls ~/.claude/skills/rr/references/workflow/step-4-discussion.md`
-   - `ls ~/.claude/skills/rr/references/workflow/step-5-finalise.md`
-   - `ls ~/.claude/skills/rr/references/workflow/step-6-publish.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/schemas/enums.schema.json`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/business-context.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/jira-config.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-1-extract.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-2-adversarial.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-3-rectify.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-4-discussion.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-5-finalise.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-6-publish.md`
 7. Check bin scripts exist:
-   - `ls ~/.claude/skills/rr/bin/rr-prepare.sh`
-   - `ls ~/.claude/skills/rr/bin/rr-finalize.sh`
-   - `ls ~/.claude/skills/rr/bin/sub-agent-prompt.md`
-   - `ls ~/.claude/skills/rr/bin/monitor.py`
-   - `ls ~/.claude/skills/rr/bin/_publish_one.sh`
-   - `ls ~/.claude/skills/rr/bin/_update_cpt.sh`
-   - `ls ~/.claude/skills/rr/bin/rr-board-aggregate.py`
-   - `ls ~/.claude/skills/rr/bin/monitor_server.py`
-   - `ls ~/.claude/skills/rr/bin/monitor_dashboard.html`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-prepare.sh`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-finalize.sh`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/sub-agent-prompt.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/monitor.py`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_publish_one.sh`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-board-aggregate.py`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/monitor_server.py`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/monitor_dashboard.html`
 8. Check sub-command files exist:
-   - `ls ~/.claude/commands/rr/*.md`
+   - `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/rr/*.md`
 9. Try Atlassian MCP connectivity: attempt `mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql` with JQL `project = RR AND issuetype = Risk` limit 1
 10. Check CPT-1 ticket is accessible (non-blocking — WARN only if it fails):
    ```bash
@@ -54,7 +54,7 @@ rr doctor — Environment Health Check
   [WARN] JIRA_API_KEY: not set
   [PASS] reference files: 9 files found
   [PASS] bin: 9 files found
-  [PASS] sub-commands: N files in ~/.claude/commands/rr/
+  [PASS] sub-commands: N files in ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/rr/
   [PASS] Atlassian MCP: connected (1 result)
   [PASS] CPT-1: accessible
   [PASS] version: 5.0.0

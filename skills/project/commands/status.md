@@ -24,10 +24,10 @@ If not in a git repo, say "Not in a git repository. Navigate to a project and tr
 ## Step 2: Verify dependencies and read references
 
 Verify dependencies exist before reading:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: WARN and continue (skip CI standard comparison)
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md` — if missing: WARN and continue (skip CI standard comparison)
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role list and expected worktree layout (if available).
+Read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` for role list and expected worktree layout (if available).
 Read the project's `CLAUDE.md` and `PROJECT_CONFIG.json` if they exist.
 
 ## Step 3: Gather data
@@ -147,7 +147,7 @@ Env vars:
 
 Open Jira Issues: <count by priority from Atlassian MCP>
 Tests: <count or n/a>
-Memory: <file count in ~/.claude/projects/*/memory/>
+Memory: <file count in ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/memory/>
 ```
 
 </process>

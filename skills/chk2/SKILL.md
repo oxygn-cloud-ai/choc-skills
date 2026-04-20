@@ -75,8 +75,8 @@ TARGET
   https://myzr.io (configurable via CHK2_TARGET env var)
 
 LOCATION
-  ~/.claude/skills/chk2/SKILL.md
-  ~/.claude/commands/chk2/*.md (sub-commands)
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk2/SKILL.md
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/*.md (sub-commands)
 ```
 
 End of help output. Do not continue.
@@ -92,7 +92,7 @@ If $ARGUMENTS equals "doctor", "--doctor", or "check", run environment diagnosti
 4. Verify `python3` is available: `which python3`
 5. Verify `websockets` python package: `python3 -c "import websockets" 2>&1`
 6. Verify target is reachable: `curl -s -o /dev/null -w "%{http_code}" https://myzr.io/`
-7. Verify sub-command files exist: `ls ~/.claude/commands/chk2/*.md`
+7. Verify sub-command files exist: `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/*.md`
 8. Report installed skill version
 9. Verify Codex CLI available: `command -v codex && codex --version 2>/dev/null | head -1`. If found: PASS with version. If not found: WARN — "Codex CLI not installed. Cross-validation will be skipped. Install from: https://github.com/openai/codex"
 
@@ -106,7 +106,7 @@ chk2 doctor — Environment Health Check
   [PASS] python3: /usr/bin/python3
   [PASS] websockets: installed
   [PASS] target reachable: https://myzr.io/ (200)
-  [PASS] sub-commands: 35 files in ~/.claude/commands/chk2/
+  [PASS] sub-commands: 35 files in ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/
   [PASS] version: 2.3.0
   [PASS] Codex CLI: codex v0.118.0
 
@@ -137,8 +137,8 @@ Before executing, silently verify:
 2. **Target reachable**: `curl -s -o /dev/null -w "%{http_code}" https://myzr.io/` returns 200. If not:
    > **chk2 error**: Target https://myzr.io/ is not reachable (HTTP {code}). Check the server is running.
 
-3. **Sub-commands installed**: `ls ~/.claude/commands/chk2/*.md` finds files. If not:
-   > **chk2 warning**: Sub-command files not found in ~/.claude/commands/chk2/. Running inline.
+3. **Sub-commands installed**: `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/*.md` finds files. If not:
+   > **chk2 warning**: Sub-command files not found in ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/. Running inline.
 
 4. **Codex CLI availability** (soft check): Run `command -v codex 2>/dev/null`. Store the result:
    - If found: set `CODEX_AVAILABLE=true`. Codex cross-validation will run after all test categories complete.
@@ -192,7 +192,7 @@ Parse $ARGUMENTS and route:
 | `github` | Run `/chk2:github` — log findings to GitHub Issues |
 | `update` | Run `/chk2:update` — update chk2 to the latest version |
 
-If the sub-command `.md` files exist in `~/.claude/commands/chk2/`, invoke them via the Skill tool. Otherwise, execute the tests inline using the definitions below.
+If the sub-command `.md` files exist in `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/`, invoke them via the Skill tool. Otherwise, execute the tests inline using the definitions below.
 
 ---
 
@@ -334,7 +334,7 @@ If any test returns HTTP 429 or Cloudflare error 1015:
 
 ## Test Category Definitions
 
-If sub-command files are not installed, use these inline definitions. Each category lists the tests to run, the pass conditions, and the output format. See the sub-command files in `~/.claude/commands/chk2/` for the full test specifications — they are the authoritative source.
+If sub-command files are not installed, use these inline definitions. Each category lists the tests to run, the pass conditions, and the output format. See the sub-command files in `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/` for the full test specifications — they are the authoritative source.
 
 ### Headers (14 checks)
 Test HTTP security headers via `curl -sI`. Check HSTS, CSP, X-Frame-Options, CORS, referrer policy, etc.
@@ -430,7 +430,7 @@ Test security reporting: Report-To/Reporting-Endpoints header, NEL header, secur
 Read existing SECURITY_CHECK.md. For every FAIL and WARN, provide deep resolution: exact Cloudflare dashboard paths, copy-pasteable server code, DNS records, and verification commands. Group by effort level (instant / quick / deeper).
 
 ### Github
-Read existing SECURITY_CHECK.md and create a GitHub Issue for every FAIL and WARN finding, with P1-P4 priority labels and category labels. Skips findings that already have an open issue (comments instead). See `~/.claude/commands/chk2/github.md` for full details.
+Read existing SECURITY_CHECK.md and create a GitHub Issue for every FAIL and WARN finding, with P1-P4 priority labels and category labels. Skips findings that already have an open issue (comments instead). See `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/github.md` for full details.
 
 ### Update
-Update chk2 to the latest version from the GitHub repo. Uses `~/.claude/skills/chk2/.source-repo` if present, otherwise falls back to a curl-based update. See `~/.claude/commands/chk2/update.md` for full details.
+Update chk2 to the latest version from the GitHub repo. Uses `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk2/.source-repo` if present, otherwise falls back to a curl-based update. See `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/update.md` for full details.

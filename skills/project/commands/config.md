@@ -25,11 +25,11 @@ git rev-parse --show-toplevel 2>/dev/null
 If not in a git repo: "Not in a git repository."
 
 Verify dependencies exist before reading:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. Required for project configuration."
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. Required for project configuration."
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md not found. Required for project configuration."
+- `test -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md not found. Required for project configuration."
 
 Read the project's `PROJECT_CONFIG.json` for current configuration.
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions.
+Read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` for role definitions.
 
 ## Step 2: Show current config and ask what to change
 
@@ -114,7 +114,7 @@ done
 
 ### Enable/disable CI
 - Create or remove `.github/workflows/test.yml`
-- Read template from `~/.claude/PROJECT_STANDARDS.md` section 3
+- Read template from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md` section 3
 
 ### Set Jira epic key
 - Ask for the key (e.g., CPT-42)

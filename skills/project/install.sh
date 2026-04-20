@@ -2,15 +2,19 @@
 set -euo pipefail
 
 # Per-skill installer for project
-# Installs SKILL.md to ~/.claude/skills/project/
-# Installs sub-command .md files to ~/.claude/commands/project/
-# Installs router to ~/.claude/commands/project.md
+# Installs SKILL.md to ${CLAUDE_CONFIG_DIR:-~/.claude}/skills/project/
+# Installs sub-command .md files to ${CLAUDE_CONFIG_DIR:-~/.claude}/commands/project/
+# Installs router to ${CLAUDE_CONFIG_DIR:-~/.claude}/commands/project.md
 # Installs bin/ scripts to ~/.local/bin/
-# Installs hooks/*.sh to ~/.claude/hooks/ and registers them in
-# ~/.claude/settings.json hooks.PreToolUse (idempotent).
+# Installs hooks/*.sh to ${CLAUDE_CONFIG_DIR:-~/.claude}/hooks/ and registers them in
+# ${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json hooks.PreToolUse (idempotent).
 
 SKILL_NAME="project"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# CLAUDE_CONFIG_DIR honoured (CPT-174). Falls back to ~/.claude when unset or
+# empty, matching how Claude Code itself resolves the config dir at runtime.
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
 
 # Colors
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -26,15 +30,15 @@ warn() { printf "${YELLOW}warn${RESET}  %s\n" "$*" >&2; }
 info() { printf "${CYAN}info${RESET}  %s\n" "$*"; }
 die()  { err "$@"; exit 1; }
 
-SKILL_TARGET="${HOME}/.claude/skills/${SKILL_NAME}"
-COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
+SKILL_TARGET="${CLAUDE_DIR}/skills/${SKILL_NAME}"
+COMMANDS_TARGET="${CLAUDE_DIR}/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
 HOOKS_SOURCE="${SCRIPT_DIR}/hooks"
-HOOKS_TARGET="${HOME}/.claude/hooks"
+HOOKS_TARGET="${CLAUDE_DIR}/hooks"
 GLOBAL_SOURCE="${SCRIPT_DIR}/global"
-GLOBAL_TARGET="${HOME}/.claude"
-SETTINGS_FILE="${HOME}/.claude/settings.json"
+GLOBAL_TARGET="${CLAUDE_DIR}"
+SETTINGS_FILE="${CLAUDE_DIR}/settings.json"
 
 # Files installed to ~/.claude/ root (multi-session architecture + project standards).
 # Listed explicitly so --uninstall knows what to target and --check stays in sync.
@@ -113,14 +117,14 @@ ${BOLD}USAGE${RESET}
   ./install.sh --help       Show this help
 
 ${BOLD}INSTALLS TO${RESET}
-  ~/.claude/skills/project/SKILL.md            Main skill file
-  ~/.claude/commands/project.md                Router
-  ~/.claude/commands/project/*.md              Sub-command files
+  ${CLAUDE_DIR}/skills/project/SKILL.md            Main skill file
+  ${CLAUDE_DIR}/commands/project.md                Router
+  ${CLAUDE_DIR}/commands/project/*.md              Sub-command files
   ~/.local/bin/project-*.sh                    Launch/picker helpers
-  ~/.claude/hooks/*.sh                         PreToolUse enforcement hooks
-  ~/.claude/settings.json                      hooks.PreToolUse[] registrations
-  ~/.claude/MULTI_SESSION_ARCHITECTURE.md      Global multi-session architecture
-  ~/.claude/PROJECT_STANDARDS.md               Global project standards
+  ${CLAUDE_DIR}/hooks/*.sh                         PreToolUse enforcement hooks
+  ${CLAUDE_DIR}/settings.json                      hooks.PreToolUse[] registrations
+  ${CLAUDE_DIR}/MULTI_SESSION_ARCHITECTURE.md      Global multi-session architecture
+  ${CLAUDE_DIR}/PROJECT_STANDARDS.md               Global project standards
 
 ${BOLD}REQUIREMENTS${RESET}
   git, gh (authenticated), jq (for settings.json merge)
@@ -140,7 +144,7 @@ if [ "${1:-}" = "--uninstall" ]; then
   info "Uninstalling project..."
   [ -d "$SKILL_TARGET" ] && rm -rf "$SKILL_TARGET" && ok "Removed ${SKILL_TARGET}" || warn "Skill not installed"
   [ -d "$COMMANDS_TARGET" ] && rm -rf "$COMMANDS_TARGET" && ok "Removed ${COMMANDS_TARGET}" || warn "Commands not installed"
-  [ -f "${HOME}/.claude/commands/project.md" ] && rm -f "${HOME}/.claude/commands/project.md" && ok "Removed router" || true
+  [ -f "${CLAUDE_DIR}/commands/project.md" ] && rm -f "${CLAUDE_DIR}/commands/project.md" && ok "Removed router" || true
   [ -f "${HOME}/.local/bin/project-picker.sh" ] && rm -f "${HOME}/.local/bin/project-picker.sh" && ok "Removed picker script" || true
   [ -f "${HOME}/.local/bin/project-launch-session.sh" ] && rm -f "${HOME}/.local/bin/project-launch-session.sh" && ok "Removed launch-session script" || true
 
@@ -175,8 +179,8 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     err "SKILL.md not found at ${SKILL_TARGET}/SKILL.md"; issues=$((issues + 1))
   fi
 
-  if [ -f "${HOME}/.claude/commands/project.md" ]; then
-    ok "Router: ~/.claude/commands/project.md"
+  if [ -f "${CLAUDE_DIR}/commands/project.md" ]; then
+    ok "Router: ${CLAUDE_DIR}/commands/project.md"
   else
     err "Router not found"; issues=$((issues + 1))
   fi
@@ -188,16 +192,16 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     err "Sub-commands not found"; issues=$((issues + 1))
   fi
 
-  if [ -f "${HOME}/.claude/MULTI_SESSION_ARCHITECTURE.md" ]; then
+  if [ -f "${CLAUDE_DIR}/MULTI_SESSION_ARCHITECTURE.md" ]; then
     ok "Global architecture doc present"
   else
-    err "${HOME}/.claude/MULTI_SESSION_ARCHITECTURE.md missing (required at runtime)"; issues=$((issues + 1))
+    err "${CLAUDE_DIR}/MULTI_SESSION_ARCHITECTURE.md missing (required at runtime)"; issues=$((issues + 1))
   fi
 
-  if [ -f "${HOME}/.claude/PROJECT_STANDARDS.md" ]; then
+  if [ -f "${CLAUDE_DIR}/PROJECT_STANDARDS.md" ]; then
     ok "Global project standards present"
   else
-    err "${HOME}/.claude/PROJECT_STANDARDS.md missing (required at runtime)"; issues=$((issues + 1))
+    err "${CLAUDE_DIR}/PROJECT_STANDARDS.md missing (required at runtime)"; issues=$((issues + 1))
   fi
 
   if command -v git >/dev/null 2>&1; then
@@ -282,13 +286,13 @@ cp "$SKILL_SOURCE" "${SKILL_TARGET}/SKILL.md"
 ok "SKILL.md -> ${SKILL_TARGET}/SKILL.md"
 
 # 2. Install router command
-mkdir -p "${HOME}/.claude/commands"
-cat > "${HOME}/.claude/commands/project.md" <<'ROUTER'
+mkdir -p "${CLAUDE_DIR}/commands"
+cat > "${CLAUDE_DIR}/commands/project.md" <<'ROUTER'
 # project — Project Repository Administration Router
 
 Parse the argument from: $ARGUMENTS
 
-Route to the appropriate sub-command. Every subcommand is a colon-command file under `~/.claude/commands/project/` — there is no inline dispatch:
+Route to the appropriate sub-command. Every subcommand is a colon-command file under `${CLAUDE_DIR}/commands/project/` — there is no inline dispatch:
 
 | Argument | Action |
 |----------|--------|
@@ -305,7 +309,7 @@ Route to the appropriate sub-command. Every subcommand is a colon-command file u
 
 Invoke the matching skill using the Skill tool.
 ROUTER
-ok "Router -> ~/.claude/commands/project.md"
+ok "Router -> ${CLAUDE_DIR}/commands/project.md"
 
 # 3. Install sub-commands (if directory exists)
 if [ -d "$COMMANDS_SOURCE" ]; then
@@ -415,7 +419,7 @@ ok "project v${ver} installed successfully"
 echo ""
 info "Files installed:"
 printf "  ${DIM}%-50s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
-printf "  ${DIM}%-50s${RESET} (router)\n" "${HOME}/.claude/commands/project.md"
+printf "  ${DIM}%-50s${RESET} (router)\n" "${CLAUDE_DIR}/commands/project.md"
 [ -d "$COMMANDS_TARGET" ] && printf "  ${DIM}%-50s${RESET} (sub-commands)\n" "${COMMANDS_TARGET}/"
 [ -f "${BIN_TARGET}/project-picker.sh" ] && printf "  ${DIM}%-50s${RESET} (session picker)\n" "${BIN_TARGET}/project-picker.sh"
 [ -f "${BIN_TARGET}/project-launch-session.sh" ] && printf "  ${DIM}%-50s${RESET} (launch helper)\n" "${BIN_TARGET}/project-launch-session.sh"
