@@ -10,6 +10,11 @@ allowed-tools:
 
 <objective>
 Display comprehensive status of the current project's configuration and health.
+
+Throughout this document, `$CLAUDE_DIR` means the Claude config directory —
+`$CLAUDE_CONFIG_DIR` if set and non-empty, otherwise `$HOME/.claude` (CPT-174).
+Resolve it in every bash invocation with `CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"`
+before using any `$CLAUDE_DIR/...` path.
 </objective>
 
 <process>
@@ -24,18 +29,22 @@ If not in a git repo, say "Not in a git repository. Navigate to a project and tr
 ## Step 2: Verify dependencies and read references
 
 Verify dependencies exist (do not read the full files — extract only what is needed):
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: WARN and continue (skip label/CI/branch-protection standard comparison). Replaces retired `~/.claude/GITHUB_CONFIG.md` per CPT-124/141.
+- `test -f $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` — if missing: WARN and continue with reduced output (skip worktree role comparison)
+- `test -f $CLAUDE_DIR/PROJECT_STANDARDS.md` — if missing: WARN and continue (skip label/CI/branch-protection standard comparison). Replaces retired `$CLAUDE_DIR/GITHUB_CONFIG.md` per CPT-124/141.
 - `test -f PROJECT_CONFIG.json` (repo-local) — if missing: WARN and continue (some status fields degrade to inference).
 
 Derive the **expected** role list with this precedence (CPT-139 — the set-diff must compare observed worktrees against THIS project's configured roles, not the full MSA catalog; non-software projects legitimately skip chk1/chk2/playtester per MSA §1):
 
 1. **First** — if `PROJECT_CONFIG.json` exists at the repo root and has `.sessions.roles` as an explicit array, use it verbatim. This is the per-project source of truth.
-2. **Else** — if `PROJECT_CONFIG.json.project.type` (or `.project_type` / `.projectType`) is `"non-software"`, derive from `~/.claude/MULTI_SESSION_ARCHITECTURE.md` then drop `chk1`, `chk2`, `playtester`.
+2. **Else** — if `PROJECT_CONFIG.json.project.type` (or `.project_type` / `.projectType`) is `"non-software"`, derive from `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` then drop `chk1`, `chk2`, `playtester`.
 3. **Else** — fall back to the full MSA catalog (parse `` `session/<role>` `` tokens from the role table's worktree-branch column). This preserves pre-CPT-139 behaviour for projects that don't yet carry PROJECT_CONFIG.json or have it without role-narrowing fields. CPT-114 fixes the prior tautological derivation that used `.worktrees/*/` as the expected set, which meant missing roles silently vanished and stray worktrees were implicitly accepted — do NOT regress to that.
 
 ```bash
 ROLES=()
+# CPT-174: resolve Claude config dir at the top of this block — runs in a
+# fresh shell each time Claude invokes it.
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+
 # CPT-156: distinguish "key present but empty" from "key absent". jq's
 # `.sessions.roles[]? // empty` collapses both to zero lines — the
 # sentinel below keeps them apart so `{"sessions":{"roles":[]}}` is
@@ -58,7 +67,7 @@ fi
 # but-empty). CPT-156: `project_type` is a plain assignment, not `local`
 # — this block runs at top level when Claude executes the status bash
 # snippet, and bash rejects `local` outside a function with exit 1.
-if [ "$SESSIONS_ROLES_DECLARED" != "1" ] && [ ${#ROLES[@]} -eq 0 ] && [ -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md ]; then
+if [ "$SESSIONS_ROLES_DECLARED" != "1" ] && [ ${#ROLES[@]} -eq 0 ] && [ -f $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md ]; then
   project_type=""
   if [ -f PROJECT_CONFIG.json ] && command -v jq >/dev/null 2>&1; then
     project_type=$(jq -r '.project.type // .project_type // .projectType // empty' PROJECT_CONFIG.json 2>/dev/null)
@@ -70,7 +79,7 @@ if [ "$SESSIONS_ROLES_DECLARED" != "1" ] && [ ${#ROLES[@]} -eq 0 ] && [ -f ~/.cl
       case "$role" in chk1|chk2|playtester) continue ;; esac
     fi
     ROLES+=("$role")
-  done < <(grep -oE '`session/[a-z0-9_-]+`' ~/.claude/MULTI_SESSION_ARCHITECTURE.md \
+  done < <(grep -oE '`session/[a-z0-9_-]+`' $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md \
            | sed 's|`session/||;s|`$||' | sort -u)
 fi
 ```
@@ -216,7 +225,7 @@ Worktrees:
 Labels: <count> (<list P1-P4 presence>)
 Open Issues: <count by priority>
 Tests: <count or n/a>
-Memory: <file count in ~/.claude/projects/*/memory/>
+Memory: <file count in $CLAUDE_DIR/projects/*/memory/>
 ```
 
 </process>

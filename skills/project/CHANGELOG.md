@@ -2,6 +2,11 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [1.2.11] - 2026-04-20
+
+### Fixed
+- **Skill now honours `CLAUDE_CONFIG_DIR`** (CPT-174). Previously every `~/.claude/...` path was hardcoded against `$HOME/.claude`, so on any machine where Claude Code resolves its config dir via `$CLAUDE_CONFIG_DIR` (e.g. `/workspace/.claude`), the `/project:audit`, `/project:status`, `/project:new`, `/project:config`, `/project:launch`, and `/project:update` subcommands all STOPped or degraded with spurious "MULTI_SESSION_ARCHITECTURE.md not found" errors, and the installer wrote the skill tree to `$HOME/.claude` while Claude read from `$CLAUDE_CONFIG_DIR`. The six command files plus `SKILL.md` now resolve `CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"` in each bash invocation and use `$CLAUDE_DIR/...` thereafter. Zero behaviour change for machines without `CLAUDE_CONFIG_DIR` set (the `:-` fallback preserves the default). Coupled with the installer fix in the root `install.sh` + `skills/project/install.sh` (same CPT-174). 11 bats regressions in `tests/install-claude-config-dir.bats` cover install-time path resolution under set/unset/empty `CLAUDE_CONFIG_DIR`, plus a structural check that every installer carries the `CLAUDE_DIR` fallback definition. The `sessions.roles` role-detection bash block in `commands/status.md` had `CLAUDE_DIR` resolution added inside the extracted block so `tests/project-status-role-detection.bats` continues to pass when the test shell has `CLAUDE_CONFIG_DIR` unset.
+
 ## [1.2.10] - 2026-04-18
 
 ### Fixed

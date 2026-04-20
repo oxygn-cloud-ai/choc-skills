@@ -1,7 +1,7 @@
 ---
 name: rr:board
 description: "Generate board risk oversight paper from completed assessments"
-allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(python3 *), Bash(curl *), Bash(bash *), Bash(printf *), Bash(base64 *), Bash(tr *), Bash(wc *), Bash(cat *), Bash(~/.claude/skills/rr/bin/_update_cpt.sh *), Write, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(python3 *), Bash(curl *), Bash(bash *), Bash(printf *), Bash(base64 *), Bash(tr *), Bash(wc *), Bash(cat *), Bash(${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh *), Write, AskUserQuestion
 ---
 
 # rr:board — Board Risk Oversight Paper
@@ -38,7 +38,7 @@ If 0: report error and stop:
 Run the aggregation script via Bash tool:
 
 ```bash
-python3 ~/.claude/skills/rr/bin/rr-board-aggregate.py \
+python3 ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-board-aggregate.py \
   --work-dir "${RR_WORK_DIR:-$HOME/rr-work}" \
   --quarter "<Q1|Q2|Q3|Q4>" \
   --year "<YYYY>"
@@ -55,10 +55,10 @@ Read the output file:
 
 Read ALL of these files using the Read tool:
 
-1. `~/.claude/skills/rr/references/board-paper-template.md` — Paper structure and rules
-2. `~/.claude/skills/rr/references/business-context.md` — Chocolate Finance facts
-3. `~/.claude/skills/rr/references/regulatory-framework.md` — MAS/SFC instruments
-4. `~/.claude/skills/rr/references/quality-standards.md` — Assessment methodology
+1. `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/board-paper-template.md` — Paper structure and rules
+2. `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/business-context.md` — Chocolate Finance facts
+3. `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/regulatory-framework.md` — MAS/SFC instruments
+4. `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/quality-standards.md` — Assessment methodology
 
 ### Read Critical/High Risk Assessments
 
@@ -118,7 +118,7 @@ If `--publish` flag is NOT set:
 
 ### Read MATTER Configuration
 
-Read: `~/.claude/skills/rr/references/matter-jira-config.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/matter-jira-config.md`
 
 ### Calculate Due Date
 
@@ -161,7 +161,7 @@ After ticket creation, attach the full paper and statistics via Bash:
 ```bash
 # Read JIRA_AUTH from dedicated credentials file if it exists,
 # otherwise require JIRA_EMAIL and JIRA_API_KEY env vars
-AUTH_CRED_FILE="$HOME/.claude/skills/rr/.jira-auth"
+AUTH_CRED_FILE="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/.jira-auth"
 if [ -f "$AUTH_CRED_FILE" ]; then
   JIRA_AUTH=$(cat "$AUTH_CRED_FILE")
 elif [ -n "${JIRA_EMAIL:-}" ] && [ -n "${JIRA_API_KEY:-}" ]; then
@@ -186,7 +186,7 @@ curl -s -X POST \
 
 After successful ticket creation, update CPT via Bash:
 ```bash
-~/.claude/skills/rr/bin/_update_cpt.sh board_paper_published "Board Risk Oversight Paper: <Q> <YYYY> published as <TICKET-KEY>" || true
+${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh board_paper_published "Board Risk Oversight Paper: <Q> <YYYY> published as <TICKET-KEY>" || true
 ```
 
 ## Phase 5: Report

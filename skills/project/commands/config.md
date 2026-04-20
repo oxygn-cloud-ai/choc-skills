@@ -12,7 +12,12 @@ allowed-tools:
 ---
 
 <objective>
-Interactively modify the current project's configuration. Machine-readable changes are persisted to the repo's `PROJECT_CONFIG.json` (project type, Jira epic, labels, deviations) and applied to GitHub/git; narrative standards remain in `~/.claude/PROJECT_STANDARDS.md`. (CPT-124/141 migration: the retired per-project `GITHUB_CONFIG.md` is no longer read or written.)
+Interactively modify the current project's configuration. Machine-readable changes are persisted to the repo's `PROJECT_CONFIG.json` (project type, Jira epic, labels, deviations) and applied to GitHub/git; narrative standards remain in `$CLAUDE_DIR/PROJECT_STANDARDS.md`. (CPT-124/141 migration: the retired per-project `GITHUB_CONFIG.md` is no longer read or written.)
+
+Throughout this document, `$CLAUDE_DIR` means the Claude config directory —
+`$CLAUDE_CONFIG_DIR` if set and non-empty, otherwise `$HOME/.claude` (CPT-174).
+Resolve it in every bash invocation with `CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"`
+before using any `$CLAUDE_DIR/...` path.
 </objective>
 
 <process>
@@ -25,11 +30,11 @@ git rev-parse --show-toplevel 2>/dev/null
 If not in a git repo: "Not in a git repository."
 
 Verify dependencies exist before reading:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. Required for project configuration."
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. This file defines the narrative label/CI/branch-protection standards (replaces retired GITHUB_CONFIG.md). Required for project configuration."
+- `test -f $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md not found. Required for project configuration."
+- `test -f $CLAUDE_DIR/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "$CLAUDE_DIR/PROJECT_STANDARDS.md not found. This file defines the narrative label/CI/branch-protection standards (replaces retired GITHUB_CONFIG.md). Required for project configuration."
 
 Read the project's `PROJECT_CONFIG.json` (if present) for current machine-readable configuration. Create a scaffold one via `/project:new` if it doesn't exist, or continue with inferred defaults for this session.
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions and `~/.claude/PROJECT_STANDARDS.md` for label/CI/protection standards.
+Read `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` for role definitions and `$CLAUDE_DIR/PROJECT_STANDARDS.md` for label/CI/protection standards.
 
 Migration note (CPT-141): the retired per-project `GITHUB_CONFIG.md` is no longer consulted or written. If a repo still has a stale `GITHUB_CONFIG.md`, suggest removing it after migrating any project-specific content into `PROJECT_CONFIG.json`.
 
@@ -120,7 +125,7 @@ done
 
 ### Enable/disable CI
 - Create or remove `.github/workflows/test.yml`
-- Read CI template from `~/.claude/PROJECT_STANDARDS.md`
+- Read CI template from `$CLAUDE_DIR/PROJECT_STANDARDS.md`
 
 ### Set Jira epic key
 - Ask for the key (e.g., CPT-42)

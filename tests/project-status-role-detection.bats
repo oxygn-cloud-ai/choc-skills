@@ -32,6 +32,7 @@ _extract_role_detection_block() {
 }
 
 setup() {
+  unset CLAUDE_CONFIG_DIR  # CPT-174: ensure tests never inherit ambient CLAUDE_CONFIG_DIR
   [ -f "$STATUS_MD" ]
   TMPDIR="$(mktemp -d)"
   # Fake HOME with a minimal MULTI_SESSION_ARCHITECTURE.md so the Layer 2/3

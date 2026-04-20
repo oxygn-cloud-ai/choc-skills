@@ -9,7 +9,12 @@ allowed-tools:
 ---
 
 <objective>
-Audit the current project against `~/.claude/MULTI_SESSION_ARCHITECTURE.md` (role/worktree/Jira definitions) and `~/.claude/PROJECT_STANDARDS.md` (narrative label/CI/branch-protection spec), with machine-readable per-project config from the repo's `PROJECT_CONFIG.json`. Report compliance gaps with PASS/FAIL/WARN/SKIP verdicts. (CPT-124/141 migration: the retired `GITHUB_CONFIG.md` is no longer consulted.)
+Audit the current project against `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` (role/worktree/Jira definitions) and `$CLAUDE_DIR/PROJECT_STANDARDS.md` (narrative label/CI/branch-protection spec), with machine-readable per-project config from the repo's `PROJECT_CONFIG.json`. Report compliance gaps with PASS/FAIL/WARN/SKIP verdicts. (CPT-124/141 migration: the retired `GITHUB_CONFIG.md` is no longer consulted.)
+
+Throughout this document, `$CLAUDE_DIR` means the Claude config directory —
+`$CLAUDE_CONFIG_DIR` if set and non-empty, otherwise `$HOME/.claude` (CPT-174).
+Resolve it in every bash invocation with `CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"`
+before using any `$CLAUDE_DIR/...` path.
 </objective>
 
 <process>
@@ -24,14 +29,14 @@ If not in a git repo: "Not in a git repository. Navigate to a project and try ag
 ## Step 2: Verify dependencies and read standards
 
 Before reading, verify the dependency files exist:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file is required for project auditing. Restore it or check your ~/.claude configuration."
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. This file defines the narrative label/CI/branch-protection standards (replaces retired GITHUB_CONFIG.md). Restore it or check your ~/.claude configuration."
+- `test -f $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md not found. This file is required for project auditing. Restore it or check your ~/.claude configuration."
+- `test -f $CLAUDE_DIR/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "$CLAUDE_DIR/PROJECT_STANDARDS.md not found. This file defines the narrative label/CI/branch-protection standards (replaces retired GITHUB_CONFIG.md). Restore it or check your ~/.claude configuration."
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the full role list and requirements.
-Read `~/.claude/PROJECT_STANDARDS.md` for label, CI, branch protection, and doc requirements.
+Read `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` for the full role list and requirements.
+Read `$CLAUDE_DIR/PROJECT_STANDARDS.md` for label, CI, branch protection, and doc requirements.
 Read the project's `PROJECT_CONFIG.json` (if present) to understand project type, Jira epic, and documented deviations. If missing, fall back to inference in Step 3.
 
-Migration note (CPT-141): the retired per-project `GITHUB_CONFIG.md` is no longer consulted — its narrative content is now in `~/.claude/PROJECT_STANDARDS.md` and per-project machine-readable config is in each repo's `PROJECT_CONFIG.json`. If a repo still has a stale `GITHUB_CONFIG.md`, flag it as migration-pending in the audit output (informational only — do not STOP).
+Migration note (CPT-141): the retired per-project `GITHUB_CONFIG.md` is no longer consulted — its narrative content is now in `$CLAUDE_DIR/PROJECT_STANDARDS.md` and per-project machine-readable config is in each repo's `PROJECT_CONFIG.json`. If a repo still has a stale `GITHUB_CONFIG.md`, flag it as migration-pending in the audit output (informational only — do not STOP).
 
 ## Step 3: Determine project type
 

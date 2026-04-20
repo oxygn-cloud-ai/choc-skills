@@ -62,8 +62,8 @@ TOOLS USED
   Fix mode: + Write, Edit (to apply fixes)
 
 LOCATION
-  ~/.claude/skills/chk1/SKILL.md
-  ~/.claude/commands/chk1/*.md (sub-commands)
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk1/SKILL.md
+  ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk1/*.md (sub-commands)
 ```
 
 End of help output. Do not continue.
@@ -80,7 +80,7 @@ If $ARGUMENTS equals "doctor", "--doctor", or "check", run the following diagnos
 4. **Working tree status**: Run `git status --porcelain`. Report count of modified/untracked files. WARN if there are uncommitted changes (audit may not reflect working state).
 5. **Has recent commits**: Run `git log --oneline -5`. WARN if fewer than 2 commits (no diff range possible).
 6. **Branch status**: Run `git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD`. Report current branch or detached HEAD state. WARN if detached HEAD.
-7. **Skill installation**: Check if `~/.claude/skills/chk1/SKILL.md` exists. Report installed path.
+7. **Skill installation**: Check if `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk1/SKILL.md` exists. Report installed path.
 8. **Skill version**: Read the `version:` field from the installed SKILL.md. Report version number.
 
 Format the output as:
@@ -94,7 +94,7 @@ chk1 doctor — Environment Health Check
   [WARN] Working tree: 3 uncommitted changes
   [PASS] Has recent commits: N commits found
   [PASS] Branch: main
-  [PASS] Installed: ~/.claude/skills/chk1/SKILL.md
+  [PASS] Installed: ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk1/SKILL.md
   [PASS] Version: X.Y.Z
 
   Result: N passed, N warnings, N failed
@@ -131,7 +131,7 @@ If $ARGUMENTS matches a mode keyword, route to the corresponding sub-command:
 
 If $ARGUMENTS doesn't match a mode keyword, treat it as a scope specifier (commit range, branch, SHA) and run the full audit on that scope.
 
-If sub-command files exist in `~/.claude/commands/chk1/`, invoke them via the Skill tool. Otherwise execute inline.
+If sub-command files exist in `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk1/`, invoke them via the Skill tool. Otherwise execute inline.
 
 ---
 

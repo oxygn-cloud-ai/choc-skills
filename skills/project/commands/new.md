@@ -12,7 +12,12 @@ allowed-tools:
 ---
 
 <objective>
-Create a new project repository fully configured per ~/.claude/MULTI_SESSION_ARCHITECTURE.md and ~/.claude/PROJECT_STANDARDS.md (with per-project overrides and machine-readable config in the new repo's `PROJECT_CONFIG.json`).
+Create a new project repository fully configured per $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md and $CLAUDE_DIR/PROJECT_STANDARDS.md (with per-project overrides and machine-readable config in the new repo's `PROJECT_CONFIG.json`).
+
+Throughout this document, `$CLAUDE_DIR` means the Claude config directory —
+`$CLAUDE_CONFIG_DIR` if set and non-empty, otherwise `$HOME/.claude` (CPT-174).
+Resolve it in every bash invocation with `CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"`
+before using any `$CLAUDE_DIR/...` path.
 </objective>
 
 <process>
@@ -45,12 +50,12 @@ Before anything else, verify this is safe to run:
 ## Step 1: Verify dependencies and read the architecture
 
 Verify dependencies exist before reading:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "~/.claude/MULTI_SESSION_ARCHITECTURE.md not found. This file defines the multi-session workflow and is required for project creation."
-- `test -f ~/.claude/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "~/.claude/PROJECT_STANDARDS.md not found. This file defines the narrative label/CI/branch-protection standards (replaces retired GITHUB_CONFIG.md)."
+- `test -f $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error: "$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md not found. This file defines the multi-session workflow and is required for project creation."
+- `test -f $CLAUDE_DIR/PROJECT_STANDARDS.md` — if missing: **STOP** with error: "$CLAUDE_DIR/PROJECT_STANDARDS.md not found. This file defines the narrative label/CI/branch-protection standards (replaces retired GITHUB_CONFIG.md)."
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for role definitions, worktree layout, and Jira structure. This is the authoritative reference — do not hardcode or inline its contents.
+Read `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` for role definitions, worktree layout, and Jira structure. This is the authoritative reference — do not hardcode or inline its contents.
 
-Read `~/.claude/PROJECT_STANDARDS.md` for narrative label, CI template, and branch-protection standards. Machine-readable specifics (status check names, required labels, Jira epic key) come from the new project's `PROJECT_CONFIG.json` rather than being globally hardcoded (CPT-124).
+Read `$CLAUDE_DIR/PROJECT_STANDARDS.md` for narrative label, CI template, and branch-protection standards. Machine-readable specifics (status check names, required labels, Jira epic key) come from the new project's `PROJECT_CONFIG.json` rather than being globally hardcoded (CPT-124).
 
 ## Step 2: Gather basics
 
@@ -107,7 +112,7 @@ Create these files at the repo root:
 
 **CLAUDE.md** — project name, type, description, Jira epic (placeholder until step 7), key files, development commands (language-specific).
 
-**PROJECT_CONFIG.json** (per-project, machine-readable) — project type, Jira epic key, label set, required status checks, branch protection overrides. Validated against `PROJECT_CONFIG.schema.json`. Inherits narrative standards from `~/.claude/PROJECT_STANDARDS.md`; records any per-project deviations here.
+**PROJECT_CONFIG.json** (per-project, machine-readable) — project type, Jira epic key, label set, required status checks, branch protection overrides. Validated against `PROJECT_CONFIG.schema.json`. Inherits narrative standards from `$CLAUDE_DIR/PROJECT_STANDARDS.md`; records any per-project deviations here.
 
 **Language-specific scaffolding** (Software only):
 - Python: `pyproject.toml` (with version 0.1.0), `src/<name>/__init__.py`, `tests/conftest.py`, `.gitignore`
@@ -118,7 +123,7 @@ Create these files at the repo root:
 
 ## Step 6: Create GitHub labels
 
-Use the label definitions already in context from Step 1 (do not re-read `~/.claude/PROJECT_STANDARDS.md`).
+Use the label definitions already in context from Step 1 (do not re-read `$CLAUDE_DIR/PROJECT_STANDARDS.md`).
 
 For Software projects — full set:
 ```bash
@@ -176,7 +181,7 @@ git push -u origin main
 
 ## Step 9: Create session worktrees
 
-Read the worktree setup from `~/.claude/MULTI_SESSION_ARCHITECTURE.md` section 7.
+Read the worktree setup from `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` section 7.
 
 For Software (all 11 sessions):
 ```bash
@@ -212,7 +217,7 @@ Template:
 You are the **<Role>** for <project-name>.
 
 ## Protocol
-Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
+Read $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md section <N> for your full protocol.
 
 ## Project
 - Jira epic: <epic-key>
@@ -251,7 +256,7 @@ EOF
 
 ```bash
 ENCODED=$(echo "<path>" | sed 's|/|-|g' | sed 's|^-||')
-mkdir -p "$HOME/.claude/projects/$ENCODED/memory"
+mkdir -p "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/$ENCODED/memory"
 ```
 
 Write initial `MEMORY.md` (index) and `project_status.md` with project name, type, version, creation date, and Jira epic key.
@@ -283,7 +288,7 @@ Project <name> created successfully.
 <success_criteria>
 - [ ] GitHub repo created with correct visibility
 - [ ] All required docs present at repo root
-- [ ] Labels match `~/.claude/PROJECT_STANDARDS.md` narrative + `PROJECT_CONFIG.json.github.labels` for project type
+- [ ] Labels match `$CLAUDE_DIR/PROJECT_STANDARDS.md` narrative + `PROJECT_CONFIG.json.github.labels` for project type
 - [ ] Jira epic key documented in CLAUDE.md and `PROJECT_CONFIG.json.jira.epicKey`
 - [ ] All session worktrees created with correct branch names
 - [ ] Session startup prompts created in .claude/sessions/

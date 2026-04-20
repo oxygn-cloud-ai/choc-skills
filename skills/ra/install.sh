@@ -2,13 +2,17 @@
 set -euo pipefail
 
 # Per-skill installer for ra
-# Installs SKILL.md to ~/.claude/skills/ra/
-# Installs sub-command .md files to ~/.claude/commands/ra/
-# Installs reference files to ~/.claude/skills/ra/references/
+# Installs SKILL.md to ${CLAUDE_CONFIG_DIR:-~/.claude}/skills/ra/
+# Installs sub-command .md files to ${CLAUDE_CONFIG_DIR:-~/.claude}/commands/ra/
+# Installs reference files to ${CLAUDE_CONFIG_DIR:-~/.claude}/skills/ra/references/
 # chmod +x install.sh
 
 SKILL_NAME="ra"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# CLAUDE_CONFIG_DIR honoured (CPT-174). Falls back to ~/.claude when unset or
+# empty, matching how Claude Code itself resolves the config dir at runtime.
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
 
 # Colors
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -24,8 +28,8 @@ warn() { printf "${YELLOW}warn${RESET}  %s\n" "$*" >&2; }
 info() { printf "${CYAN}info${RESET}  %s\n" "$*"; }
 die()  { err "$@"; exit 1; }
 
-SKILL_TARGET="${HOME}/.claude/skills/${SKILL_NAME}"
-COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
+SKILL_TARGET="${CLAUDE_DIR}/skills/${SKILL_NAME}"
+COMMANDS_TARGET="${CLAUDE_DIR}/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
 REFERENCES_SOURCE="${SCRIPT_DIR}/references"
@@ -68,11 +72,11 @@ ${BOLD}USAGE${RESET}
   ./install.sh --help       Show this help
 
 ${BOLD}INSTALLS TO${RESET}
-  ~/.claude/skills/ra/SKILL.md             Main skill file
-  ~/.claude/skills/ra/.source-repo         Repo path marker (for /ra update)
-  ~/.claude/skills/ra/references/          Schemas, workflow, context (16+ files)
-  ~/.claude/commands/ra/*.md               Sub-command files (7 files)
-  ~/.claude/commands/ra.md                 Router file
+  ${CLAUDE_DIR}/skills/ra/SKILL.md             Main skill file
+  ${CLAUDE_DIR}/skills/ra/.source-repo         Repo path marker (for /ra update)
+  ${CLAUDE_DIR}/skills/ra/references/          Schemas, workflow, context (16+ files)
+  ${CLAUDE_DIR}/commands/ra/*.md               Sub-command files (7 files)
+  ${CLAUDE_DIR}/commands/ra.md                 Router file
 EOF
   exit 0
 fi
@@ -99,9 +103,9 @@ if [ "$ACTION" = "uninstall" ]; then
   else
     warn "Commands not installed at ${COMMANDS_TARGET}"
   fi
-  if [ -f "${HOME}/.claude/commands/ra.md" ]; then
-    rm -f "${HOME}/.claude/commands/ra.md"
-    ok "Removed router: ~/.claude/commands/ra.md"
+  if [ -f "${CLAUDE_DIR}/commands/ra.md" ]; then
+    rm -f "${CLAUDE_DIR}/commands/ra.md"
+    ok "Removed router: ${CLAUDE_DIR}/commands/ra.md"
   fi
   ok "ra uninstalled"
   exit 0
@@ -122,10 +126,10 @@ if [ "$ACTION" = "check" ]; then
   fi
 
   # Router
-  if [ -f "${HOME}/.claude/commands/ra.md" ]; then
-    ok "Router: ~/.claude/commands/ra.md"
+  if [ -f "${CLAUDE_DIR}/commands/ra.md" ]; then
+    ok "Router: ${CLAUDE_DIR}/commands/ra.md"
   else
-    err "Router not found: ~/.claude/commands/ra.md"
+    err "Router not found: ${CLAUDE_DIR}/commands/ra.md"
     issues=$((issues + 1))
   fi
 
@@ -243,8 +247,8 @@ echo "$SCRIPT_DIR" > "${SKILL_TARGET}/.source-repo"
 ok "Source repo marker -> ${SKILL_TARGET}/.source-repo"
 
 # 3. Install router command
-mkdir -p "${HOME}/.claude/commands"
-cat > "${HOME}/.claude/commands/ra.md" <<'ROUTER'
+mkdir -p "${CLAUDE_DIR}/commands"
+cat > "${CLAUDE_DIR}/commands/ra.md" <<'ROUTER'
 # ra — Risk Assessment Router
 
 Parse the argument from: $ARGUMENTS
@@ -265,7 +269,7 @@ Route to the appropriate sub-skill:
 
 Invoke the matching skill using the Skill tool.
 ROUTER
-ok "Router -> ~/.claude/commands/ra.md"
+ok "Router -> ${CLAUDE_DIR}/commands/ra.md"
 
 # 4. Install sub-commands (clean stale files from previous version)
 if [ -d "$COMMANDS_TARGET" ]; then
@@ -309,7 +313,7 @@ ok "ra v${ver} installed successfully"
 echo ""
 info "Files installed:"
 printf "  ${DIM}%-55s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
-printf "  ${DIM}%-55s${RESET} (router)\n" "${HOME}/.claude/commands/ra.md"
+printf "  ${DIM}%-55s${RESET} (router)\n" "${CLAUDE_DIR}/commands/ra.md"
 printf "  ${DIM}%-55s${RESET} (${count} sub-commands)\n" "${COMMANDS_TARGET}/"
 printf "  ${DIM}%-55s${RESET} (${ref_count} reference files)\n" "${SKILL_TARGET}/references/"
 echo ""

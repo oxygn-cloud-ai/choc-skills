@@ -12,18 +12,18 @@ Run checks:
 3. Env vars (report set/not set, NEVER display values): JIRA_CLOUD_ID, JIRA_EMAIL, JIRA_API_KEY, RR_ASSIGNEE_ID (optional — WARN if not set)
 3b. Jira auth file: check if `~/.jira-auth` exists (used by `/ra:publish` for file attachments). WARN if missing.
 4. Reference files exist:
-   - `~/.claude/skills/ra/references/schemas/enums.schema.json`
-   - `~/.claude/skills/ra/references/business-context.md`
-   - `~/.claude/skills/ra/references/jira-config.md`
-   - `~/.claude/skills/ra/references/quality-standards.md`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/schemas/enums.schema.json`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/business-context.md`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/jira-config.md`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/quality-standards.md`
 5. Workflow step files exist (6 files):
-   - `~/.claude/skills/ra/references/workflow/step-1-interview.md`
-   - `~/.claude/skills/ra/references/workflow/step-2-ingest.md`
-   - `~/.claude/skills/ra/references/workflow/step-3-assess.md`
-   - `~/.claude/skills/ra/references/workflow/step-4-adversarial.md`
-   - `~/.claude/skills/ra/references/workflow/step-5-discuss.md`
-   - `~/.claude/skills/ra/references/workflow/step-6-output.md`
-6. Sub-commands: `ls ~/.claude/commands/ra/*.md` (expect 7 files)
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-1-interview.md`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-2-ingest.md`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-3-assess.md`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-4-adversarial.md`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-5-discuss.md`
+   - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-6-output.md`
+6. Sub-commands: `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/ra/*.md` (expect 7 files)
 7. Output directory writable: check `${RA_OUTPUT_DIR:-~/ra-output}` exists or can be created
 8. Atlassian MCP connectivity: attempt search `project = RA AND issuetype = Epic` limit 1
 9. Slack MCP connectivity: non-blocking WARN if not available
@@ -40,7 +40,7 @@ ra doctor — Environment Health Check
   [WARN] RR_ASSIGNEE_ID: not set (tickets will have no assignee)
   [PASS] reference files: 4 files found
   [PASS] workflow steps: 6 files found
-  [PASS] sub-commands: 7 files in ~/.claude/commands/ra/
+  [PASS] sub-commands: 7 files in ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/ra/
   [PASS] output directory: writable
   [PASS] Atlassian MCP: connected
   [WARN] Slack MCP: not available

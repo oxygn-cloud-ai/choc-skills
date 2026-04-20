@@ -1,7 +1,7 @@
 ---
 name: rr:fix
 description: "Re-run failed assessments from batch mode"
-allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(sed *), Bash(bash *), Bash(~/.claude/skills/rr/bin/rr-finalize.sh *), Write, Agent, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(sed *), Bash(bash *), Bash(${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-finalize.sh *), Write, Agent, AskUserQuestion
 ---
 
 # rr:fix — Re-run Failed Assessments
@@ -91,7 +91,7 @@ Stop here.
 If sub-agent failures exist:
 1. Ask user: "Re-run N failed batches via Agent dispatch? (y/n)"
 2. If yes:
-   a. Read the sub-agent prompt template from `~/.claude/skills/rr/bin/sub-agent-prompt.md`
+   a. Read the sub-agent prompt template from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/sub-agent-prompt.md`
    b. For each failed batch:
       - Determine the batch_id from the error file or missing result
       - Verify the extract file exists: `${RR_WORK_DIR:-~/rr-work}/extracts/batch_<batch_id>.json`
@@ -105,7 +105,7 @@ If sub-agent failures exist:
       - Report success or persistent failure
    c. After all retries, run finalization for any newly completed assessments:
       ```bash
-      ~/.claude/skills/rr/bin/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4 if applicable]
+      ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4 if applicable]
       ```
 3. Report retry results
 

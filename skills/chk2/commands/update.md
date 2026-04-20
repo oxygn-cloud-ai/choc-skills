@@ -10,12 +10,12 @@ Context from user: $ARGUMENTS
 
 ## Update Process
 
-1. Read the source repo path from `~/.claude/skills/chk2/.source-repo` (if it exists).
+1. Read the source repo path from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk2/.source-repo` (if it exists).
 
 2. **If `.source-repo` exists:**
    - Run `git -C <repo-path> pull` to update the local clone
    - Run `bash <repo-path>/skills/chk2/install.sh --force` to reinstall (updates SKILL.md, sub-commands, and router)
-   - Read the installed version from `~/.claude/skills/chk2/SKILL.md` and report:
+   - Read the installed version from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk2/SKILL.md` and report:
      ```
      chk2 update — Updated to vX.Y.Z (33 sub-commands installed)
      Restart Claude Code to pick up changes.
@@ -25,7 +25,7 @@ Context from user: $ARGUMENTS
 
    a. Read the currently installed version:
       ```bash
-      INSTALLED_VER=$(grep -m1 '^version:' ~/.claude/skills/chk2/SKILL.md | sed 's/^version: *//')
+      INSTALLED_VER=$(grep -m1 '^version:' ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk2/SKILL.md | sed 's/^version: *//')
       ```
 
    b. Fetch the remote version:
@@ -46,13 +46,13 @@ Context from user: $ARGUMENTS
 
    e. If a newer version is available, download all files:
       ```bash
-      curl -sL "$REPO/skills/chk2/SKILL.md" -o ~/.claude/skills/chk2/SKILL.md
-      mkdir -p ~/.claude/commands/chk2
+      curl -sL "$REPO/skills/chk2/SKILL.md" -o ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk2/SKILL.md
+      mkdir -p ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2
       echo "all quick headers tls dns cors api ws waf infra brute scale disclosure \
             fix github update cookies cache smuggling auth transport redirect \
             fingerprint timing compression jwt graphql sse ipv6 reporting hardening \
             negotiation proxy business backend" | tr ' ' '\n' | grep -v '^$' | \
-        xargs -P 4 -I{} curl -sL "$REPO/skills/chk2/commands/{}.md" -o ~/.claude/commands/chk2/{}.md
+        xargs -P 4 -I{} curl -sL "$REPO/skills/chk2/commands/{}.md" -o ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/chk2/{}.md
       ```
 
    f. Report the result:

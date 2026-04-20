@@ -14,11 +14,11 @@ argument-hint: [RR-NNN | all | board | status | monitor | fix | update | help | 
 
 Before executing, silently verify:
 
-1. **Reference files readable**: Check that `~/.claude/skills/rr/references/schemas/enums.schema.json` exists. If not:
-   > **rr error**: Reference files not found at ~/.claude/skills/rr/references/. Run `/rr doctor` to diagnose.
+1. **Reference files readable**: Check that `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/schemas/enums.schema.json` exists. If not:
+   > **rr error**: Reference files not found at ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/. Run `/rr doctor` to diagnose.
 
-2. **Sub-commands installed**: `ls ~/.claude/commands/rr/*.md` finds files. If not:
-   > **rr warning**: Sub-command files not found in ~/.claude/commands/rr/. Running inline.
+2. **Sub-commands installed**: `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/rr/*.md` finds files. If not:
+   > **rr warning**: Sub-command files not found in ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/rr/. Running inline.
 
 ---
 
@@ -42,7 +42,7 @@ Parse $ARGUMENTS and route:
 | `remove` | Invoke `/rr:remove` (hidden — testing only) |
 | anything else | Invoke `/rr:help` |
 
-If the sub-command `.md` files exist in `~/.claude/commands/rr/`, invoke them via the Skill tool. Otherwise, execute the logic inline using the workflow overview below.
+If the sub-command `.md` files exist in `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/rr/`, invoke them via the Skill tool. Otherwise, execute the logic inline using the workflow overview below.
 
 ---
 
@@ -101,27 +101,27 @@ If the sub-command `.md` files exist in `~/.claude/commands/rr/`, invoke them vi
 If sub-command files are not installed, use this inline fallback. Each step reads its detailed instructions from the reference files.
 
 ### Step 1 — Extract and Draft
-Read: `~/.claude/skills/rr/references/workflow/step-1-extract.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-1-extract.md`
 Retrieve target risk from Jira, fetch child tickets, export to JSON, draft initial assessment.
 
 ### Step 2 — Adversarial Review
-Read: `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-2-adversarial.md`
 Challenge Assessment 1 against 8 criteria. Verify regulatory citations via web search.
 
 ### Step 3 — Rectified Assessment
-Read: `~/.claude/skills/rr/references/workflow/step-3-rectify.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-3-rectify.md`
 Address every challenge from Step 2. Track changes in `changes_from_previous`.
 
 ### Step 4 — Discussion
-Read: `~/.claude/skills/rr/references/workflow/step-4-discussion.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-4-discussion.md`
 Initiate discussion with user. Ask about unresolved points one at a time. Do NOT wait passively.
 
 ### Step 5 — Final Assessment
-Read: `~/.claude/skills/rr/references/workflow/step-5-finalise.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-5-finalise.md`
 Incorporate discussion outcomes. Produce final assessment. **Wait for user confirmation** before Step 6.
 
 ### Step 6 — Publish to Jira
-Read: `~/.claude/skills/rr/references/workflow/step-6-publish.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-6-publish.md`
 Check for existing same-day Review. Create or update Review child ticket. Attach workflow files.
 
 ---

@@ -24,6 +24,7 @@ INSTALLERS=(
 )
 
 setup() {
+  unset CLAUDE_CONFIG_DIR  # CPT-174: ensure tests never inherit ambient CLAUDE_CONFIG_DIR
   export HOME="$(mktemp -d)"
   mkdir -p "${HOME}/.claude"
 }

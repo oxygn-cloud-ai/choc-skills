@@ -11,8 +11,8 @@ argument-hint: [assess | publish | status | update | help | doctor | version]
 # ra — Bespoke Risk Assessment
 
 ## Pre-flight Checks
-1. Reference files readable: check `~/.claude/skills/ra/references/schemas/enums.schema.json` exists
-2. Sub-commands installed: `ls ~/.claude/commands/ra/*.md`
+1. Reference files readable: check `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/schemas/enums.schema.json` exists
+2. Sub-commands installed: `ls ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/ra/*.md`
 
 ## Routing
 
@@ -75,32 +75,32 @@ Parse $ARGUMENTS and route:
 ## Assessment Workflow Overview
 
 ### Step 1 — Interview
-Read: `~/.claude/skills/ra/references/workflow/step-1-interview.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-1-interview.md`
 
 Execute: adaptive conversation to understand the subject, confirm scope, gather materials.
 
 ### Step 2 — Ingest
-Read: `~/.claude/skills/ra/references/workflow/step-2-ingest.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-2-ingest.md`
 
 Execute: fetch, normalise, record provenance, build subject brief.
 
 ### Step 3 — Assess
-Read: `~/.claude/skills/ra/references/workflow/step-3-assess.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-3-assess.md`
 
 Execute: categorise risks, rate using matrix, epistemic classification, mitigations, projected residual risk.
 
 ### Step 4 — Adversarial Review
-Read: `~/.claude/skills/ra/references/workflow/step-4-adversarial.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-4-adversarial.md`
 
 Execute: challenge against 11 criteria, verify regulatory citations, rectify assessment.
 
 ### Step 5 — Discuss
-Read: `~/.claude/skills/ra/references/workflow/step-5-discuss.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-5-discuss.md`
 
 Execute: present findings to user, walk through each finding, handle deferred items.
 
 ### Step 6 — Output
-Read: `~/.claude/skills/ra/references/workflow/step-6-output.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ra/references/workflow/step-6-output.md`
 
 Execute: finalise all files, write assessment_final.json.
 

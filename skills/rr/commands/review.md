@@ -18,7 +18,7 @@ If no valid key found, report an error and stop:
 ## Configuration
 
 - Output directory: `${RR_OUTPUT_DIR:-~/rr-output}`
-- Reference files: `~/.claude/skills/rr/references/`
+- Reference files: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/`
 - Date stamp: current date in `yyyy-mm-dd` format
 - File prefix: lowercase key with hyphen (e.g. `rr-220`)
 
@@ -26,9 +26,9 @@ If no valid key found, report an error and stop:
 
 Read these reference files:
 
-1. `~/.claude/skills/rr/references/schemas/enums.schema.json` — Strict enum values for all fields
-2. `~/.claude/skills/rr/references/business-context.md` — Chocolate Finance facts and operating context
-3. `~/.claude/skills/rr/references/jira-config.md` — Jira connection details, field mappings, Cloud ID
+1. `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/schemas/enums.schema.json` — Strict enum values for all fields
+2. `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/business-context.md` — Chocolate Finance facts and operating context
+3. `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/jira-config.md` — Jira connection details, field mappings, Cloud ID
 
 Create the output directory if it does not exist:
 ```bash
@@ -43,7 +43,7 @@ Execute each step by reading the step file and following its instructions exactl
 
 ### Step 1 — Extract and Draft
 
-Read: `~/.claude/skills/rr/references/workflow/step-1-extract.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-1-extract.md`
 
 Execute step 1 instructions:
 1. Retrieve the target risk from Jira via MCP tools
@@ -54,7 +54,7 @@ Execute step 1 instructions:
 
 ### Step 2 — Adversarial Review
 
-Read: `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-2-adversarial.md`
 
 Execute step 2 instructions:
 1. Challenge Assessment 1 against 8 adversarial criteria
@@ -66,7 +66,7 @@ Proceed immediately to Step 3 — do not wait for user input.
 
 ### Step 3 — Rectified Assessment
 
-Read: `~/.claude/skills/rr/references/workflow/step-3-rectify.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-3-rectify.md`
 
 Execute step 3 instructions:
 1. Address every challenge from Step 2
@@ -78,7 +78,7 @@ Proceed immediately to Step 4 — do not wait for user input.
 
 ### Step 4 — Discussion
 
-Read: `~/.claude/skills/rr/references/workflow/step-4-discussion.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-4-discussion.md`
 
 Initiate discussion with user. Do NOT wait passively — ask the first question immediately:
 1. Identify unresolved points from Step 2/3
@@ -89,7 +89,7 @@ Initiate discussion with user. Do NOT wait passively — ask the first question 
 
 ### Step 5 — Final Assessment
 
-Read: `~/.claude/skills/rr/references/workflow/step-5-finalise.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-5-finalise.md`
 
 Produce final assessment:
 1. Incorporate all discussion outcomes from Step 4
@@ -101,7 +101,7 @@ If the user requests changes, update the assessment and re-present. Do not proce
 
 ### Step 6 — Publish to Jira
 
-Read: `~/.claude/skills/rr/references/workflow/step-6-publish.md`
+Read: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-6-publish.md`
 
 Publish to Jira:
 1. Check for existing same-day Review child ticket

@@ -2,11 +2,15 @@
 set -euo pipefail
 
 # Per-skill installer for chk2
-# Installs SKILL.md to ~/.claude/skills/chk2/
-# Installs sub-command .md files to ~/.claude/commands/chk2/
+# Installs SKILL.md to ${CLAUDE_CONFIG_DIR:-~/.claude}/skills/chk2/
+# Installs sub-command .md files to ${CLAUDE_CONFIG_DIR:-~/.claude}/commands/chk2/
 
 SKILL_NAME="chk2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# CLAUDE_CONFIG_DIR honoured (CPT-174). Falls back to ~/.claude when unset or
+# empty, matching how Claude Code itself resolves the config dir at runtime.
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
 
 # Colors
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -22,8 +26,8 @@ warn() { printf "${YELLOW}warn${RESET}  %s\n" "$*" >&2; }
 info() { printf "${CYAN}info${RESET}  %s\n" "$*"; }
 die()  { err "$@"; exit 1; }
 
-SKILL_TARGET="${HOME}/.claude/skills/${SKILL_NAME}"
-COMMANDS_TARGET="${HOME}/.claude/commands/${SKILL_NAME}"
+SKILL_TARGET="${CLAUDE_DIR}/skills/${SKILL_NAME}"
+COMMANDS_TARGET="${CLAUDE_DIR}/commands/${SKILL_NAME}"
 SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
 FORCE=false
@@ -65,8 +69,8 @@ ${BOLD}USAGE${RESET}
   ./install.sh --help       Show this help
 
 ${BOLD}INSTALLS TO${RESET}
-  ~/.claude/skills/chk2/SKILL.md        Main skill file
-  ~/.claude/commands/chk2/*.md           Sub-command files (35 files)
+  ${CLAUDE_DIR}/skills/chk2/SKILL.md        Main skill file
+  ${CLAUDE_DIR}/commands/chk2/*.md           Sub-command files (35 files)
 EOF
   exit 0
 fi
@@ -94,9 +98,9 @@ if [ "$ACTION" = "uninstall" ]; then
     warn "Commands not installed at ${COMMANDS_TARGET}"
   fi
   # Remove router file
-  if [ -f "${HOME}/.claude/commands/chk2.md" ]; then
-    rm -f "${HOME}/.claude/commands/chk2.md"
-    ok "Removed router: ~/.claude/commands/chk2.md"
+  if [ -f "${CLAUDE_DIR}/commands/chk2.md" ]; then
+    rm -f "${CLAUDE_DIR}/commands/chk2.md"
+    ok "Removed router: ${CLAUDE_DIR}/commands/chk2.md"
   fi
   ok "chk2 uninstalled"
   exit 0
@@ -115,10 +119,10 @@ if [ "$ACTION" = "check" ]; then
     issues=$((issues + 1))
   fi
 
-  if [ -f "${HOME}/.claude/commands/chk2.md" ]; then
-    ok "Router: ~/.claude/commands/chk2.md"
+  if [ -f "${CLAUDE_DIR}/commands/chk2.md" ]; then
+    ok "Router: ${CLAUDE_DIR}/commands/chk2.md"
   else
-    err "Router not found: ~/.claude/commands/chk2.md"
+    err "Router not found: ${CLAUDE_DIR}/commands/chk2.md"
     issues=$((issues + 1))
   fi
 
@@ -185,9 +189,9 @@ cp "$SKILL_SOURCE" "${SKILL_TARGET}/SKILL.md"
 ok "SKILL.md -> ${SKILL_TARGET}/SKILL.md"
 
 # 2. Install router command
-mkdir -p "${HOME}/.claude/commands"
+mkdir -p "${CLAUDE_DIR}/commands"
 # Generate router from SKILL.md routing table
-cat > "${HOME}/.claude/commands/chk2.md" <<'ROUTER'
+cat > "${CLAUDE_DIR}/commands/chk2.md" <<'ROUTER'
 # chk2 — Security Check Router
 
 Parse the argument from: $ARGUMENTS
@@ -219,7 +223,7 @@ Route to the appropriate sub-skill based on the argument:
 
 Invoke the matching skill using the Skill tool.
 ROUTER
-ok "Router -> ~/.claude/commands/chk2.md"
+ok "Router -> ${CLAUDE_DIR}/commands/chk2.md"
 
 # 3. Install sub-commands (clean stale files from previous version)
 if [ -d "$COMMANDS_TARGET" ]; then
@@ -246,7 +250,7 @@ ok "chk2 v${ver} installed successfully"
 echo ""
 info "Files installed:"
 printf "  ${DIM}%-50s${RESET} (main skill)\n" "${SKILL_TARGET}/SKILL.md"
-printf "  ${DIM}%-50s${RESET} (router)\n" "${HOME}/.claude/commands/chk2.md"
+printf "  ${DIM}%-50s${RESET} (router)\n" "${CLAUDE_DIR}/commands/chk2.md"
 printf "  ${DIM}%-50s${RESET} (${count} sub-commands)\n" "${COMMANDS_TARGET}/"
 echo ""
 info "Usage: /chk2 or /chk2 help"

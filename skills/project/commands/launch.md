@@ -11,6 +11,11 @@ allowed-tools:
 
 <objective>
 Launch tmux sessions with Claude Code running in each worktree session for a project. Creates one tmux session per project with named windows per role.
+
+Throughout this document, `$CLAUDE_DIR` means the Claude config directory —
+`$CLAUDE_CONFIG_DIR` if set and non-empty, otherwise `$HOME/.claude` (CPT-174).
+Resolve it in every bash invocation with `CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"`
+before using any `$CLAUDE_DIR/...` path.
 </objective>
 
 <process>
@@ -18,7 +23,7 @@ Launch tmux sessions with Claude Code running in each worktree session for a pro
 ## Step 0: Pre-checks
 
 Verify dependencies exist:
-- `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error.
+- `test -f $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` — if missing: **STOP** with error.
 - `command -v tmux` — if missing: **STOP** with error: "tmux is required. Install with: brew install tmux"
 - `command -v claude` — if missing: **STOP** with error: "Claude Code CLI is required."
 
@@ -62,7 +67,7 @@ done
 
 ## Step 3: Read architecture
 
-Read `~/.claude/MULTI_SESSION_ARCHITECTURE.md` for the role list.
+Read `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` for the role list.
 
 Detect project type from `PROJECT_CONFIG.json` `.project.type` (preferred) or infer from presence of `.github/workflows/` and language scaffolding (CPT-124/141 migration: retired `GITHUB_CONFIG.md` is no longer consulted):
 - **Software** (11 roles): master, planner, implementer, fixer, merger, chk1, chk2, performance, playtester, reviewer, triager

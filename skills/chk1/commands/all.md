@@ -10,7 +10,7 @@ Run all 8 audit sections against the detected or specified scope. This is the de
 
 ## Instructions
 
-The main skill file (`~/.claude/skills/chk1/SKILL.md`) is already in context — it was loaded to route to this command. Do not re-read it.
+The main skill file (`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/chk1/SKILL.md`) is already in context — it was loaded to route to this command. Do not re-read it.
 
 1. Execute the full audit as defined in SKILL.md (all 8 sections)
 2. Follow the scope detection, pre-flight checks, and output format exactly as specified

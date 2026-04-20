@@ -1,7 +1,7 @@
 ---
 name: rr:all
 description: "Batch risk register review — orchestrate parallel/sequential assessments"
-allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(rm *), Bash(date *), Bash(echo *), Bash(sed *), Bash(bash *), Bash(test *), Bash(wc *), Bash(tr *), Bash(~/.claude/skills/rr/bin/rr-prepare.sh *), Bash(~/.claude/skills/rr/bin/rr-finalize.sh *), Bash(~/.claude/skills/rr/bin/_update_cpt.sh *), Write, Agent, AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(ls *), Bash(rm *), Bash(date *), Bash(echo *), Bash(sed *), Bash(bash *), Bash(test *), Bash(wc *), Bash(tr *), Bash(${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-prepare.sh *), Bash(${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-finalize.sh *), Bash(${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh *), Write, Agent, AskUserQuestion
 ---
 
 # rr:all — Batch Risk Register Review
@@ -23,7 +23,7 @@ Parse any flags or filters from $ARGUMENTS (everything after the `all` keyword):
 Check if the batch scripts are available by running these checks via Bash:
 
 ```bash
-test -x ~/.claude/skills/rr/bin/rr-prepare.sh && echo "bin_available"
+test -x ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-prepare.sh && echo "bin_available"
 test -n "${JIRA_EMAIL:-}" && test -n "${JIRA_API_KEY:-}" && echo "jira_creds_set"
 ```
 
@@ -48,7 +48,7 @@ If `--reset` flag is set:
 1. Ask user to confirm: "This will delete the entire batch work directory at ${RR_WORK_DIR:-~/rr-work}. Continue? (y/n)"
 2. If confirmed, delegate to the bin script which has symlink validation (CPT-26) and marker-file safety checks:
    ```bash
-   ~/.claude/skills/rr/bin/rr-prepare.sh --reset
+   ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-prepare.sh --reset
    ```
 3. Report cleared and continue to launch
 
@@ -66,7 +66,7 @@ Monitor progress: /rr monitor (in separate terminal)
 Build the command with applicable flags and run via Bash tool:
 
 ```bash
-RR_CATEGORY_FILTER="${category_filter}" ~/.claude/skills/rr/bin/rr-prepare.sh [--force] [--qtr:Q1|Q2|Q3|Q4]
+RR_CATEGORY_FILTER="${category_filter}" ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-prepare.sh [--force] [--qtr:Q1|Q2|Q3|Q4]
 ```
 
 Capture the batch count from the last line of stdout. If 0, report "No risks to process" and stop.
@@ -82,7 +82,7 @@ Capture the batch count from the last line of stdout. If 0, report "No risks to 
 
 2. Read the sub-agent prompt template:
    ```
-   ~/.claude/skills/rr/bin/sub-agent-prompt.md
+   ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/sub-agent-prompt.md
    ```
 
 3. List all batch files:
@@ -114,7 +114,7 @@ For each wave of batches:
        - Replace every occurrence of `{{BATCH_ID}}` with the actual batch number
        - Replace every occurrence of `{{BATCH_FILE}}` with the actual absolute path to the batch extract file
        - Replace every occurrence of `{{WORK_DIR}}` with the actual absolute path to the work directory
-       - Replace every occurrence of `{{SKILLS_DIR}}` with `~/.claude/skills/rr`
+       - Replace every occurrence of `{{SKILLS_DIR}}` with `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr`
 
    Launch ALL agents in this wave in a single message (parallel Agent tool calls).
 
@@ -131,7 +131,7 @@ For each wave of batches:
 
 4. Update CPT with wave progress (non-blocking) via Bash:
    ```bash
-   ~/.claude/skills/rr/bin/_update_cpt.sh dispatch_progress "Wave N of M complete: X succeeded, Y failed" || true
+   ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh dispatch_progress "Wave N of M complete: X succeeded, Y failed" || true
    ```
 
 5. Proceed to the next wave.
@@ -162,7 +162,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dispatch complete: ${succeeded}/${total} ba
 Run via Bash tool:
 
 ```bash
-~/.claude/skills/rr/bin/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4]
+${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/rr-finalize.sh [--qtr:Q1|Q2|Q3|Q4]
 ```
 
 ### Report to User
@@ -188,7 +188,7 @@ Report to user why batch script mode is not available, then proceed sequentially
 
 At the start of sequential processing, update CPT via Bash (non-blocking):
 ```bash
-~/.claude/skills/rr/bin/_update_cpt.sh started "Sequential mode: processing N risks" || true
+${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh started "Sequential mode: processing N risks" || true
 ```
 Do NOT update CPT per-risk (avoids spam). Only update at completion.
 
@@ -246,11 +246,11 @@ Check if `${RR_OUTPUT_DIR:-~/rr-output}/rr-progress.md` exists.
 Before processing any risks, read all workflow step files once. These are static reference documents that do not change between risks — loading them once avoids 6×(N-1) redundant file reads **within a single uninterrupted session**.
 
 Read these files now and keep them in context for the batch run:
-- `~/.claude/skills/rr/references/workflow/step-1-extract.md`
-- `~/.claude/skills/rr/references/workflow/step-2-adversarial.md`
-- `~/.claude/skills/rr/references/workflow/step-3-rectify.md`
-- `~/.claude/skills/rr/references/workflow/step-5-finalise.md`
-- `~/.claude/skills/rr/references/workflow/step-6-publish.md`
+- `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-1-extract.md`
+- `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-2-adversarial.md`
+- `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-3-rectify.md`
+- `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-5-finalise.md`
+- `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/references/workflow/step-6-publish.md`
 
 **Known limitation — auto-compaction**: Claude Code auto-compacts context as it fills. Compaction can summarise or drop the pre-loaded step content silently. The per-risk loop below therefore includes a re-check step to detect this and re-read on miss. Realistic savings are per-session (until the first compaction or new chat), not per-register — the claim holds for the first ~N risks processed before compaction, then degrades.
 
@@ -295,7 +295,7 @@ For each pending risk in the progress file:
 
 After all risks are processed (or context limit reached), update CPT via Bash (non-blocking):
 ```bash
-~/.claude/skills/rr/bin/_update_cpt.sh complete "Sequential mode: N/M risks processed" || true
+${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/rr/bin/_update_cpt.sh complete "Sequential mode: N/M risks processed" || true
 ```
 
 ## After

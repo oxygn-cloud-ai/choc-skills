@@ -21,6 +21,7 @@ REPO_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 INSTALLER="$REPO_DIR/install.sh"
 
 setup() {
+  unset CLAUDE_CONFIG_DIR  # CPT-174: ensure tests never inherit ambient CLAUDE_CONFIG_DIR
   [ -f "$INSTALLER" ]
   # Use a fake HOME so any accidental install doesn't touch the real one.
   export HOME="$(mktemp -d)"
