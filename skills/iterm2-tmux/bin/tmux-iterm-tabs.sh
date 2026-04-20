@@ -174,11 +174,41 @@ if [[ -n "$TARGET_PROJECT" ]]; then
     exit 1
   fi
 
-  # 3. Generate a distinct background image per role-window. The BG filename
-  #    namespaces on project name so two different projects can each have a
-  #    "master" window without clobbering each other's backgrounds.
+  # 3. Create one linked "view" session per role-window so each iTerm2 tab gets
+  #    its own INDEPENDENT active-window state.
+  #
+  #    Why: `tmux attach -t base:window` changes the base session's active
+  #    window globally. Attaching 11 tabs sequentially ends with every tab
+  #    snapped to whichever window was attached last. Grouped/linked sessions
+  #    (`new-session -t <group> -s <view>`) share the same windows but track
+  #    their own current-window, so each tab stays on its intended window.
+  #
+  #    Naming: <project>__<window>. Double underscore prevents collisions with
+  #    user project names that legitimately contain a single '-' (e.g., a role
+  #    or role suffix that matches a window name) while still being a valid
+  #    tmux session identifier.
   for entry in "${win_entries[@]}"; do
     IFS='|' read -r w_idx w_name <<< "$entry"
+    view_session="${TARGET_PROJECT}__${w_name}"
+
+    # Skip if the linked session already exists (second /project:launch run,
+    # or manual re-attach). Don't recreate — that would reset window state.
+    if ! tmux has-session -t "=${view_session}" 2>/dev/null; then
+      if ! tmux new-session -d -t "$TARGET_PROJECT" -s "$view_session" 2>/dev/null; then
+        echo "[ERROR] Failed to create linked session '$view_session'." >&2
+        exit 1
+      fi
+    fi
+
+    # Point the view session at its assigned window. Use the 'session:window'
+    # form — this only affects the view session, not the base session.
+    tmux select-window -t "${view_session}:${w_name}" 2>/dev/null || {
+      echo "[ERROR] Failed to select window '$w_name' in view '$view_session'." >&2
+      exit 1
+    }
+
+    # 3b. Per-role background image. The BG filename namespaces on project so
+    #     two projects can each have a "master" window without collision.
     bg_key="${TARGET_PROJECT}-${w_name}"
     generate_background "$w_name" "$bg_key" "$w_idx"
   done
@@ -202,9 +232,13 @@ if [[ -n "$TARGET_PROJECT" ]]; then
   rm -rf "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
   mkdir "/tmp/.iterm2-tmux-autostart" 2>/dev/null || true
 
-  # Attach command: the 1st arg is the tmux session; the 5th arg is the window
-  # name to select-window into after attach. tmux-attach-session.sh handles
-  # both args.
+  # Attach command: each tab attaches to its OWN linked view session
+  # (<project>__<window>). The view session already has its current-window
+  # selected, so we pass NO 5th-arg window name — plain `tmux attach -t <view>`.
+  # Tab label ($2) stays as the role name so the user still sees "master",
+  # "planner", etc.; the project name ($4) is informational.
+  first_view="${TARGET_PROJECT}__${first_name}"
+  safe_first_view="$(escape_applescript "$first_view")"
   cat > "$TMPSCRIPT" << HEADER
 tell application "iTerm2"
   activate
@@ -214,7 +248,7 @@ tell application "iTerm2"
     tell current session
       set name to "$safe_first_name"
 ${first_bg_line}
-      write text "exec $ATTACH_SCRIPT '$safe_project' '$safe_first_name' $first_idx '$safe_project' '$safe_first_name'"
+      write text "exec $ATTACH_SCRIPT '$safe_first_view' '$safe_first_name' $first_idx '$safe_project'"
     end tell
 HEADER
 
@@ -225,13 +259,15 @@ HEADER
   for entry in ${rest_entries[@]+"${rest_entries[@]}"}; do
     IFS='|' read -r w_idx w_name <<< "$entry"
     safe_name="$(escape_applescript "$w_name")"
+    view_session="${TARGET_PROJECT}__${w_name}"
+    safe_view="$(escape_applescript "$view_session")"
     tab_bg_line="$(bg_applescript_line "${TARGET_PROJECT}-${w_name}")"
     cat >> "$TMPSCRIPT" << EOF
     set newTab to (create tab with default profile)
     tell current session of newTab
       set name to "$safe_name"
 ${tab_bg_line}
-      write text "exec $ATTACH_SCRIPT '$safe_project' '$safe_name' $w_idx '$safe_project' '$safe_name'"
+      write text "exec $ATTACH_SCRIPT '$safe_view' '$safe_name' $w_idx '$safe_project'"
     end tell
 EOF
   done

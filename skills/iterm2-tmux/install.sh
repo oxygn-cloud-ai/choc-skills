@@ -321,32 +321,6 @@ for script in "${SCRIPTS[@]}"; do
   fi
 done
 
-# --- Step 4: Optional iTerm2 plist import ---
-printf "\n${BOLD}iTerm2 preferences${RESET}\n\n"
-
-plist_source="${SCRIPT_DIR}/iterm2/com.googlecode.iterm2.plist"
-plist_target="${HOME}/Library/Preferences/com.googlecode.iterm2.plist"
-
-if [ -f "$plist_source" ]; then
-  if confirm "Import iTerm2 preferences? (backs up existing first)"; then
-    if [ -f "$plist_target" ]; then
-      backup="${plist_target}.backup.$(date +%Y%m%d%H%M%S)"
-      cp "$plist_target" "$backup"
-      ok "Backed up existing plist to ${backup}"
-    fi
-    cp "$plist_source" "$plist_target"
-    ok "Imported iTerm2 preferences"
-    info "Restart iTerm2 for changes to take effect"
-  else
-    info "Skipped iTerm2 preferences import"
-    info "Key settings to enable manually in iTerm2 Preferences:"
-    info "  - General > tmux > Auto-hide tmux client session"
-    info "  - General > tmux > Sync clipboard"
-  fi
-else
-  info "iTerm2 plist not found in repo — skipping"
-fi
-
 # --- Step 5: Auto-startup on iTerm2 open ---
 printf "\n${BOLD}Auto-startup${RESET}\n\n"
 

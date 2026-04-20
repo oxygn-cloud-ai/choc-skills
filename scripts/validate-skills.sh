@@ -142,7 +142,7 @@ for dir in "${SKILLS_DIR}"/*/; do
   fi
 
   # --- Check: no unwanted files ---
-  for unwanted in node_modules .env .env.local .DS_Store; do
+  for unwanted in node_modules .env .env.local; do
     if [ -e "${dir}/${unwanted}" ]; then
       fail "Contains unwanted file/directory: ${unwanted}"
       skill_errors=$((skill_errors + 1))

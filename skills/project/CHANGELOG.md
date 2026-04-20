@@ -2,6 +2,34 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.2.0] - 2026-04-19
+
+### Added
+
+- **`skills/project/global/`** directory ships two previously-unshipped
+  runtime dependencies as skill product:
+  - `MULTI_SESSION_ARCHITECTURE.md` — full role protocol and §-numbered
+    rules referenced by every `session/<role>` prompt and by
+    `commands/audit.md` rules 8/9/16.
+  - `PROJECT_STANDARDS.md` — branch-protection, CI, and documentation
+    contract referenced by `commands/audit.md` rules 3/8/10/11.
+
+  `install.sh` now copies both into `~/.claude/` on every `--force` run
+  (idempotent, overwrites any stale local copy — customisation belongs
+  upstream in the skill source, not in the installed artefact). Previously
+  these were treated as user-owned global config; a fresh machine install
+  would pass `install.sh --check` with 2 errors because nothing bootstrapped
+  them. This closes that gap.
+
+### Changed
+
+- `install.sh --help` moves the two docs from **REQUIREMENTS** to
+  **INSTALLS TO** — they are now skill-shipped.
+- Project-level `CLAUDE.md` § "Skill-is-product rule" updated to reflect
+  that `~/.claude/MULTI_SESSION_ARCHITECTURE.md` and
+  `~/.claude/PROJECT_STANDARDS.md` are skill product (installed by
+  `skills/project/install.sh`), not user-owned global config.
+
 ## [2.1.6] - 2026-04-17
 
 ### Fixed

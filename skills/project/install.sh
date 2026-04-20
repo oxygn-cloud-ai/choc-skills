@@ -32,7 +32,13 @@ SKILL_SOURCE="${SCRIPT_DIR}/SKILL.md"
 COMMANDS_SOURCE="${SCRIPT_DIR}/commands"
 HOOKS_SOURCE="${SCRIPT_DIR}/hooks"
 HOOKS_TARGET="${HOME}/.claude/hooks"
+GLOBAL_SOURCE="${SCRIPT_DIR}/global"
+GLOBAL_TARGET="${HOME}/.claude"
 SETTINGS_FILE="${HOME}/.claude/settings.json"
+
+# Files installed to ~/.claude/ root (multi-session architecture + project standards).
+# Listed explicitly so --uninstall knows what to target and --check stays in sync.
+GLOBAL_DOCS=(MULTI_SESSION_ARCHITECTURE.md PROJECT_STANDARDS.md)
 
 # hook_matcher_for <basename> — emit the space-separated matcher(s) a hook
 # must be registered against in ~/.claude/settings.json hooks.PreToolUse.
@@ -107,16 +113,16 @@ ${BOLD}USAGE${RESET}
   ./install.sh --help       Show this help
 
 ${BOLD}INSTALLS TO${RESET}
-  ~/.claude/skills/project/SKILL.md       Main skill file
-  ~/.claude/commands/project.md           Router
-  ~/.claude/commands/project/*.md         Sub-command files
-  ~/.local/bin/project-*.sh               Launch/picker helpers
-  ~/.claude/hooks/*.sh                    PreToolUse enforcement hooks
-  ~/.claude/settings.json                 hooks.PreToolUse[] registrations
+  ~/.claude/skills/project/SKILL.md            Main skill file
+  ~/.claude/commands/project.md                Router
+  ~/.claude/commands/project/*.md              Sub-command files
+  ~/.local/bin/project-*.sh                    Launch/picker helpers
+  ~/.claude/hooks/*.sh                         PreToolUse enforcement hooks
+  ~/.claude/settings.json                      hooks.PreToolUse[] registrations
+  ~/.claude/MULTI_SESSION_ARCHITECTURE.md      Global multi-session architecture
+  ~/.claude/PROJECT_STANDARDS.md               Global project standards
 
 ${BOLD}REQUIREMENTS${RESET}
-  ~/.claude/MULTI_SESSION_ARCHITECTURE.md  (runtime reference)
-  ~/.claude/PROJECT_STANDARDS.md           (runtime reference)
   git, gh (authenticated), jq (for settings.json merge)
 EOF
   exit 0
@@ -346,7 +352,29 @@ else
   warn "PROJECT_CONFIG.schema.json not found at repo root — /project:new won't be able to copy it to new projects"
 fi
 
-# 6. Install hooks + register each in ~/.claude/settings.json hooks.PreToolUse
+# 6. Install global reference docs (MULTI_SESSION_ARCHITECTURE.md, PROJECT_STANDARDS.md)
+# These live at ~/.claude/ root because session prompts and audit.md reference
+# them via absolute paths (see skills/project/commands/audit.md). Shipped from
+# the skill source tree so every install is consistent; any customisation belongs
+# upstream in skills/project/global/ then re-install, not in the live copy.
+if [ -d "$GLOBAL_SOURCE" ]; then
+  mkdir -p "$GLOBAL_TARGET"
+  global_count=0
+  for name in "${GLOBAL_DOCS[@]}"; do
+    source="${GLOBAL_SOURCE}/${name}"
+    if [ -f "$source" ]; then
+      cp "$source" "${GLOBAL_TARGET}/${name}"
+      global_count=$((global_count + 1))
+    else
+      warn "Expected global doc missing from source: ${source}"
+    fi
+  done
+  ok "global docs: ${global_count} file(s) -> ${GLOBAL_TARGET}/"
+else
+  warn "No global/ directory found — MULTI_SESSION_ARCHITECTURE.md / PROJECT_STANDARDS.md not installed"
+fi
+
+# 7. Install hooks + register each in ~/.claude/settings.json hooks.PreToolUse
 # Hook files live in ~/.claude/hooks/ (machine-global, shared with other tools).
 # Registration is idempotent: re-running --force does not duplicate entries.
 if [ -d "$HOOKS_SOURCE" ]; then
@@ -376,11 +404,11 @@ else
   warn "No hooks/ directory found — enforcement hooks not installed"
 fi
 
-# 7. Record source repo path (for /project update)
+# 8. Record source repo path (for /project update)
 echo "$SCRIPT_DIR" > "${SKILL_TARGET}/.source-repo"
 ok "Source repo marker -> ${SKILL_TARGET}/.source-repo"
 
-# 8. Verify
+# 9. Verify
 ver=$(grep -m1 '^version:' "${SKILL_TARGET}/SKILL.md" 2>/dev/null | sed 's/^version: *//' || true)
 echo ""
 ok "project v${ver} installed successfully"

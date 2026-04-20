@@ -2,6 +2,18 @@
 
 All notable changes to the iterm2-tmux tool will be documented in this file.
 
+## [1.4.0] - 2026-04-19
+
+### Removed
+
+- Bundled iTerm2 plist (`iterm2/com.googlecode.iterm2.plist`) and the Step 4
+  auto-import prompt in `install.sh`. The plist embedded personal
+  `/Users/jamesshanahan` paths and only set two minor preferences (auto-hide
+  tmux client session, sync clipboard). Core skill functionality — per-session
+  tab orchestration, colour/watermark, auto-startup — is unaffected. macOS
+  users wanting those two preferences can enable them manually in
+  iTerm2 Preferences → General → tmux.
+
 ## [1.3.0] - 2026-04-17
 
 ### Fixed
