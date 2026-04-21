@@ -3,7 +3,7 @@
 This file defines **narrative standards** that apply to all projects using the multi-session architecture. Machine-readable configuration lives in each project's `PROJECT_CONFIG.json` (validated against `PROJECT_CONFIG.schema.json`).
 
 Referenced by:
-- `~/.claude/MULTI_SESSION_ARCHITECTURE.md` (session lifecycle)
+- `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` (session lifecycle)
 - Each project's `PROJECT_CONFIG.json` (structured config)
 - The `/project` skill (auditing, scaffolding, status)
 
@@ -41,7 +41,7 @@ EOF
 
 ## 2. GitHub Issues
 
-**GitHub Issues are NOT used for issue tracking.** Jira is the single source of truth (see `~/.claude/MULTI_SESSION_ARCHITECTURE.md` section 5).
+**GitHub Issues are NOT used for issue tracking.** Jira is the single source of truth (see `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` section 5).
 
 Every new repo should have GitHub Issues disabled:
 ```bash
@@ -139,9 +139,9 @@ git worktree add .worktrees/my-feature -b feature/foo   # ❌
 git worktree add ../fix-proj-42 -b fix/PROJ-42          # ❌
 ```
 
-See `~/.claude/MULTI_SESSION_ARCHITECTURE.md` §7.1 for the full rule, correct/incorrect examples, and enforcement architecture. Enforcement has three layers:
+See `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` §7.1 for the full rule, correct/incorrect examples, and enforcement architecture. Enforcement has three layers:
 
-1. **Tool-layer hook (hard block):** `~/.claude/hooks/block-worktree-add.sh` is registered as a `PreToolUse` hook in `~/.claude/settings.json`. Any Bash tool call matching `git worktree add` exits 2 unless the command inlines `GIT_WORKTREE_OVERRIDE=1`.
+1. **Tool-layer hook (hard block):** `$CLAUDE_DIR/hooks/block-worktree-add.sh` is registered as a `PreToolUse` hook in `$CLAUDE_DIR/settings.json`. Any Bash tool call matching `git worktree add` exits 2 unless the command inlines `GIT_WORKTREE_OVERRIDE=1`.
 2. **Audit detection (soft block):** `/project:audit` check #16 FAILs on any `.worktrees/<name>/` whose `<name>` is not in `PROJECT_CONFIG.json` `sessions.roles`. It also validates each role worktree's HEAD branch against a role-aware rule — **fixer** may be on `session/fixer` or `^fix/<JIRA_KEY>-[0-9]+` (active-work per §7.1); **implementer** may be on `session/implementer` or `^feature/<JIRA_KEY>-[0-9]+`; **all other roles** must be on `session/<role>` because they are read-only on source. Anything else FAILs.
 3. **Session-prompt guidance:** every `.claude/sessions/<role>.md` includes a "Worktree rule" reminder at session startup.
 
@@ -162,15 +162,15 @@ When auditing an existing repo against this standard:
 - [ ] Coverage thresholds match actual reach (or `coverage` job is excluded from required checks with documented deviation)
 - [ ] Jira epic configured in PROJECT_CONFIG.json
 - [ ] Deviations from these standards documented in PROJECT_CONFIG.json deviations array
-- [ ] Worktrees match `sessions.roles` — no extras, no missing, each parked on `session/<role>` (enforced by `/project:audit` check #16 and the `PreToolUse` hook in `~/.claude/settings.json` — see §7)
+- [ ] Worktrees match `sessions.roles` — no extras, no missing, each parked on `session/<role>` (enforced by `/project:audit` check #16 and the `PreToolUse` hook in `$CLAUDE_DIR/settings.json` — see §7)
 
 ---
 
 ## Finding this document
 
-This file lives at `~/.claude/PROJECT_STANDARDS.md`. It is the global standard for project configuration practices.
+This file ships as part of the `/project` skill (skill product). At runtime it is installed to `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md` — i.e. under `$CLAUDE_CONFIG_DIR` when that env var is set (e.g. `/workspace/.claude/PROJECT_STANDARDS.md`), otherwise `$HOME/.claude/PROJECT_STANDARDS.md`. Source of truth lives in `skills/project/global/PROJECT_STANDARDS.md` in the choc-skills repo; the installer copies it into the Claude config dir on every `--force` run.
 
 For the `/project` skill or any tool that needs to understand project standards:
-- **Path:** `/Users/oxygnserver01/.claude/PROJECT_STANDARDS.md`
+- **Path:** resolved via `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md`
 - **What it contains:** branch protection, CI monitoring, push discipline, coverage, documentation requirements, worktree strategy
 - **How to use it:** reference this file for narrative standards. Machine-readable config is in each project's `PROJECT_CONFIG.json`.

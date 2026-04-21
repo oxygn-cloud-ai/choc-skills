@@ -82,15 +82,25 @@ register_hook_in_settings() {
 }
 
 # remove_hook_registration <absolute-cmd-path>
-# Removes ALL PreToolUse entries whose .hooks[].command equals the path.
-# Used by --uninstall to de-register without touching unrelated hooks.
+# Removes the specific hook command entry from every PreToolUse matcher's
+# .hooks[] array, and drops matcher objects whose .hooks[] becomes empty.
+# Preserves unrelated sibling hooks that share a matcher object (CPT-175).
+#
+# Prior filter (`all(.command != $c)`) dropped the entire matcher object when
+# any of its hooks matched — collateral-deleting unrelated siblings. The
+# current two-step rebuild surgically removes only the caller-specified
+# command and only prunes matchers that become truly empty.
 remove_hook_registration() {
   local cmd="$1"
   [ -f "$SETTINGS_FILE" ] || return 0
   local tmp; tmp=$(mktemp)
-  jq --arg c "$cmd" \
-    '.hooks.PreToolUse |= ((. // []) | map(select((.hooks // []) | all(.command != $c))))' \
-    "$SETTINGS_FILE" > "$tmp" && mv "$tmp" "$SETTINGS_FILE"
+  jq --arg c "$cmd" '
+    .hooks.PreToolUse = (
+      (.hooks.PreToolUse // [])
+      | map(.hooks = ((.hooks // []) | map(select(.command != $c))))
+      | map(select((.hooks // []) | length > 0))
+    )
+  ' "$SETTINGS_FILE" > "$tmp" && mv "$tmp" "$SETTINGS_FILE"
 }
 
 # --force is accepted for command-line symmetry with the root install.sh, but

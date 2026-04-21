@@ -2,7 +2,9 @@
 
 A comprehensive guide to the `/project` skill — project repository administration for multi-session Claude Code workflows.
 
-**Skill version:** 2.1.4
+**Skill version:** 2.2.2
+
+> **Paths note** (CPT-174): throughout this guide, `$CLAUDE_DIR` means the Claude Code config directory, resolved from `$CLAUDE_CONFIG_DIR` when set and non-empty, otherwise `$HOME/.claude`. On machines where `CLAUDE_CONFIG_DIR` is set (e.g. to `/workspace/.claude`), every `$CLAUDE_DIR/...` path below lives under that relocated root.
 
 ---
 
@@ -59,8 +61,8 @@ Before using `/project`, you need:
 | tmux (for launch) | `tmux -V` | `brew install tmux` |
 | python3 | `python3 --version` | `brew install python3` |
 | jsonschema (for config validation) | `python3 -c "import jsonschema"` | `pip3 install jsonschema` |
-| `~/.claude/MULTI_SESSION_ARCHITECTURE.md` | `test -f ~/.claude/MULTI_SESSION_ARCHITECTURE.md` | Manual setup |
-| `~/.claude/PROJECT_STANDARDS.md` | `test -f ~/.claude/PROJECT_STANDARDS.md` | Manual setup |
+| `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` | `test -f $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` | Manual setup |
+| `$CLAUDE_DIR/PROJECT_STANDARDS.md` | `test -f $CLAUDE_DIR/PROJECT_STANDARDS.md` | Manual setup |
 
 Run `/project doctor` to check all prerequisites at once.
 
@@ -77,12 +79,12 @@ cd choc-skills/skills/project
 ### What gets installed
 
 ```
-~/.claude/skills/project/
+$CLAUDE_DIR/skills/project/
   SKILL.md                        # Main skill definition
   PROJECT_CONFIG.schema.json      # Schema for new projects
   .source-repo                    # Path back to source repo (for updates)
 
-~/.claude/commands/
+$CLAUDE_DIR/commands/
   project.md                      # Router (dispatches subcommands)
   project/
     new.md                        # /project:new
@@ -210,8 +212,8 @@ All tracking happens in **Jira** (not GitHub Issues, not GitHub PRs). Reviewer p
 
 **Pre-flight checks:**
 - Must be inside a git repo
-- Warns if `~/.claude/MULTI_SESSION_ARCHITECTURE.md` missing (reduced output)
-- Warns if `~/.claude/PROJECT_STANDARDS.md` missing (skips standard comparison)
+- Warns if `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` missing (reduced output)
+- Warns if `$CLAUDE_DIR/PROJECT_STANDARDS.md` missing (skips standard comparison)
 
 ### /project new
 
@@ -243,7 +245,7 @@ All tracking happens in **Jira** (not GitHub Issues, not GitHub PRs). Reviewer p
 | Session prompts | `.claude/sessions/<role>.md` for each role |
 | CI | `.github/workflows/test.yml` with language-appropriate test jobs. Failure tracking defaults to Master-session (no workflow jobs needed); `notify-failure`/`notify-recovery` are opt-in for workflow-jobs mode (Software) |
 | Branch protection | Required status checks, no force push (Software) |
-| Memory | `~/.claude/projects/<encoded-path>/memory/` initialized |
+| Memory | `$CLAUDE_DIR/projects/<encoded-path>/memory/` initialized |
 
 **Safety checks:**
 - Refuses to run inside an existing git repo
@@ -330,7 +332,7 @@ Scans `${TMUX_REPOS_DIR:-~/Repos}` for all directories with `.worktrees/`, launc
 
 **Pre-flight checks:**
 - Must be inside a git repo
-- Requires both `~/.claude/MULTI_SESSION_ARCHITECTURE.md` and `~/.claude/PROJECT_STANDARDS.md`
+- Requires both `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md` and `$CLAUDE_DIR/PROJECT_STANDARDS.md`
 - Reads `PROJECT_CONFIG.json` for project type and documented deviations
 
 ### /project config
@@ -375,7 +377,7 @@ If ANY check finds work, it warns with specifics and requires explicit "yes" con
 ```
 
 **How it works:**
-1. Reads `~/.claude/skills/project/.source-repo` (written during install)
+1. Reads `$CLAUDE_DIR/skills/project/.source-repo` (written during install)
 2. Runs `git pull` in the choc-skills repo
 3. Re-runs `install.sh --force` to update all files
 4. Reports the new installed version
@@ -404,12 +406,12 @@ Shows the full usage guide with all subcommands, session roles, project types, a
 
 Runs 9 health checks:
 
-1. Skill installed at `~/.claude/skills/project/SKILL.md`
+1. Skill installed at `$CLAUDE_DIR/skills/project/SKILL.md`
 2. Source repo marker exists and is reachable (catches unmounted drives)
-3. Router at `~/.claude/commands/project.md`
-4. 9 subcommand files in `~/.claude/commands/project/`
-5. Global architecture doc (`~/.claude/MULTI_SESSION_ARCHITECTURE.md`)
-6. Global project standards (`~/.claude/PROJECT_STANDARDS.md`)
+3. Router at `$CLAUDE_DIR/commands/project.md`
+4. 9 subcommand files in `$CLAUDE_DIR/commands/project/`
+5. Global architecture doc (`$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md`)
+6. Global project standards (`$CLAUDE_DIR/PROJECT_STANDARDS.md`)
 7. git installed
 8. gh installed
 9. gh authenticated
@@ -489,7 +491,7 @@ Session prompts live in the repo at `.claude/sessions/<role>.md`. They are thin 
 You are the **Fixer** for my-project.
 
 ## Protocol
-Read ~/.claude/MULTI_SESSION_ARCHITECTURE.md section 4 for your full protocol.
+Read $CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md section 4 for your full protocol.
 
 ## Project
 - Jira epic: CPT-42
@@ -662,8 +664,8 @@ When all gates pass, Master notifies you:
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `MULTI_SESSION_ARCHITECTURE.md` | `~/.claude/` | Global: 11 role definitions, workflow rules, Jira integration, release model |
-| `PROJECT_STANDARDS.md` | `~/.claude/` | Global: branch protection, CI monitoring, push discipline, coverage, docs requirements |
+| `MULTI_SESSION_ARCHITECTURE.md` | `$CLAUDE_DIR/` | Global: 11 role definitions, workflow rules, Jira integration, release model |
+| `PROJECT_STANDARDS.md` | `$CLAUDE_DIR/` | Global: branch protection, CI monitoring, push discipline, coverage, docs requirements |
 | `PROJECT_CONFIG.json` | Repo root | Per-project: Jira epic, GitHub settings, session roles, loop intervals, deviations |
 | `PROJECT_CONFIG.schema.json` | Repo root | Per-project: JSON Schema for config validation |
 | `.claude/sessions/<role>.md` | Repo | Per-project: session identity prompts (thin — point to architecture doc) |
@@ -677,8 +679,8 @@ When all gates pass, Master notifies you:
 |---------|-------|-----|
 | `/project:new` fails with "gh not authenticated" | gh CLI not logged in | Run `gh auth login` |
 | `/project:audit` reports all FAIL | Running in wrong directory | `cd` into a project repo first |
-| `~/.claude/MULTI_SESSION_ARCHITECTURE.md missing` | File deleted or never created | Restore from backup or recreate |
-| `~/.claude/PROJECT_STANDARDS.md missing` | Old setup (had GITHUB_CONFIG.md) | Create PROJECT_STANDARDS.md per v1.3.0 |
+| `$CLAUDE_DIR/MULTI_SESSION_ARCHITECTURE.md missing` | File deleted or never created | Restore from backup or recreate |
+| `$CLAUDE_DIR/PROJECT_STANDARDS.md missing` | Old setup (had GITHUB_CONFIG.md) | Create PROJECT_STANDARDS.md per v1.3.0 |
 | Skill not appearing in Claude Code | Not installed | `./install.sh --force` from skills/project/ |
 | Skill is outdated | Source repo not pulled | `/project update` |
 | `doctor` reports `.source-repo` unreachable | External drive unmounted | Mount drive and re-run |

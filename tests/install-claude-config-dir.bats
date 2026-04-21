@@ -154,6 +154,65 @@ teardown() {
   [ ! -d "${FAKE_CLAUDE}/commands/project" ]
 }
 
+# --- CPT-175: remove_hook_registration must preserve unrelated sibling hooks
+#     that share a matcher object. The pre-fix filter `all(.command != $c)`
+#     dropped the entire matcher whenever any of its hooks matched,
+#     collateral-deleting siblings installed by other tools. ---
+
+@test "CPT-175: project --uninstall preserves unrelated sibling PreToolUse hooks" {
+  # Manually prepare a settings.json where /project's block-worktree-add.sh
+  # shares a matcher with an unrelated sibling hook, then run the skill's
+  # uninstall and assert the sibling survives.
+  CLAUDE_CONFIG_DIR="$FAKE_CLAUDE" bash "${REPO_DIR}/skills/project/install.sh" --force >/dev/null 2>&1
+
+  # Verify install registered our block-worktree-add.sh against the Bash matcher.
+  [ -f "${FAKE_CLAUDE}/settings.json" ]
+  local our_cmd="${FAKE_CLAUDE}/hooks/block-worktree-add.sh"
+  local our_count
+  our_count=$(jq --arg c "$our_cmd" \
+    '[.hooks.PreToolUse[]? | .hooks[]? | select(.command == $c)] | length' \
+    "${FAKE_CLAUDE}/settings.json")
+  [ "$our_count" -eq 1 ]
+
+  # Inject an unrelated sibling hook into the same matcher object manually.
+  local sibling="/home/fake/.local/bin/unrelated-tool.sh"
+  local tmp; tmp=$(mktemp)
+  jq --arg s "$sibling" \
+    '.hooks.PreToolUse |= [.[] | if .matcher == "Bash" then .hooks += [{"type":"command","command":$s}] else . end]' \
+    "${FAKE_CLAUDE}/settings.json" > "$tmp"
+  mv "$tmp" "${FAKE_CLAUDE}/settings.json"
+
+  # Confirm sibling got added.
+  local sibling_count
+  sibling_count=$(jq --arg c "$sibling" \
+    '[.hooks.PreToolUse[]? | .hooks[]? | select(.command == $c)] | length' \
+    "${FAKE_CLAUDE}/settings.json")
+  [ "$sibling_count" -eq 1 ]
+
+  # Now uninstall /project. Sibling should survive; our command should go.
+  CLAUDE_CONFIG_DIR="$FAKE_CLAUDE" run bash "${REPO_DIR}/skills/project/install.sh" --uninstall
+  [ "$status" -eq 0 ]
+
+  local post_sibling_count post_our_count
+  post_sibling_count=$(jq --arg c "$sibling" \
+    '[.hooks.PreToolUse[]? | .hooks[]? | select(.command == $c)] | length' \
+    "${FAKE_CLAUDE}/settings.json")
+  post_our_count=$(jq --arg c "$our_cmd" \
+    '[.hooks.PreToolUse[]? | .hooks[]? | select(.command == $c)] | length' \
+    "${FAKE_CLAUDE}/settings.json")
+
+  if [ "$post_sibling_count" -ne 1 ]; then
+    echo "FAIL: unrelated sibling hook ${sibling} was collateral-deleted on uninstall" >&2
+    jq . "${FAKE_CLAUDE}/settings.json" >&2
+    return 1
+  fi
+  if [ "$post_our_count" -ne 0 ]; then
+    echo "FAIL: our hook ${our_cmd} not properly de-registered on uninstall" >&2
+    jq . "${FAKE_CLAUDE}/settings.json" >&2
+    return 1
+  fi
+}
+
 # --- Regression: no installer should contain unwrapped ~/.claude paths
 #     outside of the CLAUDE_DIR-definition line, comments, and self-documenting
 #     ${CLAUDE_CONFIG_DIR:-~/.claude} mentions. ---

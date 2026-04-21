@@ -69,9 +69,11 @@ expected=$(jq -r '.jira.epicKey // empty' "$config_path" 2>/dev/null || true)
 # Match — allow
 [ "$proposed" = "$expected" ] && exit 0
 
-# Mismatch — block with a clear message
+# Mismatch — block with a clear message.
+# CPT-175: print the actual running-hook path via ${BASH_SOURCE[0]} so the
+# banner matches reality on CLAUDE_CONFIG_DIR machines.
 cat >&2 <<EOF
-BLOCKED by ~/.claude/hooks/verify-jira-parent.sh
+BLOCKED by ${BASH_SOURCE[0]}
 
 Proposed Jira parent: $proposed
 PROJECT_CONFIG.json jira.epicKey (from $config_path): $expected

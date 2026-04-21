@@ -39,10 +39,13 @@ if printf '%s' "$cmd" | grep -qE "$pattern_override"; then
 fi
 
 # Block with a clear message. Stderr is surfaced back to the calling agent.
-cat >&2 <<'EOF'
-BLOCKED by ~/.claude/hooks/block-worktree-add.sh
+# CPT-175: print the actual running-hook path via ${BASH_SOURCE[0]} so the
+# banner matches reality on CLAUDE_CONFIG_DIR machines (was hardcoded to
+# ~/.claude/hooks/... which misdirects debugging under a relocated config dir).
+cat >&2 <<EOF
+BLOCKED by ${BASH_SOURCE[0]}
 
-`git worktree add` is forbidden by MULTI_SESSION_ARCHITECTURE.md §7.1.
+\`git worktree add\` is forbidden by MULTI_SESSION_ARCHITECTURE.md §7.1.
 
 The 11 role worktrees are fixed. Feature/fix work is a branch CREATED INSIDE
 the existing role worktree, never a new worktree:

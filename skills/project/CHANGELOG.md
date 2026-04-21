@@ -2,6 +2,20 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.2.2] - 2026-04-21
+
+### Fixed (CPT-175 — Codex adversarial-review follow-ups to CPT-174)
+
+- **`/project --uninstall` no longer collateral-deletes unrelated PreToolUse sibling hooks** (P2, CPT-175). The previous `remove_hook_registration()` jq filter `map(select((.hooks // []) | all(.command != $c)))` dropped the entire matcher object whenever any of its hooks matched — so if a user or another tool had grouped commands under the same matcher (legal `settings.json` shape), uninstalling `/project` silently corrupted their config by removing the siblings too. Reproduction: a `Bash` matcher containing `[block-worktree-add.sh, unrelated-other-tool.sh]` lost both on uninstall. Replaced with a two-step rebuild — `map(.hooks = ((.hooks // []) | map(select(.command != $c))))` strips only the target command from each matcher's `.hooks[]`, then `map(select((.hooks // []) | length > 0))` drops matchers that genuinely became empty. Unrelated siblings survive; empty matcher objects are cleaned up. New BATS regression in `tests/install-claude-config-dir.bats` ("CPT-175: project --uninstall preserves unrelated sibling PreToolUse hooks") asserts sibling survival directly; bats suite 12/12 post-fix.
+
+- **Hardcoded `~/.claude/` leftovers cleaned across shipped skill product** (P3, CPT-175):
+  - `hooks/{block-worktree-add,verify-jira-parent}.sh` — banner lines `BLOCKED by ~/.claude/hooks/...` replaced with `BLOCKED by ${BASH_SOURCE[0]}` so the printed path matches the hook's actual install location on `CLAUDE_CONFIG_DIR` machines.
+  - `global/PROJECT_STANDARDS.md` "Finding this document" — removed the leaked machine-specific `/Users/oxygnserver01/.claude/PROJECT_STANDARDS.md` line and generalized the path discussion to `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/PROJECT_STANDARDS.md`.
+  - `global/MULTI_SESSION_ARCHITECTURE.md` — same fix for its own "Finding this document" block (removed second `/Users/oxygnserver01/...` leak), and generalized the header "Referenced by" list to factor the prefix. All body-text `~/.claude/` references converted to `$CLAUDE_DIR/` to match the paths-note convention.
+  - `README.md` — added a Paths note box at the top defining `$CLAUDE_DIR`; updated prerequisites (removed stale "NOT installed by this skill" claim — v2.2.0 does ship them); fixed manual-uninstall snippet to resolve `$CLAUDE_DIR` inline; added a troubleshooting row for "hooks don't fire on CLAUDE_CONFIG_DIR machine".
+  - `USER_GUIDE.md` — added same Paths note; replaced every literal `~/.claude/` in body with `$CLAUDE_DIR/`; version stamp bumped to 2.2.2.
+  - Final sweep: `grep -rn '/Users/' skills/project/` returns zero hits; no runtime `~/.claude/` references remain in shipped product except the single Paths-note explaining the convention.
+
 ## [2.2.1] - 2026-04-20
 
 ### Fixed

@@ -2,9 +2,9 @@
 
 This is the **authoritative global standard** for how Claude sessions collaborate on any project. Every project must follow this architecture unless explicitly overridden in the project's CLAUDE.md (with documented justification).
 
-Referenced by:
-- `~/.claude/CLAUDE.md` (global rules)
-- `~/.claude/PROJECT_STANDARDS.md` (branch protection, CI, documentation standards)
+Referenced by (paths resolved from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/`):
+- `CLAUDE.md` (global rules)
+- `PROJECT_STANDARDS.md` (branch protection, CI, documentation standards)
 - Each project's `CLAUDE.md` and `.claude/sessions/*.md` startup prompts
 - The `/project` skill (reads this file to understand session structure)
 
@@ -430,7 +430,7 @@ git worktree add ../feature-CPT-42  -b feature/CPT-42    # ❌ forbidden
 
 Three layers, in order of strength:
 
-1. **Tool-layer hook (hard block):** `~/.claude/hooks/block-worktree-add.sh` is registered as a `PreToolUse` hook in `~/.claude/settings.json`. Any Bash tool call matching `git worktree add` is rejected with exit code 2 unless the command inlines `GIT_WORKTREE_OVERRIDE=1` as a prefix. The inline requirement forces each bypass to be a conscious human action.
+1. **Tool-layer hook (hard block):** `$CLAUDE_DIR/hooks/block-worktree-add.sh` is registered as a `PreToolUse` hook in `$CLAUDE_DIR/settings.json`. Any Bash tool call matching `git worktree add` is rejected with exit code 2 unless the command inlines `GIT_WORKTREE_OVERRIDE=1` as a prefix. The inline requirement forces each bypass to be a conscious human action.
 2. **Audit detection (soft block):** `/project:audit` check #16 FAILs on any `.worktrees/<name>/` whose `<name>` is not in `PROJECT_CONFIG.json` `sessions.roles`. It also validates each role worktree's HEAD branch against a role-aware rule — **fixer** may be on `session/fixer` or a branch matching `^fix/<JIRA_KEY>-[0-9]+` (active-work pattern per §7.1); **implementer** may be on `session/implementer` or `^feature/<JIRA_KEY>-[0-9]+`; **all other roles** (master, planner, merger, chk1, chk2, performance, playtester, reviewer, triager) must be on `session/<role>` because they are read-only on source per §1. Any other HEAD value FAILs (indicates a re-pointed worktree, forbidden).
 3. **Session-prompt guidance:** every `.claude/sessions/<role>.md` includes a "Worktree rule" reminder that feature/fix work is a branch inside the existing worktree, never a new worktree.
 
@@ -535,9 +535,9 @@ Each project documents in its CLAUDE.md or PROJECT_CONFIG.json:
 
 ## Finding this document
 
-This file lives at `~/.claude/MULTI_SESSION_ARCHITECTURE.md`. It is the global standard.
+This file ships as part of the `/project` skill (skill product). At runtime it is installed to `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md` — i.e. under `$CLAUDE_CONFIG_DIR` when that env var is set, otherwise `$HOME/.claude/`. Source of truth lives in `skills/project/global/MULTI_SESSION_ARCHITECTURE.md` in the choc-skills repo; the installer copies it into the Claude config dir on every `--force` run.
 
 For the `/project` skill or any tool that needs to understand the session structure:
-- **Path:** `/Users/oxygnserver01/.claude/MULTI_SESSION_ARCHITECTURE.md`
+- **Path:** resolved via `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md`
 - **What it contains:** role definitions, workflow rules, Jira integration, release model, code permissions, escalation rules
 - **How to use it:** read this file at session start to understand the multi-session architecture. When creating a new project, use this as the template for setting up worktrees and session prompts. When auditing a project, verify it conforms to this standard.
