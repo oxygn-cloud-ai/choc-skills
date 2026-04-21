@@ -343,7 +343,7 @@ When filing any issue, every session must:
 
 ### CI failure auto-filing to Jira
 
-The **Master session** monitors CI status on the local machine via `gh run list` and files failures as Jira tasks under the project's epic. Jira credentials are provided by BWS (Bitwarden Secrets Manager) on the machine where sessions run. GitHub Actions workflows do not file to Jira directly — they only run tests and report pass/fail.
+The **Master session** monitors CI status on the local machine via `gh run list` and files failures as Jira tasks under the project's epic. Jira credentials are injected into the shell environment from AWS Secrets Manager by `~/.bashrc` (see `$CLAUDE_DIR/PROJECT_STANDARDS.md` §9). GitHub Actions workflows do not file to Jira directly — they only run tests and report pass/fail.
 
 ### No GitHub Issues for tracking
 

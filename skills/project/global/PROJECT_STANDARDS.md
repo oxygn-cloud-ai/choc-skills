@@ -68,7 +68,7 @@ CI failures are tracked in **Jira**, not GitHub Issues. The mechanism:
    - Description: run URL, commit SHA, last 50 lines of failed log
 3. When CI recovers, Master comments on the Jira task and transitions it to Done
 
-Jira credentials are provided by BWS (Bitwarden Secrets Manager) on the machine where sessions run. CI workflows in GitHub Actions do **not** need Jira secrets — they only run tests and report pass/fail status.
+Jira credentials are injected into the shell environment from AWS Secrets Manager by `~/.bashrc` (see §9). CI workflows in GitHub Actions do **not** need Jira secrets — they only run tests and report pass/fail status.
 
 ## 4. Push Discipline
 
@@ -163,6 +163,35 @@ When auditing an existing repo against this standard:
 - [ ] Jira epic configured in PROJECT_CONFIG.json
 - [ ] Deviations from these standards documented in PROJECT_CONFIG.json deviations array
 - [ ] Worktrees match `sessions.roles` — no extras, no missing, each parked on `session/<role>` (enforced by `/project:audit` check #16 and the `PreToolUse` hook in `$CLAUDE_DIR/settings.json` — see §7)
+
+## 9. Secrets and Environment
+
+All API credentials required by Claude sessions are injected into the shell environment from **AWS Secrets Manager** by `~/.bashrc` at startup on `choc-aws` (Ubuntu 24.04 on AWS Lightsail). Code and tool calls MUST reference these by env var name only — never by value — per the global rule in `$CLAUDE_DIR/CLAUDE.md`.
+
+AWS credentials themselves come from the Lightsail instance role; no long-lived AWS keys exist on disk.
+
+**Env vars populated** (identifiers only — values never live in any file):
+
+| Env var | Purpose | Secrets Manager entry |
+|---|---|---|
+| `CLAUDE_CODE_OAUTH_TOKEN` | Claude Code login | `claude-code/oauth-token` |
+| `JIRA_API_KEY` | Atlassian / Jira API | `claude-code/atlassian` |
+| `JIRA_URL` | Jira site base URL | `claude-code/jira-url` |
+| `JIRA_EMAIL` | Jira account email | `claude-code/jira-email` |
+| `BB_API_KEY` | Bitbucket API | `claude-code/choc-bb` |
+| `GH_TOKEN` | GitHub PAT | `claude-code/github` |
+| `HF_TOKEN` | Hugging Face | `claude-code/huggingface` |
+| `OPENROUTER_API_KEY` | OpenRouter | `claude-code/openrouter` |
+| `RUNPOD_API_KEY` | RunPod | `claude-code/runpod` |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot | `claude-code/telegram` |
+
+**Rules:**
+
+- NEVER write a secret value into any file, command-line arg, PR description, log, commit message, or tool parameter.
+- NEVER `echo` a secret value. To verify a var is set, check its length: `[ -n "$GH_TOKEN" ] && echo set`.
+- **Rotation:** update the value in AWS Secrets Manager and `source ~/.bashrc`. No file edits required.
+- **Adding a secret:** create it under the `claude-code/<name>` namespace, then add a guarded `if tok=$(sm claude-code/<name>) …` block to `~/.bashrc`. Never paste the raw value into the file — `sm` fetches it at runtime.
+- **Non-`choc-aws` hosts:** if/when sessions run on a different host, the mechanism may differ; the rule (reference by env var, never by value) is invariant.
 
 ---
 
