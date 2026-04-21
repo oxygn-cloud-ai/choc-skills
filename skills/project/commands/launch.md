@@ -37,8 +37,9 @@ COMMON=$(git rev-parse --git-common-dir 2>/dev/null) || {
 }
 REPO_ROOT=$(cd "$COMMON/.." && pwd)
 ```
-`REPO_ROOT` is always the main repo path — the directory that contains `.worktrees/`.
-Verify `$REPO_ROOT/.worktrees/` exists; if not, STOP (no worktrees to launch into).
+`REPO_ROOT` is always the main repo path — the directory that contains (or will contain) `.worktrees/`.
+
+**Do NOT STOP here if `.worktrees/` is missing.** In single-project mode, Step 2.5 below auto-materialises missing role worktrees with user confirmation. In `--all` mode, Step 2's loop already skips repos without `.worktrees/`.
 
 Parse `$ARGUMENTS` for flags:
 - `--all` → scan `${TMUX_REPOS_DIR:-~/Repos}` for all projects with `.worktrees/`
@@ -54,11 +55,7 @@ PROJECT_NAME=$(basename "$REPO_ROOT")
 PROJECT_SLUG=$(echo "$PROJECT_NAME" | tr '.' '-' | tr ':' '-' | tr ' ' '-')
 ```
 
-Verify `.worktrees/` exists:
-```bash
-test -d "$REPO_ROOT/.worktrees"
-```
-If missing: "No worktrees found at $REPO_ROOT/.worktrees/. Run /project:new to create a project with worktrees, or /project:config to add them."
+**Missing `.worktrees/` is handled by Step 2.5 — do not STOP here.** The user explicitly invoked `/project:launch` on this project, so absent worktrees are a configuration gap to fix (with confirmation), not a reason to abort.
 
 ### All projects mode (`--all`)
 
@@ -70,6 +67,54 @@ for dir in "$REPOS_DIR"/*/; do
   fi
 done
 ```
+
+**Missing-worktree policy in `--all`:** repos without `.worktrees/` are silently skipped. Step 2.5 is NOT run for them. Rationale: in bulk mode the lack of `.worktrees/` is the intentional signal that a repo isn't set up for multi-session work — auto-materialising across an entire `$REPOS_DIR` would quietly promote unrelated projects into multi-session configuration. If a listed repo IS supposed to be multi-session but is missing some role worktrees, launch it individually with `/project:launch` so Step 2.5's confirmation runs on it.
+
+## Step 2.5: Materialise missing role worktrees (single-project mode only)
+
+**Scope:** single-project mode. Skipped entirely in `--all` mode per the policy note above.
+
+Invoke the helper to build a plan:
+
+```bash
+~/.local/bin/project-materialise-worktrees.sh --list --repo "$REPO_ROOT"
+```
+
+The helper reads `PROJECT_CONFIG.json` `.sessions.roles[]`, checks each role's worktree presence via `git worktree list --porcelain` (not `-d` — a stray plain directory doesn't count as present), and prints a plan. Per role the action is one of:
+
+- `REUSE` — local `session/<role>` branch exists and is free → attach worktree to it (no `-b`).
+- `TRACK` — only `origin/session/<role>` exists → create local tracking branch (`--track -b session/<role> … origin/session/<role>`).
+- `CREATE` — neither exists → new `session/<role>` branch from the detected default branch (`PROJECT_CONFIG.json` `.github.defaultBranch` → `git symbolic-ref refs/remotes/origin/HEAD` → error).
+- `CONFLICT` — `session/<role>` is already checked out at another worktree; the script **will not** try to move it. Operator must resolve before retrying.
+- `STRAY` — `.worktrees/<role>/` exists as a plain directory (not a registered worktree); operator must remove or inspect before retrying.
+
+### If the plan is empty
+
+If the helper prints `0 missing worktrees — nothing to do`, continue to Step 3 immediately.
+
+### If the plan is non-empty
+
+Show the plan verbatim to the user and ask for confirmation:
+
+> Create N worktree(s)? [y/N]
+
+- **y / yes** → run the helper with `--execute`:
+  ```bash
+  ~/.local/bin/project-materialise-worktrees.sh --execute --repo "$REPO_ROOT"
+  ```
+  - Exit 0 → continue to Step 3.
+  - Exit 4 (partial failure) → show the helper's stderr to the user and **abort the launch**. The user resolves the underlying conflict (free the branch, remove the stray dir) and re-runs `/project:launch`.
+  - Any other non-zero → abort and report.
+
+- **n / no / anything else** → abort with "Launch cancelled — role worktrees are required before /project:launch can proceed."
+
+### Interaction with `--dry-run`
+
+If the CLI flag `--dry-run` was passed (parsed in Step 2), Step 2.5 runs `--list` only, prints the plan, and **continues** to Step 3 so the rest of the launch proceeds under its own dry-run semantics. No `--execute`, no prompt, no creation.
+
+### Policy note — GIT_WORKTREE_OVERRIDE
+
+The helper inlines `GIT_WORKTREE_OVERRIDE=1` on every `git worktree add` to bypass the `block-worktree-add.sh` PreToolUse hook. This is the sanctioned setup-automation bypass per `MULTI_SESSION_ARCHITECTURE.md §7.1`; `/project:launch` and `/project:new` are the two authorised boundaries. No other command or agent may silently bypass.
 
 ## Step 3: Read architecture and config
 
@@ -332,4 +377,11 @@ project launch --all — $N projects launched
 - [ ] Report shows accurate status table with loop intervals and readiness-timeout markers
 - [ ] Step 8a invokes `~/.local/bin/tmux-iterm-tabs.sh --session "$PROJECT_SLUG"` in single-project mode on macOS when iTerm2 is running. Skipped for --dry-run, --all, non-macOS, or iTerm2 not running. Failure does not abort the launch.
 - [ ] `tmux-iterm-tabs.sh --session` iterates `tmux list-windows -t <slug>` (NOT global `tmux ls`), so tabs are scoped to the current project's windows only — no leakage from other projects' tmux sessions.
+- [ ] Step 2.5 invokes `~/.local/bin/project-materialise-worktrees.sh --list` and displays the missing-worktree plan to the user before any creation. User confirmation required before `--execute`; on "n" the launch aborts cleanly. Helper exit 4 surfaces stderr and aborts.
+- [ ] Presence check for `.worktrees/<role>/` uses `git worktree list --porcelain`, not `-d` — stray plain directories are flagged as STRAY, not treated as registered.
+- [ ] Branch precedence: local `session/<role>` (REUSE) → remote `origin/session/<role>` (TRACK with --track) → default branch (CREATE). Branch already checked out elsewhere = CONFLICT, fails loudly.
+- [ ] Default-branch detection: `PROJECT_CONFIG.json .github.defaultBranch` → `git symbolic-ref --short refs/remotes/origin/HEAD` → error. Never hardcoded `main`.
+- [ ] `--dry-run` CLI flag: Step 2.5 runs `--list` only, never `--execute`. No prompt.
+- [ ] `--all` mode SKIPS Step 2.5. Repos without `.worktrees/` stay skipped. Rationale documented in Step 2.
+- [ ] Helper uses `GIT_WORKTREE_OVERRIDE=1` inline on every `git worktree add`. Policy exception documented in launch.md and `hooks/block-worktree-add.sh`.
 </success_criteria>

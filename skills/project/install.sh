@@ -157,6 +157,7 @@ if [ "${1:-}" = "--uninstall" ]; then
   [ -f "${CLAUDE_DIR}/commands/project.md" ] && rm -f "${CLAUDE_DIR}/commands/project.md" && ok "Removed router" || true
   [ -f "${HOME}/.local/bin/project-picker.sh" ] && rm -f "${HOME}/.local/bin/project-picker.sh" && ok "Removed picker script" || true
   [ -f "${HOME}/.local/bin/project-launch-session.sh" ] && rm -f "${HOME}/.local/bin/project-launch-session.sh" && ok "Removed launch-session script" || true
+  [ -f "${HOME}/.local/bin/project-materialise-worktrees.sh" ] && rm -f "${HOME}/.local/bin/project-materialise-worktrees.sh" && ok "Removed materialise-worktrees script" || true
 
   # De-register hooks from settings.json but leave the hook files in place.
   # Rationale: other tools / future skills may share the hook files; settings.json
@@ -248,6 +249,12 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     ok "Launch-session script: ${HOME}/.local/bin/project-launch-session.sh"
   else
     err "Launch-session script: not installed (run install.sh --force) — /project:launch will fail without it"; issues=$((issues + 1))
+  fi
+
+  if [ -f "${HOME}/.local/bin/project-materialise-worktrees.sh" ]; then
+    ok "Materialise-worktrees script: ${HOME}/.local/bin/project-materialise-worktrees.sh"
+  else
+    err "Materialise-worktrees script: not installed (run install.sh --force) — /project:launch Step 2.5 will fail when worktrees are missing"; issues=$((issues + 1))
   fi
 
   # Hook file + registration check
@@ -433,6 +440,7 @@ printf "  ${DIM}%-50s${RESET} (router)\n" "${CLAUDE_DIR}/commands/project.md"
 [ -d "$COMMANDS_TARGET" ] && printf "  ${DIM}%-50s${RESET} (sub-commands)\n" "${COMMANDS_TARGET}/"
 [ -f "${BIN_TARGET}/project-picker.sh" ] && printf "  ${DIM}%-50s${RESET} (session picker)\n" "${BIN_TARGET}/project-picker.sh"
 [ -f "${BIN_TARGET}/project-launch-session.sh" ] && printf "  ${DIM}%-50s${RESET} (launch helper)\n" "${BIN_TARGET}/project-launch-session.sh"
+[ -f "${BIN_TARGET}/project-materialise-worktrees.sh" ] && printf "  ${DIM}%-50s${RESET} (worktree materialiser)\n" "${BIN_TARGET}/project-materialise-worktrees.sh"
 [ -d "$HOOKS_TARGET" ] && printf "  ${DIM}%-50s${RESET} (enforcement hooks)\n" "${HOOKS_TARGET}/"
 echo ""
 info "Usage: /project or /project help"

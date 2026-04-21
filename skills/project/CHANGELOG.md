@@ -2,6 +2,32 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.3.0] - 2026-04-21
+
+### Added
+
+- **`/project:launch` now materialises missing role worktrees on demand** (CPT follow-up to `/project:audit` gaps). Previously Step 1 / Step 2 STOPped with "No worktrees found at $REPO_ROOT/.worktrees/. Run /project:new …" whenever `.worktrees/` was missing or incomplete, forcing the user to pivot to a different command. Now the user invokes `/project:launch` once; the new Step 2.5 surfaces a plan of missing role worktrees and — on `y` confirmation — creates them via a new helper script before proceeding to the normal tmux + Claude launch flow. Scope is intentionally **single-project mode only**: `--all` still skips repos without `.worktrees/` (documented, not a bug — a repo without `.worktrees/` is signalling that it isn't multi-session, and bulk materialisation would silently promote unrelated repos).
+
+- **New helper `skills/project/bin/project-materialise-worktrees.sh`** owns the mechanics. Installed automatically by `install.sh` to `~/.local/bin/`. Contracts:
+  - `--list` prints the missing-worktree plan (one line per role with action ∈ REUSE / TRACK / CREATE / CONFLICT / STRAY) and exits 0. `--execute` performs the `git worktree add` calls.
+  - Branch precedence: local `refs/heads/session/<role>` (REUSE, no `-b`) → `refs/remotes/origin/session/<role>` (TRACK with `--track -b`) → default branch (CREATE with `-b`). Branch already checked out elsewhere is reported as CONFLICT — never silently moved.
+  - Presence uses `git worktree list --porcelain`, not `[ -d .worktrees/<role> ]` — stray plain directories are flagged as STRAY so the operator can inspect before the script stomps them.
+  - Default-branch detection order: `--default-branch` flag → `PROJECT_CONFIG.json .github.defaultBranch` → `git symbolic-ref --short refs/remotes/origin/HEAD` → exit 2. No hardcoded `main` fallback (fixes repos on `master` / `develop` / custom defaults).
+  - Runs `git worktree prune` at start so a previously `rm -rf`'d worktree doesn't block re-materialisation with "already registered".
+  - Exit codes: 0 success, 1 usage, 2 missing deps / undetectable default branch, 4 partial failure. `/project:launch` Step 2.5 surfaces exit 4's stderr and aborts the launch; operator fixes conflicts and re-runs.
+
+- **BATS coverage:** new `tests/project-materialise-worktrees.bats` — 15 tests covering `--help`, `--list`, `--execute`, branch precedence (REUSE / TRACK / CREATE), default-branch detection (config / symbolic-ref / `--default-branch` override), stray-directory detection, branch-in-use CONFLICT handling, and stale-admin-data pruning. All 15 green against the v2.3.0 implementation.
+
+### Changed
+
+- **`hooks/block-worktree-add.sh` banner comment** now names the two authorised automation boundaries for inline `GIT_WORKTREE_OVERRIDE=1` — `/project:new` (scaffold) and `/project:launch` Step 2.5 (gap-fill). Any other skill-level bypass is a policy violation. Hook behaviour unchanged — this is documentation only, addressing a gap raised in pre-merge review: "you're normalising around a policy exception without writing down the policy".
+
+- **`skills/project/commands/launch.md`** success-criteria list expanded with 7 new items covering Step 2.5, presence-check semantics, branch precedence, default-branch detection, `--dry-run` and `--all`-mode interactions, and the `GIT_WORKTREE_OVERRIDE` policy exception.
+
+### Known out-of-scope
+
+- `/project:new` Step 9's worktree-creation loop still uses bare `git worktree add` (no `GIT_WORKTREE_OVERRIDE=1` prefix) — a pre-existing issue that makes `/project:new` fail on machines with the hook installed. Filed for a follow-up change; not fixed here to keep this change focused.
+
 ## [2.2.2] - 2026-04-21
 
 ### Fixed (CPT-175 — Codex adversarial-review follow-ups to CPT-174)

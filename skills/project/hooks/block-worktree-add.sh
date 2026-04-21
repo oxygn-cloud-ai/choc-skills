@@ -11,6 +11,14 @@
 # Bypass: prefix the command with GIT_WORKTREE_OVERRIDE=1 inline. The inline
 # form is deliberate — it forces the human to consciously authorise each
 # bypass rather than setting a long-lived env var and forgetting about it.
+#
+# Authorised automation boundaries (the only skill-level code sanctioned to
+# inline GIT_WORKTREE_OVERRIDE=1):
+#   - /project:new  (initial multi-session scaffold, creates 11 role worktrees)
+#   - /project:launch Step 2.5 via bin/project-materialise-worktrees.sh
+#     (fills gaps when role worktrees are missing at launch time).
+# Any other skill, agent, or command that bypasses this hook without being
+# listed here is violating policy — treat such a bypass as a bug.
 
 set -u
 
