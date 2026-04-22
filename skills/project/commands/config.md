@@ -17,6 +17,14 @@ Interactively modify the current project's configuration. Changes are persisted 
 
 <process>
 
+## Prompting fallback (v2.4.0+)
+
+This process uses `AskUserQuestion` — a Claude Code built-in tool — for structured multi-choice prompts and for confirmations. **If `AskUserQuestion` is not available in the current session** (an older Claude Code build, or a custom harness that does not expose it), fall back to a numbered-list plain-text prompt and wait for the user's numeric reply. Alongside the fallback, emit this one-line install hint:
+
+> Note: `AskUserQuestion` is a Claude Code built-in. Update Claude Code to the latest release, or enable the tool in your harness configuration, to get structured prompts.
+
+Every subsequent "ask via AskUserQuestion" instruction in this file is subject to this fallback — do not re-state it inline.
+
 ## Step 1: Pre-checks
 
 ```bash
@@ -122,13 +130,26 @@ done
 
 ### Configure loops
 - Loop-capable roles: master, triager, reviewer, merger, chk1, chk2, fixer, implementer. Never offer planner/performance/playtester — they're on-demand only.
-- Show current `sessions.loops` from PROJECT_CONFIG.json with intervals and prompt paths
-- Ask which role to edit (multi-select OK)
+- Show current `sessions.loops` from PROJECT_CONFIG.json with intervals and prompt paths.
+- Ask which role to edit (multi-select OK).
 - For each selected role, ask:
-  - Interval in minutes (integer, 0 = disable loop)
-  - Prompt path relative to worktree root (default `loops/loop.md`)
-- Verify the prompt file exists at `.worktrees/<role>/<prompt-path>`. If missing, offer to create it with a role-appropriate template (same templates as `/project:new` Step 10.5).
-- Update `sessions.loops.<role>` in PROJECT_CONFIG.json
+  - Interval in minutes (integer, 0 = disable loop).
+  - Prompt path relative to worktree root (default `loops/loop.md`).
+- **Install missing loop.md from template** (new behaviour, v2.4.0+). Verify the prompt file exists at `.worktrees/<role>/<prompt-path>`. If missing:
+  ```bash
+  TEMPLATES_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/templates/loops"
+  if [ -f "$TEMPLATES_DIR/$role.md" ]; then
+    mkdir -p ".worktrees/$role/loops"
+    cp "$TEMPLATES_DIR/$role.md" ".worktrees/$role/<prompt-path>"
+    git -C ".worktrees/$role" add "<prompt-path>"
+    git -C ".worktrees/$role" commit --quiet -m "feat: add loop prompt for $role"
+    git -C ".worktrees/$role" push --quiet -u origin HEAD 2>/dev/null || true
+  else
+    echo "Template not found at $TEMPLATES_DIR/$role.md — re-run skills/project/install.sh --force, or edit .worktrees/$role/<prompt-path> manually." >&2
+  fi
+  ```
+  No user confirmation is asked — installing a missing loop.md is always safe (cannot overwrite anything; file did not exist).
+- Update `sessions.loops.<role>` in PROJECT_CONFIG.json.
 - Remind user: changes take effect on next `/project:launch`. Currently-looping sessions must be sent `/loop` again to pick up new intervals.
 
 ### Manage env vars

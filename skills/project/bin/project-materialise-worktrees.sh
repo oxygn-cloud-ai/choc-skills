@@ -34,6 +34,8 @@ set -euo pipefail
 MODE=""
 REPO_ROOT=""
 DEFAULT_BRANCH_OVERRIDE=""
+TEMPLATES_DIR_OVERRIDE=""
+SKIP_LOOP_SEED="false"
 
 usage() {
   cat <<EOF
@@ -44,6 +46,9 @@ Flags:
   --execute              Create missing worktrees.
   --repo <path>          Repo root (default: auto-detect via \`git rev-parse --git-common-dir\`).
   --default-branch <n>   Override detected default branch.
+  --templates-dir <path> Override where per-role loop.md templates are read from
+                         (default: \${CLAUDE_CONFIG_DIR:-\$HOME/.claude}/skills/project/templates/loops).
+  --skip-loop-seed       Do not seed loop.md files (worktree creation only).
   -h, --help             Show this help.
 
 Exit: 0 on success (or empty --list), 1 on usage error, 2 on missing deps,
@@ -58,6 +63,8 @@ while [ $# -gt 0 ]; do
     --execute)         MODE="execute"; shift ;;
     --repo)            REPO_ROOT="${2:-}"; shift 2 ;;
     --default-branch)  DEFAULT_BRANCH_OVERRIDE="${2:-}"; shift 2 ;;
+    --templates-dir)   TEMPLATES_DIR_OVERRIDE="${2:-}"; shift 2 ;;
+    --skip-loop-seed)  SKIP_LOOP_SEED="true"; shift ;;
     -h|--help)         usage 0 ;;
     *)                 echo "Unknown arg: $1" >&2; usage 1 ;;
   esac
@@ -108,6 +115,13 @@ DB=$(detect_default_branch) || {
   exit 2
 }
 
+# Resolve templates directory (for per-role loop.md seeding).
+if [ -n "$TEMPLATES_DIR_OVERRIDE" ]; then
+  TEMPLATES_DIR="$TEMPLATES_DIR_OVERRIDE"
+else
+  TEMPLATES_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/templates/loops"
+fi
+
 # Clear stale worktree admin entries so a previously `rm -rf`'d worktree
 # doesn't block `git worktree add` with "already registered".
 git -C "$REPO_ROOT" worktree prune 2>/dev/null || true
@@ -132,6 +146,37 @@ branch_checkout_location() {
 
 has_local_branch()  { git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$1"; }
 has_remote_branch() { git -C "$REPO_ROOT" show-ref --verify --quiet "refs/remotes/origin/$1"; }
+
+# seed_loop_prompt <role> <worktree-abs-path>
+# Copy the role's loop.md template into the worktree and commit to session/<role>,
+# iff the role is loop-configured in PROJECT_CONFIG.json, the template file exists,
+# and no loop.md is already present. Idempotent.
+seed_loop_prompt() {
+  local role="$1" wt="$2"
+  [ "$SKIP_LOOP_SEED" = "true" ] && return 0
+  local is_looping
+  is_looping=$(jq -r --arg r "$role" '.sessions.loops[$r] // empty' "$CONFIG" 2>/dev/null || true)
+  [ -n "$is_looping" ] || return 0   # role not loop-configured for this project
+  local template="${TEMPLATES_DIR}/${role}.md"
+  if [ ! -f "$template" ]; then
+    printf "  [warn]  %-12s  loop template missing at %s — loop.md not seeded\n" "$role" "$template" >&2
+    return 0
+  fi
+  local target="$wt/loops/loop.md"
+  [ -f "$target" ] && return 0       # already there, idempotent
+  mkdir -p "$wt/loops"
+  cp "$template" "$target"
+  # Commit to session/<role>, best-effort push. Failures are non-fatal —
+  # the helper's contract is worktree materialisation; loop.md seeding is
+  # additive.
+  if git -C "$wt" add "loops/loop.md" >/dev/null 2>&1 \
+     && git -C "$wt" commit --quiet -m "feat: add loop prompt for $role" >/dev/null 2>&1; then
+    git -C "$wt" push --quiet -u origin HEAD 2>/dev/null || true
+    printf "  [seed]  %-12s  loops/loop.md  (from template %s)\n" "$role" "${role}.md"
+  else
+    printf "  [warn]  %-12s  loops/loop.md written but git commit failed\n" "$role" >&2
+  fi
+}
 
 # Build plan -----------------------------------------------------------------
 # Each plan entry is a TAB-separated tuple: ROLE<TAB>ACTION<TAB>DETAILS.
@@ -193,6 +238,7 @@ for line in "${PLAN[@]}"; do
     REUSE)
       if GIT_WORKTREE_OVERRIDE=1 git -C "$REPO_ROOT" worktree add --quiet "$wt" "$branch" 2>/dev/null; then
         printf "  [OK]    %-12s  worktree created (reused %s)\n" "$role" "$branch"
+        seed_loop_prompt "$role" "$wt"
       else
         printf "  [ERROR] %-12s  git worktree add failed for %s\n" "$role" "$branch" >&2
         failed=$((failed + 1))
@@ -201,6 +247,7 @@ for line in "${PLAN[@]}"; do
     TRACK)
       if GIT_WORKTREE_OVERRIDE=1 git -C "$REPO_ROOT" worktree add --quiet --track -b "$branch" "$wt" "origin/$branch" 2>/dev/null; then
         printf "  [OK]    %-12s  worktree created (tracking origin/%s)\n" "$role" "$branch"
+        seed_loop_prompt "$role" "$wt"
       else
         printf "  [ERROR] %-12s  git worktree add --track failed for %s\n" "$role" "$branch" >&2
         failed=$((failed + 1))
@@ -209,6 +256,7 @@ for line in "${PLAN[@]}"; do
     CREATE)
       if GIT_WORKTREE_OVERRIDE=1 git -C "$REPO_ROOT" worktree add --quiet -b "$branch" "$wt" "$DB" 2>/dev/null; then
         printf "  [OK]    %-12s  worktree created (new branch %s from %s)\n" "$role" "$branch" "$DB"
+        seed_loop_prompt "$role" "$wt"
       else
         printf "  [ERROR] %-12s  git worktree add -b failed for %s (from %s)\n" "$role" "$branch" "$DB" >&2
         failed=$((failed + 1))

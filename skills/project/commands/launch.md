@@ -15,6 +15,14 @@ Launch tmux sessions with Claude Code running in each worktree session for a pro
 
 <process>
 
+## Prompting fallback (v2.4.0+)
+
+This process uses `AskUserQuestion` — a Claude Code built-in tool — for the Step 5 multi-select options checklist and for the Step 2.5 confirmation. **If `AskUserQuestion` is not available in the current session** (an older Claude Code build, or a custom harness that does not expose it), fall back to a numbered-list plain-text prompt and wait for the user's numeric (or `y/n`) reply. Alongside the fallback, emit this one-line install hint:
+
+> Note: `AskUserQuestion` is a Claude Code built-in. Update Claude Code to the latest release, or enable the tool in your harness configuration, to get structured prompts.
+
+Every subsequent "AskUserQuestion" reference in this file is subject to this fallback — do not re-state it inline.
+
 ## Step 0: Pre-checks
 
 Verify dependencies exist:

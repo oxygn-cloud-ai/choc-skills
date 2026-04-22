@@ -2,6 +2,38 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.4.0] - 2026-04-22
+
+### Added
+
+- **Shipped per-role loop.md templates** (`skills/project/templates/loops/<role>.md`, 8 files for master, triager, reviewer, merger, chk1, chk2, fixer, implementer). Previously loop prompts existed only as an inline triager example + bullet descriptions in `commands/new.md` Step 10.5 — every new project had to hand-author them and existing projects that skipped this step had empty loops. Templates now ship with the skill and are installed to `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/templates/loops/`. `install.sh --check` verifies all 8 files are present.
+
+- **`project-materialise-worktrees.sh --execute` now seeds `loops/loop.md`** for loop-configured roles. For each role whose worktree is newly created and that has an entry in `PROJECT_CONFIG.json` `sessions.loops`, the matching template from `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/templates/loops/<role>.md` is copied into `.worktrees/<role>/loops/loop.md` and committed to `session/<role>`. Idempotent — does not overwrite an existing `loop.md` (user customisations survive re-materialisation). `/project:launch` Step 2.5 therefore produces a fully-loop-capable set of worktrees in one shot. `/project:audit` check #13 (loop prompt files) stops FAILing post-materialisation.
+  - New helper flags: `--templates-dir <path>` (override for tests + air-gapped setups), `--skip-loop-seed` (worktree-only mode).
+  - Warn-and-continue semantics: a loop-configured role with a missing template file prints a `[warn]` line and the worktree is still materialised. No hard failure on seeding.
+
+- **`commands/config.md` "Configure loops" auto-installs missing `loop.md`** from the templates directory when the user selects a role whose prompt file does not exist. Previously the instructions said "offer to create it with a role-appropriate template" but didn't specify the source — now it's explicit: copy `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/templates/loops/<role>.md` and commit to `session/<role>`. No confirmation prompt because installing a file that does not exist cannot destroy anything.
+
+- **`commands/new.md` Step 10.5 rewritten** to copy from the shipped templates directory instead of inline template strings + bullet-list role descriptions. Single source of truth for template content across `/project:new`, `/project:config`, and the materialise helper.
+
+- **`/project:audit` check #17 — `AskUserQuestion` declared in installed skill files.** Verifies `${CLAUDE_CONFIG_DIR}/skills/project/SKILL.md` and `commands/project/{config,launch,new}.md` still contain the string `AskUserQuestion` in their frontmatter — guards against tampering with installed outputs that would silently break interactive prompts. Explicitly documents that runtime availability of `AskUserQuestion` is a Claude Code harness property and cannot be verified by a shell audit.
+
+- **`install.sh --check` now verifies the `AskUserQuestion` declaration is intact** and prints a one-line note explaining that runtime availability is harness-controlled. Error on missing declaration directs the user to `install.sh --force` to restore.
+
+- **Graceful `AskUserQuestion` fallback in `commands/config.md`, `launch.md`, `new.md`.** Each file now opens `<process>` with a "Prompting fallback" section that documents the pattern once: when `AskUserQuestion` is unavailable, the command falls back to a numbered-list plain-text prompt and prints a one-line install hint (`AskUserQuestion is a Claude Code built-in. Update Claude Code or enable it in your harness configuration to get structured prompts.`). Individual "Use AskUserQuestion" references throughout the files are subject to this fallback without needing to restate it.
+
+- **BATS coverage extended** to 20 tests in `tests/project-materialise-worktrees.bats` — 5 new cases covering loop.md seeding: template-present happy path, non-loop-configured role (no seed), template-missing role (warn, continue), `--skip-loop-seed` flag, and idempotent re-seeding (existing `loop.md` on branch preserved).
+
+### Changed
+
+- **`install.sh`** adds a new Step 5.5 that copies `templates/` to `${SKILL_TARGET}/templates/`. `--check` grows two new checks: "Loop templates: 8/8 roles present" and "AskUserQuestion declared in SKILL.md + config/launch/new command files". `--help` INSTALLS TO section lists the templates dir and clarifies that bin scripts include the new materialise helper. Post-install summary shows the templates dir.
+
+- **`hooks/block-worktree-add.sh`** unchanged in v2.4.0 — its v2.3.0 comment naming `/project:new` and `/project:launch` as the authorised `GIT_WORKTREE_OVERRIDE=1` boundaries remains accurate.
+
+### Known out-of-scope
+
+- `/project:new` Step 9's worktree-creation loop still uses bare `git worktree add` (no `GIT_WORKTREE_OVERRIDE=1`) — unchanged from v2.3.0's known-issue note. That's a separate ticket.
+
 ## [2.3.0] - 2026-04-21
 
 ### Added

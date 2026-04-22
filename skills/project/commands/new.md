@@ -17,6 +17,14 @@ Create a new project repository fully configured per ${CLAUDE_CONFIG_DIR:-$HOME/
 
 <process>
 
+## Prompting fallback (v2.4.0+)
+
+This process uses `AskUserQuestion` — a Claude Code built-in tool — for structured multi-choice prompts. **If `AskUserQuestion` is not available in the current session** (an older Claude Code build, or a custom harness that does not expose it), fall back to a numbered-list plain-text prompt and wait for the user's numeric reply. Alongside the fallback, emit this one-line install hint:
+
+> Note: `AskUserQuestion` is a Claude Code built-in. Update Claude Code to the latest release, or enable the tool in your harness configuration, to get structured prompts.
+
+Every subsequent "ask via AskUserQuestion" instruction in this file is subject to this fallback — do not re-state it inline.
+
 ## Step 0: Safety checks
 
 Before anything else, verify this is safe to run:
@@ -237,52 +245,41 @@ Read ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md section <
 
 Add a brief quick-reference section specific to each role (3-5 bullet points summarizing the protocol steps).
 
-## Step 10.5: Create loop prompts (8 loop-capable roles)
+## Step 10.5: Seed loop prompts (8 loop-capable roles)
 
-Loop prompts live at `.worktrees/<role>/loops/loop.md` — each worktree owns its own loop config. Create one for each of the 8 loop-capable roles (master, triager, reviewer, merger, chk1, chk2, fixer, implementer). Skip planner, performance, playtester — they are on-demand only.
+Loop prompts live at `.worktrees/<role>/loops/loop.md` — each worktree owns its own loop config. The project skill ships per-role templates under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/templates/loops/<role>.md` (installed by `skills/project/install.sh`; `install.sh --check` verifies all 8 are present).
 
-Each role's loop file lives on that role's branch (`session/<role>`). Commit + push from within the role's worktree so the file is on the right branch:
+Verify the templates directory first:
 
 ```bash
+TEMPLATES_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/templates/loops"
 for role in master triager reviewer merger chk1 chk2 fixer implementer; do
-  # Skip chk1/chk2 for Non-Software
-  WT=".worktrees/$role"
-  [ -d "$WT" ] || continue
-  mkdir -p "$WT/loops"
-  # Write role-specific loop prompt (see templates below) to "$WT/loops/loop.md"
-  git -C "$WT" add loops/loop.md
-  git -C "$WT" commit -m "feat: add loop prompt for $role"
-  git -C "$WT" push
+  [ -f "$TEMPLATES_DIR/$role.md" ] || { echo "Missing template: $TEMPLATES_DIR/$role.md — re-run skills/project/install.sh --force" >&2; exit 1; }
 done
 ```
 
-Example template for triager:
+For each loop-capable role that has a worktree, copy the template into `.worktrees/<role>/loops/loop.md` and commit it to `session/<role>` so the prompt travels with the branch:
 
-```markdown
-# Triager Loop — <project-name>
-
-Recurring task: scan Jira for issues needing triage.
-
-1. Query CPT epic <epic-key> for issues in "Needs Triage" status
-2. For each issue:
-   - Verify priority (P1-P4), description depth, reproduction steps
-   - If missing: comment requesting info, leave in Needs Triage
-   - If complete: transition to "Ready for Coding"
-3. Check "Ready for Coding" queue: flag aging issues (>7 days) to Master
-4. Escalate anything P1 directly to Master
-
-Read ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/MULTI_SESSION_ARCHITECTURE.md section 11 for full triager protocol.
+```bash
+for role in master triager reviewer merger chk1 chk2 fixer implementer; do
+  WT=".worktrees/$role"
+  [ -d "$WT" ] || continue   # skip if role's worktree wasn't created (Non-Software skips chk1/chk2/playtester; see Step 9)
+  mkdir -p "$WT/loops"
+  cp "$TEMPLATES_DIR/$role.md" "$WT/loops/loop.md"
+  git -C "$WT" add loops/loop.md
+  git -C "$WT" commit --quiet -m "feat: add loop prompt for $role"
+  git -C "$WT" push --quiet -u origin HEAD 2>/dev/null || true
+done
 ```
 
-Tailor the loop content per role:
-- **master**: scan for release-gate state, blocked issues, 3-strikes escalations
-- **triager**: as above
-- **reviewer**: scan `session/*` branches for new commits since last review, post structured review comments to Jira
-- **merger**: scan for approved branches in "Ready to Merge" state, squash-merge to main
-- **chk1**: run `/chk1:all` if new commits landed on main since last run
-- **chk2**: run `/chk2:all` against test/staging/production servers on schedule
-- **fixer**: check Changes Requested first; if none, pick highest-priority bug in Ready for Coding
-- **implementer**: check Changes Requested first; if none, pick highest-priority Feature Request in Ready for Coding
+**Non-Software projects:** skip `chk1` and `chk2` in the loop above (those worktrees don't exist in a Non-Software layout — see Step 9's role list). `playtester` is on-demand only and never gets a loop.
+
+After this step, every loop-capable role's worktree has its own `loops/loop.md` on its branch and `/project:audit` check #13 will PASS.
+
+**Customisation:**
+- To specialise a project's loop for a specific role, edit the file after it's been copied into the worktree (changes commit to `session/<role>` naturally).
+- To change the template shipped to all future projects, edit `skills/project/templates/loops/<role>.md` in the skill source tree and re-run `skills/project/install.sh --force`.
+- `/project:launch` Step 2.5 uses the same templates via `project-materialise-worktrees.sh`, so a re-materialised worktree gets a fresh template copy if `loop.md` is missing from the branch (existing `loop.md` on the branch is preserved — re-seeding is idempotent).
 
 Default loop intervals (written to PROJECT_CONFIG.json in Step 5):
 - master: 5m

@@ -245,3 +245,112 @@ with open(p,'w') as f: json.dump(d,f)
   [ "$status" -eq 0 ]
   [ -d "$TEST_REPO/.worktrees/master" ]
 }
+
+# --- Loop.md template seeding ---
+
+# Helper: create a templates dir with minimal loop.md content for a given role.
+_mk_template() {
+  local role="$1" dir="$2"
+  mkdir -p "$dir"
+  printf '# %s loop template\n\nRecurring task for %s.\n' "$role" "$role" > "$dir/$role.md"
+}
+
+@test "materialise: seeds loop.md for loop-configured role with template" {
+  TPL_DIR="$(mktemp -d)"
+  _mk_template master "$TPL_DIR"
+  # Add loops config for master so the role is loop-capable in this project
+  python3 -c "
+import json
+p='$TEST_REPO/PROJECT_CONFIG.json'
+with open(p) as f: d=json.load(f)
+d['sessions']['loops'] = {'master': {'intervalMinutes': 10, 'prompt': 'loops/loop.md'}}
+with open(p,'w') as f: json.dump(d,f)
+"
+  run "$SCRIPT" --execute --repo "$TEST_REPO" --templates-dir "$TPL_DIR"
+  [ "$status" -eq 0 ]
+  [ -f "$TEST_REPO/.worktrees/master/loops/loop.md" ]
+  # Content comes from the template
+  grep -q "master loop template" "$TEST_REPO/.worktrees/master/loops/loop.md"
+  # The loop.md is committed to session/master (not left as untracked)
+  run git -C "$TEST_REPO/.worktrees/master" status --porcelain loops/loop.md
+  [ -z "$output" ]
+  rm -rf "$TPL_DIR"
+}
+
+@test "materialise: does NOT seed loop.md for a role with no loops entry" {
+  TPL_DIR="$(mktemp -d)"
+  _mk_template planner "$TPL_DIR"   # template exists
+  # But planner is NOT in sessions.loops (no loop entry in default fixture)
+  run "$SCRIPT" --execute --repo "$TEST_REPO" --templates-dir "$TPL_DIR"
+  [ "$status" -eq 0 ]
+  [ ! -f "$TEST_REPO/.worktrees/planner/loops/loop.md" ]
+  rm -rf "$TPL_DIR"
+}
+
+@test "materialise: warns but proceeds when loop-configured role has no template file" {
+  # Configure loops for master but don't create the template
+  python3 -c "
+import json
+p='$TEST_REPO/PROJECT_CONFIG.json'
+with open(p) as f: d=json.load(f)
+d['sessions']['loops'] = {'master': {'intervalMinutes': 10, 'prompt': 'loops/loop.md'}}
+with open(p,'w') as f: json.dump(d,f)
+"
+  TPL_DIR="$(mktemp -d)"   # empty directory, no master.md
+  run "$SCRIPT" --execute --repo "$TEST_REPO" --templates-dir "$TPL_DIR"
+  [ "$status" -eq 0 ]
+  # Worktree IS created
+  [ -d "$TEST_REPO/.worktrees/master" ]
+  # loop.md is NOT seeded
+  [ ! -f "$TEST_REPO/.worktrees/master/loops/loop.md" ]
+  # Warning appears in output
+  [[ "$output" == *"loop template missing"* ]]
+  rm -rf "$TPL_DIR"
+}
+
+@test "materialise: --skip-loop-seed suppresses seeding even when everything is configured" {
+  TPL_DIR="$(mktemp -d)"
+  _mk_template master "$TPL_DIR"
+  python3 -c "
+import json
+p='$TEST_REPO/PROJECT_CONFIG.json'
+with open(p) as f: d=json.load(f)
+d['sessions']['loops'] = {'master': {'intervalMinutes': 10, 'prompt': 'loops/loop.md'}}
+with open(p,'w') as f: json.dump(d,f)
+"
+  run "$SCRIPT" --execute --repo "$TEST_REPO" --templates-dir "$TPL_DIR" --skip-loop-seed
+  [ "$status" -eq 0 ]
+  [ -d "$TEST_REPO/.worktrees/master" ]
+  [ ! -f "$TEST_REPO/.worktrees/master/loops/loop.md" ]
+  rm -rf "$TPL_DIR"
+}
+
+@test "materialise: seeding is idempotent — existing loop.md not overwritten on re-run" {
+  TPL_DIR="$(mktemp -d)"
+  _mk_template master "$TPL_DIR"
+  python3 -c "
+import json
+p='$TEST_REPO/PROJECT_CONFIG.json'
+with open(p) as f: d=json.load(f)
+d['sessions']['loops'] = {'master': {'intervalMinutes': 10, 'prompt': 'loops/loop.md'}}
+with open(p,'w') as f: json.dump(d,f)
+"
+  # First run seeds it
+  run "$SCRIPT" --execute --repo "$TEST_REPO" --templates-dir "$TPL_DIR"
+  [ "$status" -eq 0 ]
+  # Overwrite the seeded file with user content
+  echo "USER CUSTOMISATION" > "$TEST_REPO/.worktrees/master/loops/loop.md"
+  git -C "$TEST_REPO/.worktrees/master" add loops/loop.md
+  git -C "$TEST_REPO/.worktrees/master" commit --quiet -m "custom"
+
+  # Remove the worktree (but keep the branch + commits). .git/worktrees/ admin
+  # entry is also cleaned so re-materialisation is from scratch.
+  GIT_WORKTREE_OVERRIDE=1 git -C "$TEST_REPO" worktree remove --force ".worktrees/master"
+
+  # Re-run — worktree re-materialises (REUSE of session/master), loop.md is already
+  # on the branch from the customisation commit, so it won't be re-seeded.
+  run "$SCRIPT" --execute --repo "$TEST_REPO" --templates-dir "$TPL_DIR"
+  [ "$status" -eq 0 ]
+  grep -q "USER CUSTOMISATION" "$TEST_REPO/.worktrees/master/loops/loop.md"
+  rm -rf "$TPL_DIR"
+}

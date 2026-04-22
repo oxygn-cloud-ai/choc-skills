@@ -58,6 +58,7 @@ For each check, report PASS, FAIL, WARN, or SKIP with details.
 14. **No stale worktree branches**: any `session/*` branch with no commits in >7 days → WARN
 15. **Coverage thresholds** (Software only): if coverage job exists, thresholds match actuals. SKIP if no coverage.
 16. **No unauthorised worktrees**: per MULTI_SESSION_ARCHITECTURE.md §7.1, the only worktrees permitted are the role worktrees named in `sessions.roles` (plus the main repo). Iterate `git worktree list --porcelain` and for each `.worktrees/<name>/`, assert `<name>` is in `sessions.roles` — FAIL on any `<name>` not in the role list. For each role worktree's HEAD branch, apply a **role-aware** rule (per `MULTI_SESSION_ARCHITECTURE.md §1` — only fixer and implementer write code; all other roles are read-only on source): **fixer** may be `session/fixer` OR match `^fix/<KEY>-[0-9]+` (PASS with note naming the active ticket); **implementer** may be `session/implementer` OR match `^feature/<KEY>-[0-9]+` (PASS with note); **all other role worktrees** (master, planner, merger, chk1, chk2, performance, playtester, reviewer, triager) must be on `session/<role>` — any other branch value FAILs (a read-only role on a feature/fix branch indicates a re-pointed worktree, forbidden). `<KEY>` is `jira.projectKey` from PROJECT_CONFIG.json.
+17. **`AskUserQuestion` declared in installed skill files**: verify `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/SKILL.md` and `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/project/{config,launch,new}.md` each contain `AskUserQuestion`. Missing files that should exist → FAIL. Files present but missing the string → FAIL and list which. Purpose: detect tampering with installed skill outputs that would silently break interactive prompts. NOTE: runtime availability of `AskUserQuestion` is a Claude Code harness property — this audit check only verifies that the skill's files still declare the dependency. If the tool is missing at runtime despite the declaration, commands fall back to plain-text prompts and emit a one-line install note (see v2.4.0+ graceful-fallback pattern in `commands/config.md`, `launch.md`, `new.md`).
 
 ## Step 5: Display report
 
@@ -81,8 +82,9 @@ Type: <Software|Non-Software>
   [WARN] 14. Stale worktree: session/playtester (no commits in 5 days)
   [SKIP] 15. Coverage thresholds (not configured)
   [PASS] 16. Worktree HEADs: 11/11 authorised; all role-aware rules satisfied
+  [PASS] 17. AskUserQuestion declared in 4/4 installed skill files
 
-  Result: 9 passed, 2 warnings, 3 failed, 2 skipped
+  Result: 10 passed, 2 warnings, 3 failed, 2 skipped
 
   To fix gaps, run /project:config or address manually.
 ```

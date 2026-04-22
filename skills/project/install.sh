@@ -38,7 +38,14 @@ HOOKS_SOURCE="${SCRIPT_DIR}/hooks"
 HOOKS_TARGET="${CLAUDE_DIR}/hooks"
 GLOBAL_SOURCE="${SCRIPT_DIR}/global"
 GLOBAL_TARGET="${CLAUDE_DIR}"
+TEMPLATES_SOURCE="${SCRIPT_DIR}/templates"
+TEMPLATES_TARGET="${SKILL_TARGET}/templates"
 SETTINGS_FILE="${CLAUDE_DIR}/settings.json"
+
+# Loop-capable roles — consumed by --check to verify the shipped per-role
+# loop.md templates are all present. Must match the list in
+# commands/launch.md Step 3 and commands/new.md Step 10.5.
+LOOP_CAPABLE_ROLES=(master triager reviewer merger chk1 chk2 fixer implementer)
 
 # Files installed to ~/.claude/ root (multi-session architecture + project standards).
 # Listed explicitly so --uninstall knows what to target and --check stays in sync.
@@ -128,9 +135,10 @@ ${BOLD}USAGE${RESET}
 
 ${BOLD}INSTALLS TO${RESET}
   ${CLAUDE_DIR}/skills/project/SKILL.md            Main skill file
+  ${CLAUDE_DIR}/skills/project/templates/loops/    Per-role loop.md templates (8 roles)
   ${CLAUDE_DIR}/commands/project.md                Router
   ${CLAUDE_DIR}/commands/project/*.md              Sub-command files
-  ~/.local/bin/project-*.sh                    Launch/picker helpers
+  ~/.local/bin/project-*.sh                    Launch/picker/materialise helpers
   ${CLAUDE_DIR}/hooks/*.sh                         PreToolUse enforcement hooks
   ${CLAUDE_DIR}/settings.json                      hooks.PreToolUse[] registrations
   ${CLAUDE_DIR}/MULTI_SESSION_ARCHITECTURE.md      Global multi-session architecture
@@ -257,6 +265,40 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     err "Materialise-worktrees script: not installed (run install.sh --force) — /project:launch Step 2.5 will fail when worktrees are missing"; issues=$((issues + 1))
   fi
 
+  # Per-role loop.md templates
+  if [ -d "${TEMPLATES_TARGET}/loops" ]; then
+    missing_templates=""
+    for role in "${LOOP_CAPABLE_ROLES[@]}"; do
+      [ -f "${TEMPLATES_TARGET}/loops/${role}.md" ] || missing_templates="${missing_templates} ${role}.md"
+    done
+    if [ -z "$missing_templates" ]; then
+      ok "Loop templates: 8/8 roles present in ${TEMPLATES_TARGET}/loops/"
+    else
+      err "Loop templates missing:${missing_templates} (run install.sh --force)"; issues=$((issues + 1))
+    fi
+  else
+    err "Loop templates directory missing at ${TEMPLATES_TARGET}/loops/ (run install.sh --force) — /project:launch Step 2.5 cannot seed loop.md files"; issues=$((issues + 1))
+  fi
+
+  # AskUserQuestion is a Claude Code harness tool (built-in). Shell-level
+  # install cannot verify runtime availability. What we CAN verify is that
+  # the skill's interactive commands still declare the tool in their
+  # allowed-tools — tampering with installed command frontmatter would
+  # silently break prompts.
+  askuq_missing=""
+  for f in "${SKILL_TARGET}/SKILL.md" \
+           "${COMMANDS_TARGET}/config.md" \
+           "${COMMANDS_TARGET}/launch.md" \
+           "${COMMANDS_TARGET}/new.md"; do
+    [ -f "$f" ] || continue
+    grep -q "AskUserQuestion" "$f" || askuq_missing="${askuq_missing} $(basename "$f")"
+  done
+  if [ -z "$askuq_missing" ]; then
+    ok "AskUserQuestion declared in SKILL.md + config/launch/new command files (runtime availability is a Claude Code harness property — see USER_GUIDE for fallback guidance if commands report the tool missing)"
+  else
+    err "AskUserQuestion declaration missing from:${askuq_missing} — interactive prompts will degrade. Re-run install.sh --force to restore."; issues=$((issues + 1))
+  fi
+
   # Hook file + registration check
   if [ -d "$HOOKS_SOURCE" ]; then
     for source in "${HOOKS_SOURCE}"/*.sh; do
@@ -373,6 +415,27 @@ else
   warn "PROJECT_CONFIG.schema.json not found at repo root — /project:new won't be able to copy it to new projects"
 fi
 
+# 5.5. Install per-role loop.md templates (consumed by /project:new,
+# /project:config "Configure loops", and project-materialise-worktrees.sh).
+# These live under the skill install dir so the runtime path respects
+# CLAUDE_CONFIG_DIR. A missing templates dir means the materialise helper
+# cannot seed loop.md for loop-capable roles and /project:audit check #13
+# will FAIL post-materialisation.
+if [ -d "$TEMPLATES_SOURCE" ]; then
+  mkdir -p "$TEMPLATES_TARGET/loops"
+  # Clean stale templates from a previous version so renames don't linger.
+  rm -rf "$TEMPLATES_TARGET/loops"/*.md 2>/dev/null || true
+  template_count=0
+  for file in "${TEMPLATES_SOURCE}/loops"/*.md; do
+    [ -f "$file" ] || continue
+    cp "$file" "${TEMPLATES_TARGET}/loops/$(basename "$file")"
+    template_count=$((template_count + 1))
+  done
+  ok "loop templates: ${template_count} file(s) -> ${TEMPLATES_TARGET}/loops/"
+else
+  warn "No templates/ directory in source — loop.md templates not installed; /project:launch Step 2.5 will skip loop-prompt seeding"
+fi
+
 # 6. Install global reference docs (MULTI_SESSION_ARCHITECTURE.md, PROJECT_STANDARDS.md)
 # These live at ~/.claude/ root because session prompts and audit.md reference
 # them via absolute paths (see skills/project/commands/audit.md). Shipped from
@@ -441,6 +504,7 @@ printf "  ${DIM}%-50s${RESET} (router)\n" "${CLAUDE_DIR}/commands/project.md"
 [ -f "${BIN_TARGET}/project-picker.sh" ] && printf "  ${DIM}%-50s${RESET} (session picker)\n" "${BIN_TARGET}/project-picker.sh"
 [ -f "${BIN_TARGET}/project-launch-session.sh" ] && printf "  ${DIM}%-50s${RESET} (launch helper)\n" "${BIN_TARGET}/project-launch-session.sh"
 [ -f "${BIN_TARGET}/project-materialise-worktrees.sh" ] && printf "  ${DIM}%-50s${RESET} (worktree materialiser)\n" "${BIN_TARGET}/project-materialise-worktrees.sh"
+[ -d "${TEMPLATES_TARGET}/loops" ] && printf "  ${DIM}%-50s${RESET} (loop.md templates)\n" "${TEMPLATES_TARGET}/loops/"
 [ -d "$HOOKS_TARGET" ] && printf "  ${DIM}%-50s${RESET} (enforcement hooks)\n" "${HOOKS_TARGET}/"
 echo ""
 info "Usage: /project or /project help"
