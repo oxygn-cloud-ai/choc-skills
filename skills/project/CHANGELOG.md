@@ -2,6 +2,31 @@
 
 All notable changes to the project skill will be documented in this file.
 
+## [2.4.1] - 2026-04-22
+
+### Fixed (audit remediation from v2.4.0 /chk1 findings)
+
+- **Bug 1 — `seed_loop_prompt` now self-heals an untracked `loops/loop.md`** on re-run. v2.4.0 left loop.md permanently untracked when the initial `git commit` failed (e.g. no `user.email` configured, or a pre-commit hook blocked) because the worktree was registered and the outer loop skipped the role entirely on subsequent runs. v2.4.1 rewrites `seed_loop_prompt` as a three-case handler — (A) tracked → no-op, (B) untracked → commit + push (`[heal]` line), (C) missing → seed from template — and the outer role loop now calls `seed_loop_prompt` in `--execute` mode even for already-registered worktrees so the heal path is reachable. New BATS test 21 reproduces the v2.4.0 failure state and confirms v2.4.1 commits the orphaned file.
+
+- **Bug 2 — `commands/config.md` "Install missing loop.md" example no longer assumes `loops/` parent.** The example code used `mkdir -p ".worktrees/$role/loops"` but wrote to `".worktrees/$role/<prompt-path>"`, which only matched when `<prompt-path>` was the default `loops/loop.md`. For user-customised prompt paths (e.g. `custom/foo.md`) the `mkdir` created the wrong dir and the `cp` failed. Replaced the hardcoded `"loops"` with `"$(dirname ".worktrees/$role/<prompt-path>")"` so any prompt-path is handled correctly. Natural-language instruction to Claude; no runtime script change.
+
+- **Bug 3 — `install.sh` Step 5.5 now warns loudly when zero templates are installed.** v2.4.0 reported `ok "loop templates: 0 file(s)"` when `templates/loops/` was present but empty — silent success for a broken install. Added `[ "$template_count" -gt 0 ] || warn "Zero loop templates found …"` so developers notice immediately.
+
+- **Risk 2 — removed hardcoded `LOOP_CAPABLE_ROLES` array in `install.sh`.** v2.4.0 maintained the canonical role list in four places (`install.sh`, `commands/launch.md`, `commands/new.md`, `commands/config.md`) — a drift risk. v2.4.1 derives the expected template set from `${TEMPLATES_SOURCE}/loops/*.md` filenames. The templates directory itself is now the single source of truth: dropping a new `templates/loops/<role>.md` and re-running `install.sh --force` makes `--check` pick it up automatically. If the source templates directory is missing or empty, `--check` emits a dedicated warning/error rather than silently reporting a match against a zero-element list.
+
+- **Risk 1 — `git push` failures in `seed_loop_prompt` are no longer silent.** v2.4.0 piped `git push` stderr to `/dev/null` and swallowed failures via `|| true`, so network / auth / protected-branch / diverging-tip errors never reached the operator and the single-machine vs multi-machine divergence claim was too strong. v2.4.1 captures stderr and emits a `[warn]` line with the failure reason on push failure. Commit still happens locally; only the transport-layer failure is surfaced. New `_push_loop_commit` helper is shared between seed and heal paths.
+
+### Added
+
+- **BATS test 21 — TRACK path + loop seeding.** v2.4.0 exercised seeding on REUSE and CREATE paths but not TRACK (local branch missing, remote branch exists). Closed the coverage gap.
+- **BATS test 22 — heal path.** Explicitly reproduces the v2.4.0 Bug 1 scenario (worktree registered, loop.md untracked on disk) and asserts v2.4.1 commits it with a `[heal]` output line.
+
+Full BATS suite: 121 → 123 pass. `install.sh --check`: still 16/16 with the new source-derived template check.
+
+### Known out-of-scope (unchanged from v2.4.0)
+
+- `/project:new` Step 9's worktree-creation loop still uses bare `git worktree add` — separate ticket.
+
 ## [2.4.0] - 2026-04-22
 
 ### Added

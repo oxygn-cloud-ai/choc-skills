@@ -135,11 +135,14 @@ done
 - For each selected role, ask:
   - Interval in minutes (integer, 0 = disable loop).
   - Prompt path relative to worktree root (default `loops/loop.md`).
-- **Install missing loop.md from template** (new behaviour, v2.4.0+). Verify the prompt file exists at `.worktrees/<role>/<prompt-path>`. If missing:
+- **Install missing loop.md from template** (new behaviour, v2.4.0+; parent-dir fix in v2.4.1). Verify the prompt file exists at `.worktrees/<role>/<prompt-path>`. If missing:
   ```bash
   TEMPLATES_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/project/templates/loops"
   if [ -f "$TEMPLATES_DIR/$role.md" ]; then
-    mkdir -p ".worktrees/$role/loops"
+    # Compute parent dir from the prompt-path the user chose — do NOT hardcode
+    # "loops/" here, otherwise non-default prompt-paths (e.g. "custom/foo.md")
+    # would break because their parent wouldn't be created.
+    mkdir -p "$(dirname ".worktrees/$role/<prompt-path>")"
     cp "$TEMPLATES_DIR/$role.md" ".worktrees/$role/<prompt-path>"
     git -C ".worktrees/$role" add "<prompt-path>"
     git -C ".worktrees/$role" commit --quiet -m "feat: add loop prompt for $role"

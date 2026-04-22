@@ -42,10 +42,13 @@ TEMPLATES_SOURCE="${SCRIPT_DIR}/templates"
 TEMPLATES_TARGET="${SKILL_TARGET}/templates"
 SETTINGS_FILE="${CLAUDE_DIR}/settings.json"
 
-# Loop-capable roles — consumed by --check to verify the shipped per-role
-# loop.md templates are all present. Must match the list in
-# commands/launch.md Step 3 and commands/new.md Step 10.5.
-LOOP_CAPABLE_ROLES=(master triager reviewer merger chk1 chk2 fixer implementer)
+# Loop-capable roles are derived from the shipped templates directory at
+# runtime (see --check block below). The templates directory is the single
+# source of truth — drop a new per-role template at templates/loops/<role>.md
+# and the installer + --check pick it up automatically. No hardcoded list to
+# keep in sync with commands/launch.md, commands/new.md, commands/config.md.
+# (v2.4.1 — replaced a hardcoded array that was prone to drift; see Risk 2
+# in the v2.4.0 audit.)
 
 # Files installed to ~/.claude/ root (multi-session architecture + project standards).
 # Listed explicitly so --uninstall knows what to target and --check stays in sync.
@@ -265,19 +268,34 @@ if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--doctor" ]; then
     err "Materialise-worktrees script: not installed (run install.sh --force) — /project:launch Step 2.5 will fail when worktrees are missing"; issues=$((issues + 1))
   fi
 
-  # Per-role loop.md templates
-  if [ -d "${TEMPLATES_TARGET}/loops" ]; then
-    missing_templates=""
-    for role in "${LOOP_CAPABLE_ROLES[@]}"; do
-      [ -f "${TEMPLATES_TARGET}/loops/${role}.md" ] || missing_templates="${missing_templates} ${role}.md"
-    done
-    if [ -z "$missing_templates" ]; then
-      ok "Loop templates: 8/8 roles present in ${TEMPLATES_TARGET}/loops/"
-    else
-      err "Loop templates missing:${missing_templates} (run install.sh --force)"; issues=$((issues + 1))
-    fi
+  # Per-role loop.md templates — derive expected set from the skill SOURCE
+  # tree so the templates directory itself is the single source of truth.
+  # If we end up checking in a repo where the source templates are absent
+  # (unusual — developer removed templates/loops/ by accident), warn loudly
+  # rather than silently passing.
+  if [ ! -d "${TEMPLATES_SOURCE}/loops" ]; then
+    warn "No source templates directory at ${TEMPLATES_SOURCE}/loops/ — cannot determine expected loop template set"
   else
-    err "Loop templates directory missing at ${TEMPLATES_TARGET}/loops/ (run install.sh --force) — /project:launch Step 2.5 cannot seed loop.md files"; issues=$((issues + 1))
+    expected_templates=()
+    for tpl in "${TEMPLATES_SOURCE}/loops"/*.md; do
+      [ -f "$tpl" ] && expected_templates+=("$(basename "$tpl")")
+    done
+    expected_count="${#expected_templates[@]}"
+    if [ "$expected_count" -eq 0 ]; then
+      err "Source templates directory ${TEMPLATES_SOURCE}/loops/ contains zero *.md files — nothing to ship"; issues=$((issues + 1))
+    elif [ -d "${TEMPLATES_TARGET}/loops" ]; then
+      missing_templates=""
+      for name in "${expected_templates[@]}"; do
+        [ -f "${TEMPLATES_TARGET}/loops/${name}" ] || missing_templates="${missing_templates} ${name}"
+      done
+      if [ -z "$missing_templates" ]; then
+        ok "Loop templates: ${expected_count}/${expected_count} roles present in ${TEMPLATES_TARGET}/loops/"
+      else
+        err "Loop templates missing:${missing_templates} (run install.sh --force)"; issues=$((issues + 1))
+      fi
+    else
+      err "Loop templates directory missing at ${TEMPLATES_TARGET}/loops/ (run install.sh --force) — /project:launch Step 2.5 cannot seed loop.md files"; issues=$((issues + 1))
+    fi
   fi
 
   # AskUserQuestion is a Claude Code harness tool (built-in). Shell-level
@@ -432,6 +450,10 @@ if [ -d "$TEMPLATES_SOURCE" ]; then
     template_count=$((template_count + 1))
   done
   ok "loop templates: ${template_count} file(s) -> ${TEMPLATES_TARGET}/loops/"
+  # v2.4.1: a silent "0 file(s)" install is a bug — the guard is present but
+  # templates/loops/ was empty. Surface it so operators catch the misconfig
+  # before it becomes a runtime surprise.
+  [ "$template_count" -gt 0 ] || warn "Zero loop templates found at ${TEMPLATES_SOURCE}/loops/ — /project:launch Step 2.5 cannot seed loop.md files"
 else
   warn "No templates/ directory in source — loop.md templates not installed; /project:launch Step 2.5 will skip loop-prompt seeding"
 fi

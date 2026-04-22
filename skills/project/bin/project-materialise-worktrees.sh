@@ -147,34 +147,67 @@ branch_checkout_location() {
 has_local_branch()  { git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$1"; }
 has_remote_branch() { git -C "$REPO_ROOT" show-ref --verify --quiet "refs/remotes/origin/$1"; }
 
+# _push_loop_commit <role> <worktree-abs-path>
+# Best-effort push with stderr surfaced on failure. Used by both seed and heal
+# paths so a push failure is never silent (v2.4.1 fix for Risk 1).
+_push_loop_commit() {
+  local role="$1" wt="$2"
+  local push_out
+  if ! push_out=$(git -C "$wt" push --quiet -u origin HEAD 2>&1); then
+    printf "  [warn]  %-12s  loops/loop.md committed locally but push to origin failed: %s\n" "$role" "$push_out" >&2
+  fi
+}
+
 # seed_loop_prompt <role> <worktree-abs-path>
-# Copy the role's loop.md template into the worktree and commit to session/<role>,
-# iff the role is loop-configured in PROJECT_CONFIG.json, the template file exists,
-# and no loop.md is already present. Idempotent.
+# Three-case handler (v2.4.1):
+#   Case A — loops/loop.md tracked on session/<role>   → no-op (idempotent)
+#   Case B — loops/loop.md exists but untracked        → commit + push (heal)
+#   Case C — loops/loop.md missing, template exists    → cp + commit + push (seed)
+# Case B added in v2.4.1 to recover from prior runs where git commit failed
+# (e.g., git user.email not configured at the time); v2.4.0 left those files
+# permanently untracked because the worktree was registered and the function
+# was never re-entered.
 seed_loop_prompt() {
   local role="$1" wt="$2"
   [ "$SKIP_LOOP_SEED" = "true" ] && return 0
   local is_looping
   is_looping=$(jq -r --arg r "$role" '.sessions.loops[$r] // empty' "$CONFIG" 2>/dev/null || true)
   [ -n "$is_looping" ] || return 0   # role not loop-configured for this project
+
   local template="${TEMPLATES_DIR}/${role}.md"
+  local target="$wt/loops/loop.md"
+  local rel="loops/loop.md"
+
+  # Case A: already tracked on the branch — nothing to do.
+  if git -C "$wt" ls-files --error-unmatch "$rel" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  # Case B: file exists but is untracked — heal (commit + push).
+  if [ -f "$target" ]; then
+    if git -C "$wt" add "$rel" >/dev/null 2>&1 \
+       && git -C "$wt" commit --quiet -m "feat: add loop prompt for $role" >/dev/null 2>&1; then
+      _push_loop_commit "$role" "$wt"
+      printf "  [heal]  %-12s  loops/loop.md  (committed previously-untracked file)\n" "$role"
+    else
+      printf "  [warn]  %-12s  untracked loops/loop.md could not be committed (check git user.name/user.email and pre-commit hooks)\n" "$role" >&2
+    fi
+    return 0
+  fi
+
+  # Case C: file missing — seed from template.
   if [ ! -f "$template" ]; then
     printf "  [warn]  %-12s  loop template missing at %s — loop.md not seeded\n" "$role" "$template" >&2
     return 0
   fi
-  local target="$wt/loops/loop.md"
-  [ -f "$target" ] && return 0       # already there, idempotent
   mkdir -p "$wt/loops"
   cp "$template" "$target"
-  # Commit to session/<role>, best-effort push. Failures are non-fatal —
-  # the helper's contract is worktree materialisation; loop.md seeding is
-  # additive.
-  if git -C "$wt" add "loops/loop.md" >/dev/null 2>&1 \
+  if git -C "$wt" add "$rel" >/dev/null 2>&1 \
      && git -C "$wt" commit --quiet -m "feat: add loop prompt for $role" >/dev/null 2>&1; then
-    git -C "$wt" push --quiet -u origin HEAD 2>/dev/null || true
+    _push_loop_commit "$role" "$wt"
     printf "  [seed]  %-12s  loops/loop.md  (from template %s)\n" "$role" "${role}.md"
   else
-    printf "  [warn]  %-12s  loops/loop.md written but git commit failed\n" "$role" >&2
+    printf "  [warn]  %-12s  loops/loop.md written but git commit failed (check git user.name/user.email and pre-commit hooks)\n" "$role" >&2
   fi
 }
 
@@ -187,6 +220,11 @@ for role in "${ROLES[@]}"; do
   branch="session/$role"
 
   if is_registered_worktree "$wt"; then
+    # Registered — no plan entry. In --execute mode, still invoke
+    # seed_loop_prompt so Case B (heal an untracked loops/loop.md left by
+    # a prior failed commit) can recover. Silent no-op in --list mode, for
+    # non-loop-configured roles, and when loops/loop.md is already tracked.
+    [ "$MODE" = "execute" ] && seed_loop_prompt "$role" "$wt"
     continue
   fi
 

@@ -325,6 +325,68 @@ with open(p,'w') as f: json.dump(d,f)
   rm -rf "$TPL_DIR"
 }
 
+@test "materialise: seeds loop.md on TRACK path (remote-only branch) for loop-configured role" {
+  TPL_DIR="$(mktemp -d)"
+  _mk_template planner "$TPL_DIR"
+  # Push planner-seed to origin as session/planner, then delete the local copy.
+  # After this, session/planner exists only on origin — TRACK path is triggered.
+  git -C "$TEST_REPO" branch planner-seed main
+  git -C "$TEST_REPO" push --quiet origin planner-seed:session/planner
+  git -C "$TEST_REPO" branch -D planner-seed
+  # Configure planner in sessions.loops so seed_loop_prompt engages
+  python3 -c "
+import json
+p='$TEST_REPO/PROJECT_CONFIG.json'
+with open(p) as f: d=json.load(f)
+d['sessions']['loops'] = {'planner': {'intervalMinutes': 10, 'prompt': 'loops/loop.md'}}
+with open(p,'w') as f: json.dump(d,f)
+"
+  run "$SCRIPT" --execute --repo "$TEST_REPO" --templates-dir "$TPL_DIR"
+  [ "$status" -eq 0 ]
+  # Worktree created via TRACK path, loop.md seeded + tracked on session/planner
+  [ -f "$TEST_REPO/.worktrees/planner/loops/loop.md" ]
+  grep -q "planner loop template" "$TEST_REPO/.worktrees/planner/loops/loop.md"
+  run git -C "$TEST_REPO/.worktrees/planner" ls-files --error-unmatch loops/loop.md
+  [ "$status" -eq 0 ]
+  rm -rf "$TPL_DIR"
+}
+
+@test "materialise: heals an untracked loops/loop.md on an already-registered worktree" {
+  # Reproduces the Bug 1 (v2.4.0) scenario: a prior run copied loop.md to
+  # disk but git commit failed (e.g., git user.email unset at the time), so
+  # the file was left untracked. In v2.4.0 the role was skipped on re-run
+  # because the worktree was registered. v2.4.1 heals it.
+  TPL_DIR="$(mktemp -d)"
+  _mk_template master "$TPL_DIR"
+  python3 -c "
+import json
+p='$TEST_REPO/PROJECT_CONFIG.json'
+with open(p) as f: d=json.load(f)
+d['sessions']['loops'] = {'master': {'intervalMinutes': 10, 'prompt': 'loops/loop.md'}}
+with open(p,'w') as f: json.dump(d,f)
+"
+  # Simulate the failure state: worktree registered, loop.md present on disk
+  # but untracked on the branch.
+  GIT_WORKTREE_OVERRIDE=1 git -C "$TEST_REPO" worktree add --quiet ".worktrees/master" -b "session/master" main
+  mkdir -p "$TEST_REPO/.worktrees/master/loops"
+  cp "$TPL_DIR/master.md" "$TEST_REPO/.worktrees/master/loops/loop.md"
+  # Deliberately NO commit here — this is the bug's aftermath.
+  run git -C "$TEST_REPO/.worktrees/master" ls-files --error-unmatch loops/loop.md
+  [ "$status" -ne 0 ]   # confirm untracked
+
+  # Re-run — v2.4.1's heal path should commit the existing file.
+  run "$SCRIPT" --execute --repo "$TEST_REPO" --templates-dir "$TPL_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[heal]"* ]]
+  [[ "$output" == *"master"* ]]
+
+  # Now tracked on session/master.
+  run git -C "$TEST_REPO/.worktrees/master" ls-files --error-unmatch loops/loop.md
+  [ "$status" -eq 0 ]
+
+  rm -rf "$TPL_DIR"
+}
+
 @test "materialise: seeding is idempotent — existing loop.md not overwritten on re-run" {
   TPL_DIR="$(mktemp -d)"
   _mk_template master "$TPL_DIR"
